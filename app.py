@@ -696,7 +696,7 @@ model_df = device_df[
 ].copy()
 
 # TEMPORARY DEBUG — Apple Watch
-if device_type == "Apple Watch":
+if device_type == "Watch":
 
     st.write("DEBUG - Apple Watch data")
 
@@ -825,7 +825,7 @@ elif device_type == "Mac":
 # APPLE WATCH
 # ------------------------------------------------------------
 
-elif device_type == "Apple Watch":
+elif device_type == "Watch":
 
     # ========================================================
     # STORAGE
@@ -860,7 +860,7 @@ elif device_type == "Apple Watch":
 
         matching_df = model_df.copy()
 
-    if device_type == "Apple Watch":
+    if device_type == "Watch":
 
         st.write("DEBUG - Apple Watch data")
         st.dataframe(
@@ -1136,7 +1136,7 @@ if pd.notna(storage):
     selected_description += f" — {format_storage(storage)}"
 
 if (
-    device_type in ["iPad", "Apple Watch"]
+    device_type in ["iPad", "Watch"]
     and connectivity
 ):
     selected_description += f" — {connectivity}"
