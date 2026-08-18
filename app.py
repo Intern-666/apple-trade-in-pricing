@@ -97,7 +97,7 @@ st.markdown(
             font-size: 2.5rem !important;
             font-weight: 800 !important;
             letter-spacing: -0.5px;
-            line-height: 3;
+            line-height: 5;
             margin: 0 !important;
         }
 
