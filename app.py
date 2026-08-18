@@ -10,9 +10,11 @@ import re
 # CONFIGURATION
 # ============================================================
 
+icon_path = os.path.join(os.path.dirname(__file__), "imycom.png")
+
 st.set_page_config(
     page_title="Apple Trade-In Competitive Pricing",
-    page_icon="./imycom.png",
+    page_icon=icon_path,
     layout="centered"
 )
 
