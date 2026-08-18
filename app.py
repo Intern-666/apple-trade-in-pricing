@@ -660,6 +660,8 @@ device_type = st.selectbox(
     device_types
 )
 
+st.write("DEBUG DEVICE TYPE:", repr(device_type))
+
 
 device_df = df[
     df["Device"] == device_type
