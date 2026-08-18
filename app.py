@@ -955,50 +955,21 @@ elif device_type == "Apple Watch":
 
 elif device_type == "AirPods":
 
-    specification_options = clean_options(
-        model_df["Specification"]
-        if "Specification" in model_df.columns
-        else pd.Series(dtype=str)
+    charging_methods = [
+        "Wired Charging",
+        "Wireless Charging",
+        "Lightning Charging",
+        "MagSafe Charging",
+        "USB-C"
+    ]
+
+    charging_method = st.selectbox(
+        "Charging Method (Optional)",
+        ["Not specified"] + charging_methods,
+        key="airpods_charging_method"
     )
 
-    charging_methods = []
-
-    for specification_value in specification_options:
-
-        specification_text = str(
-            specification_value
-        ).strip()
-
-        if not specification_text:
-            continue
-
-        # Charging method is stored inside Specification
-        # and is unique to AirPods.
-
-        charging_methods.append(
-            specification_text
-        )
-
-    charging_methods = sorted(
-        set(charging_methods),
-        key=str
-    )
-
-    connectivity = ""
-
-    if charging_methods:
-
-        charging_method = st.selectbox(
-            "Charging Method (Optional)",
-            ["Not specified"] + charging_methods,
-            key="airpods_charging_method"
-        )
-
-        if charging_method == "Not specified":
-            charging_method = ""
-
-    else:
-
+    if charging_method == "Not specified":
         charging_method = ""
 
 
