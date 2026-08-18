@@ -1,3 +1,4 @@
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 import joblib
@@ -10,11 +11,11 @@ import re
 # CONFIGURATION
 # ============================================================
 
-icon_path = os.path.join(os.path.dirname(__file__), "imycom.png")
+ICON_PATH = Path(__file__).parent / "imycom.png"
 
 st.set_page_config(
     page_title="Apple Trade-In Competitive Pricing",
-    page_icon=icon_path,
+    page_icon=str(ICON_PATH),
     layout="centered"
 )
 
