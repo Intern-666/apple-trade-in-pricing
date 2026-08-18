@@ -12,7 +12,7 @@ import re
 
 st.set_page_config(
     page_title="Apple Trade-In Competitive Pricing",
-    page_icon="imycom.png",
+    page_icon="./imycom.png",
     layout="centered"
 )
 
