@@ -178,10 +178,14 @@ st.markdown(
        ======================================================== */
 
     div[data-baseweb="select"] > div {
-        background-color: var(--white) !important;
+        background-color: var(--secondary-background-color) !important;
         border: 1px solid #CCCCCC !important;
         border-radius: 6px !important;
         min-height: 42px;
+    }
+    
+    div[data-baseweb="select"] span {
+        color: var(--text-color) !important;
     }
 
     div[data-baseweb="select"] > div:hover {
@@ -295,8 +299,7 @@ st.markdown(
        ======================================================== */
 
     p,
-    label,
-    span {
+    label {
         color: var(--dark);
     }
 
