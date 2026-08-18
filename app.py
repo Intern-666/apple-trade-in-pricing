@@ -695,26 +695,6 @@ model_df = device_df[
     device_df["Model"] == model_name
 ].copy()
 
-# TEMPORARY DEBUG — Apple Watch
-if device_type == "Watch":
-
-    st.write("DEBUG - Apple Watch data")
-
-    debug_columns = [
-        col for col in [
-            "Model",
-            "Storage (GB)",
-            "Connectivity",
-            "Specification"
-        ]
-        if col in model_df.columns
-    ]
-
-    st.dataframe(
-        model_df[debug_columns],
-        hide_index=True
-    )
-
 # ============================================================
 # INITIAL DEFAULT VALUES
 # ============================================================
