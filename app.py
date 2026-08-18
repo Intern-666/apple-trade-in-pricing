@@ -805,22 +805,57 @@ elif device_type == "Mac":
 
 elif device_type == "Apple Watch":
 
-    storage = show_selectable_numeric(
-        "Storage",
-        "Storage (GB)",
-        model_df,
-        storage_options[0] if storage_options else np.nan,
-        "watch_storage",
-        format_storage
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
+    #
+    # Storage is NOT mandatory for Apple Watch.
+    # Only show it if the selected model actually has
+    # storage information in the dataset.
+    #
+
+    watch_storage_options = numeric_options(
+        model_df["Storage (GB)"]
+        if "Storage (GB)" in model_df.columns
+        else pd.Series(dtype=float)
     )
 
-    matching_df = model_df[
-        model_df["Storage (GB)"] == storage
-    ].copy()
+    if watch_storage_options:
+
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            watch_storage_options[0],
+            "watch_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
+            model_df["Storage (GB)"] == storage
+        ].copy()
+
+    else:
+
+        # No storage information for this model.
+        # Do not force a storage selection.
+        storage = np.nan
+
+        matching_df = model_df.copy()
+
+
+    # --------------------------------------------------------
+    # CONNECTIVITY
+    # --------------------------------------------------------
+    #
+    # Connectivity is independent from storage.
+    # Therefore it must be generated from the model-level
+    # dataset rather than from a storage-filtered dataset.
+    #
 
     connectivity_options = clean_options(
-        matching_df["Connectivity"]
-        if "Connectivity" in matching_df.columns
+        model_df["Connectivity"]
+        if "Connectivity" in model_df.columns
         else pd.Series(dtype=str)
     )
 
@@ -840,6 +875,7 @@ elif device_type == "Apple Watch":
         connectivity = ""
 
     if connectivity:
+
         matching_df = matching_df[
             matching_df["Connectivity"] == connectivity
         ].copy()
@@ -1071,177 +1107,56 @@ st.info(
     f"**{selected_description}**"
 )
 
-
-# ============================================================
-# MARKET BENCHMARK
-# ============================================================
-
-st.divider()
-
-st.subheader("Market Benchmark")
-
-
 # ============================================================
 # MARKET MATCH
 # ============================================================
-#
-# Market matching follows:
-#
-# Model + Storage
-#       ↓
-# Optional specification supplied?
-#       ↓
-# Yes → narrow to that exact configuration
-# No  → retain all relevant variants
-#
-# This means we never invent a market configuration.
 
 market_records = selected_df[
-    selected_df[
-        "Max. Trade-In Value (RM)"
-    ].notna()
+    selected_df["Max. Trade-In Value (RM)"].notna()
 ].copy()
 
 
 if market_records.empty:
-
-    st.warning(
-        "No observed market price is available for "
-        "this configuration."
-    )
 
     market_prices = []
 
 else:
 
     market_prices = (
-        market_records[
-            "Max. Trade-In Value (RM)"
-        ]
+        market_records["Max. Trade-In Value (RM)"]
         .astype(float)
         .tolist()
     )
 
 
 # ============================================================
-# PROVIDER COMPARISON
+# MARKET MEDIAN
 # ============================================================
-
-if not market_records.empty:
-
-    st.write("### Provider Comparison")
-
-    provider_table = (
-        market_records
-        .groupby("Provider")[
-            "Max. Trade-In Value (RM)"
-        ]
-        .agg(
-            ["min", "median", "max", "count"]
-        )
-        .reset_index()
-    )
-
-    provider_table.columns = [
-        "Provider",
-        "Lowest",
-        "Median",
-        "Highest",
-        "Listings"
-    ]
-
-    provider_table["Median"] = (
-        provider_table["Median"]
-        .round(0)
-    )
-
-    display_table = provider_table[
-        ["Provider", "Median", "Listings"]
-    ].copy()
-
-    display_table["Median"] = (
-        display_table["Median"]
-        .apply(
-            lambda x: f"RM {x:,.0f}"
-        )
-    )
-
-    display_table.columns = [
-        "Provider",
-        "Trade-In Value",
-        "Listings"
-    ]
-
-    st.dataframe(
-        display_table,
-        width="stretch",
-        hide_index=True
-    )
-
-
-# ============================================================
-# MARKET RANGE
-# ============================================================
-
-market_low = 0.0
-market_median = 0.0
-market_high = 0.0
 
 if market_prices:
-
-    market_low = min(market_prices)
 
     market_median = float(
         np.median(market_prices)
     )
 
-    market_high = max(market_prices)
+else:
 
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-
-        st.metric(
-            "Lowest",
-            f"RM {market_low:,.0f}"
-        )
-
-    with c2:
-
-        st.metric(
-            "Market Median",
-            f"RM {market_median:,.0f}"
-        )
-
-    with c3:
-
-        st.metric(
-            "Highest",
-            f"RM {market_high:,.0f}"
-        )
-
-    st.caption(
-        f"Based on {len(market_prices)} "
-        f"observed market listing(s) for this exact configuration."
-    )
+    market_median = np.nan
 
 
 # ============================================================
 # ML PREDICTION
 # ============================================================
 
-st.divider()
-
-st.subheader("Estimated Market Value")
-
-
 # ------------------------------------------------------------
 # STANDARDIZED MODEL
 # ------------------------------------------------------------
 
-standardized_model = selected[
-    "Standardized Model"
-] if "Standardized Model" in selected else ""
+standardized_model = (
+    selected["Standardized Model"]
+    if "Standardized Model" in selected
+    else ""
+)
 
 
 # ------------------------------------------------------------
@@ -1346,29 +1261,11 @@ except Exception as e:
     st.stop()
 
 
-st.metric(
-    "Estimated Market Value",
-    f"RM {ml_prediction:,.0f}"
-)
-
-
 # ============================================================
-# COMPETITIVE PRICING RECOMMENDATION
-# ============================================================
-
-st.divider()
-
-st.subheader(
-    "Competitive Pricing Recommendation"
-)
-
-
-# ============================================================
-# DETERMINE MARKET EVIDENCE
+# FINAL RECOMMENDATION
 # ============================================================
 
 provider_count = 0
-market_available = False
 
 if not market_records.empty:
 
@@ -1382,80 +1279,67 @@ if not market_records.empty:
 
     provider_count = len(providers)
 
-    if market_prices:
 
-        market_available = True
+# ------------------------------------------------------------
+# MARKET EVIDENCE FIRST
+# ------------------------------------------------------------
 
-
-# ============================================================
-# RECOMMENDATION LOGIC
-# ============================================================
-
-if provider_count >= 3:
+if market_prices:
 
     recommended_offer = market_median
 
-    confidence_level = (
-        "Strong Market Evidence"
-    )
+    if provider_count >= 3:
 
-    confidence_description = (
-        f"{provider_count} independent providers were "
-        "observed for this exact configuration. "
-        "The market median is used as the competitive "
-        "trade-in recommendation."
-    )
+        confidence_level = "Strong Market Evidence"
+
+        confidence_description = (
+            "The recommendation is based on observed "
+            "market pricing from multiple providers."
+        )
+
+    elif provider_count == 2:
+
+        confidence_level = "Good Market Evidence"
+
+        confidence_description = (
+            "The recommendation is based on observed "
+            "market pricing from two providers."
+        )
+
+    else:
+
+        confidence_level = "Limited Market Evidence"
+
+        confidence_description = (
+            "The recommendation is based on observed "
+            "market pricing from one provider."
+        )
 
 
-elif provider_count == 2:
-
-    recommended_offer = market_median
-
-    confidence_level = (
-        "Good Market Evidence"
-    )
-
-    confidence_description = (
-        "Two independent providers were observed for "
-        "this exact configuration. The market median is "
-        "used as the competitive trade-in recommendation."
-    )
-
-
-elif provider_count == 1:
-
-    recommended_offer = market_median
-
-    confidence_level = (
-        "Limited Market Evidence"
-    )
-
-    confidence_description = (
-        "Only one independent provider was observed for "
-        "this exact configuration. The observed market "
-        "price is used as the recommendation, but should "
-        "be treated with caution."
-    )
-
+# ------------------------------------------------------------
+# ML FALLBACK
+# ------------------------------------------------------------
 
 else:
 
     recommended_offer = ml_prediction
 
-    confidence_level = (
-        "Model-Based Estimate"
-    )
+    confidence_level = "Model-Based Estimate"
 
     confidence_description = (
-        "No observed market price is available for this "
-        "exact configuration. The ML estimate is used "
-        "as the recommendation."
+        "No direct market price was available for "
+        "this exact configuration. The value is "
+        "estimated using the valuation model."
     )
 
 
 # ============================================================
-# DISPLAY RECOMMENDATION
+# CUSTOMER-FACING VALUATION
 # ============================================================
+
+st.divider()
+
+st.subheader("Estimated Market Value")
 
 st.markdown(
     f"""
@@ -1463,6 +1347,7 @@ st.markdown(
         <div class="recommendation-title">
             Recommended Trade-In Offer
         </div>
+
         <div class="recommendation-value">
             RM {recommended_offer:,.0f}
         </div>
@@ -1475,127 +1360,6 @@ st.info(
     f"**{confidence_level}**  \n"
     f"{confidence_description}"
 )
-
-
-# ============================================================
-# MARKET EVIDENCE
-# ============================================================
-
-if market_available:
-
-    st.write("### Market Evidence")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-
-        st.metric(
-            "Lowest",
-            f"RM {market_low:,.0f}"
-        )
-
-    with col2:
-
-        st.metric(
-            "Market Median",
-            f"RM {market_median:,.0f}"
-        )
-
-    with col3:
-
-        st.metric(
-            "Highest",
-            f"RM {market_high:,.0f}"
-        )
-
-    st.caption(
-        f"Based on {len(market_prices)} observed "
-        f"listing(s) from {provider_count} "
-        f"independent provider(s)."
-    )
-
-
-# ============================================================
-# MODEL VS MARKET
-# ============================================================
-
-st.write("### Model vs Market")
-
-col1, col2 = st.columns(2)
-
-with col1:
-
-    st.metric(
-        "ML Estimate",
-        f"RM {ml_prediction:,.0f}"
-    )
-
-
-with col2:
-
-    if market_available:
-
-        difference = (
-            ml_prediction -
-            market_median
-        )
-
-        percentage_difference = (
-            difference /
-            market_median *
-            100
-            if market_median > 0
-            else 0
-        )
-
-        st.metric(
-            "Market Median",
-            f"RM {market_median:,.0f}",
-            delta=f"{percentage_difference:+.1f}%"
-        )
-
-    else:
-
-        st.metric(
-            "Market Median",
-            "N/A"
-        )
-
-
-# ============================================================
-# MARKET POSITION
-# ============================================================
-
-if market_available:
-
-    if ml_prediction > market_high:
-
-        st.warning(
-            "The ML estimate is above the observed "
-            "market range."
-        )
-
-    elif ml_prediction < market_low:
-
-        st.info(
-            "The ML estimate is below the observed "
-            "market range."
-        )
-
-    else:
-
-        st.success(
-            "The ML estimate falls within the observed "
-            "market price range."
-        )
-
-else:
-
-    st.info(
-        "No direct market benchmark is available. "
-        "The ML estimate is being used as the primary "
-        "valuation."
-    )
 
 
 # ============================================================
