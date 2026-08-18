@@ -1275,43 +1275,54 @@ market_low = 0.0
 market_median = 0.0
 market_high = 0.0
 
-if market_prices:
+provider_medians = pd.Series(dtype=float)
 
-    market_low = min(market_prices)
+if not market_records.empty:
 
-    market_median = float(
-        np.median(market_prices)
+    provider_medians = (
+        market_records
+        .groupby("Provider")["Max. Trade-In Value (RM)"]
+        .median()
     )
 
-    market_high = max(market_prices)
+    if not provider_medians.empty:
 
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-
-        st.metric(
-            "Lowest",
-            f"RM {market_low:,.0f}"
+        market_low = float(
+            provider_medians.min()
         )
 
-    with c2:
-
-        st.metric(
-            "Market Median",
-            f"RM {market_median:,.0f}"
+        market_median = float(
+            provider_medians.median()
         )
 
-    with c3:
-
-        st.metric(
-            "Highest",
-            f"RM {market_high:,.0f}"
+        market_high = float(
+            provider_medians.max()
         )
 
-    st.caption(
-        f"Based on {len(market_prices)} "
-        f"observed market listing(s) for this exact configuration."
-    )
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.metric(
+                "Lowest",
+                f"RM {market_low:,.0f}"
+            )
+
+        with c2:
+            st.metric(
+                "Market Median",
+                f"RM {market_median:,.0f}"
+            )
+
+        with c3:
+            st.metric(
+                "Highest",
+                f"RM {market_high:,.0f}"
+            )
+
+        st.caption(
+            f"Based on {len(provider_medians)} "
+            f"provider(s) for this exact configuration."
+        )
 
 
 # ============================================================
