@@ -18,6 +18,9 @@ st.set_page_config(
     layout="centered"
 )
 
+st.write("Current directory:", os.getcwd())
+st.write("Files:", os.listdir(os.path.dirname(__file__)))
+
 # ============================================================
 # iMALAYSIAN RED THEME
 # ============================================================
