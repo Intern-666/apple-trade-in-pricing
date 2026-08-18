@@ -106,7 +106,7 @@ st.markdown(
             font-size: 1.25rem !important;
             font-weight: 400 !important;
             line-height: 0;
-            margin-top: 0.1rem !important;
+            margin-top: -2rem !important;
             opacity: 0.92;
         }
 
