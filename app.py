@@ -1258,7 +1258,7 @@ if not market_records.empty:
 
     st.dataframe(
         display_table,
-        width="stretch"
+        width="stretch",
         hide_index=True
     )
 
