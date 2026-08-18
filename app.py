@@ -805,14 +805,9 @@ elif device_type == "Mac":
 
 elif device_type == "Apple Watch":
 
-    # --------------------------------------------------------
+    # ========================================================
     # STORAGE
-    # --------------------------------------------------------
-    #
-    # Storage is NOT mandatory for Apple Watch.
-    # Only show it if the selected model actually has
-    # storage information in the dataset.
-    #
+    # ========================================================
 
     watch_storage_options = numeric_options(
         model_df["Storage (GB)"]
@@ -837,48 +832,75 @@ elif device_type == "Apple Watch":
 
     else:
 
-        # No storage information for this model.
-        # Do not force a storage selection.
+        # Some Apple Watch models do not have storage
+        # information in the dataset.
         storage = np.nan
 
         matching_df = model_df.copy()
 
+    if device_type == "Apple Watch":
 
-    # --------------------------------------------------------
+        st.write("DEBUG - Apple Watch data")
+        st.dataframe(
+            model_df[
+                [
+                    col for col in [
+                        "Model",
+                        "Storage (GB)",
+                        "Connectivity",
+                        "Specification"
+                    ]
+                    if col in model_df.columns
+                ]
+            ]
+        )
+
+
+    # ========================================================
     # CONNECTIVITY
-    # --------------------------------------------------------
+    # ========================================================
     #
-    # Connectivity is independent from storage.
-    # Therefore it must be generated from the model-level
-    # dataset rather than from a storage-filtered dataset.
+    # IMPORTANT:
+    # Connectivity is determined from ALL rows belonging
+    # to the selected model.
     #
+    # It must NOT depend on whether storage is available.
+    # ========================================================
 
-    connectivity_options = clean_options(
+    watch_connectivity_values = clean_options(
         model_df["Connectivity"]
         if "Connectivity" in model_df.columns
         else pd.Series(dtype=str)
     )
 
-    connectivity_options = [
+    watch_connectivity_values = [
         value
-        for value in connectivity_options
-        if value
+        for value in watch_connectivity_values
+        if str(value).strip()
     ]
 
-    connectivity = st.selectbox(
-        "Connectivity (Optional)",
-        ["Not specified"] + connectivity_options,
-        key="watch_connectivity"
-    )
+    if watch_connectivity_values:
 
-    if connectivity == "Not specified":
+        connectivity = st.selectbox(
+            "Connectivity (Optional)",
+            ["Not specified"] + watch_connectivity_values,
+            key="watch_connectivity"
+        )
+
+        if connectivity == "Not specified":
+            connectivity = ""
+
+        if connectivity:
+
+            matching_df = matching_df[
+                matching_df["Connectivity"] == connectivity
+            ].copy()
+
+    else:
+
+        # No connectivity information exists for this model.
         connectivity = ""
-
-    if connectivity:
-
-        matching_df = matching_df[
-            matching_df["Connectivity"] == connectivity
-        ].copy()
+        
 
 
 # ------------------------------------------------------------
@@ -1341,26 +1363,10 @@ st.divider()
 
 st.subheader("Estimated Market Value")
 
-st.markdown(
-    f"""
-    <div class="recommendation-card">
-        <div class="recommendation-title">
-            Recommended Trade-In Offer
-        </div>
-
-        <div class="recommendation-value">
-            RM {recommended_offer:,.0f}
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
+st.metric(
+    "Recommended Trade-In Offer",
+    f"RM {recommended_offer:,.0f}"
 )
-
-st.info(
-    f"**{confidence_level}**  \n"
-    f"{confidence_description}"
-)
-
 
 # ============================================================
 # FOOTER
