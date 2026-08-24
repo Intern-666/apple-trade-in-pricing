@@ -652,25 +652,51 @@ st.subheader("Device Selection")
 
 device_types = clean_options(
     df["Device"]
+    if "Device" in df.columns
+    else pd.Series(dtype=str)
 )
+
+if not device_types:
+    st.error("No device types are available in the master dataset.")
+    st.stop()
 
 device_type = st.selectbox(
     "Device Type",
     device_types,
-    key="device_type"
+    key="device_type_selection"
 )
 
 
+# ============================================================
+# DEVICE DATA
+# ============================================================
+
 device_df = df[
-    df["Device"] == device_type
+    df["Device"].astype(str).str.strip() == device_type
 ].copy()
 
 
-# ------------------------------------------------------------
+if device_df.empty:
+    st.warning(
+        "No records are available for the selected device type."
+    )
+    st.stop()
+
+
+# ============================================================
 # SUB-DEVICE
-# ------------------------------------------------------------
+# ============================================================
+#
+# iPhone:
+#     No Sub-device selection.
+#
+# Other devices:
+#     Sub-device improves UX and narrows the available models.
+#
+# ============================================================
 
 sub_device = ""
+
 
 if device_type != "iPhone" and "Sub-device" in device_df.columns:
 
@@ -683,25 +709,45 @@ if device_type != "iPhone" and "Sub-device" in device_df.columns:
         sub_device = st.selectbox(
             "Sub-device",
             sub_device_options,
-            key="sub_device"
+            key="sub_device_selection"
         )
 
         device_df = device_df[
-            device_df["Sub-device"] == sub_device
+            device_df["Sub-device"].astype(str).str.strip()
+            == sub_device
         ].copy()
 
+
 # ============================================================
-# STANDARDIZED MODEL
+# MODEL
+# ============================================================
+#
+# IMPORTANT:
+# The finalized master dataset uses:
+#
+#     Standardized Model
+#
+# rather than the old "Model" column.
+#
 # ============================================================
 
-model_options = clean_options(
+if "Standardized Model" not in device_df.columns:
+    st.error(
+        "The master dataset does not contain "
+        "'Standardized Model'."
+    )
+    st.stop()
+
+
+models = clean_options(
     device_df["Standardized Model"]
 )
 
-if not model_options:
+
+if not models:
 
     st.warning(
-        "No models are available for the selected device."
+        "No models are available for the selected configuration."
     )
 
     st.stop()
@@ -709,55 +755,43 @@ if not model_options:
 
 model_name = st.selectbox(
     "Model",
-    model_options,
-    key="standardized_model"
+    models,
+    key="model_selection"
 )
 
 
 model_df = device_df[
-    device_df["Standardized Model"] == model_name
+    device_df["Standardized Model"].astype(str).str.strip()
+    == str(model_name).strip()
 ].copy()
+
+
+if model_df.empty:
+    st.error(
+        "No records were found for the selected model."
+    )
+    st.stop()
 
 
 # ============================================================
 # INITIAL VALUES
 # ============================================================
 
-storage = np.nan
-storage_type = ""
 connectivity = ""
 charging_method = ""
+storage = np.nan
+storage_type = ""
 
 
 # ============================================================
-# HELPER — FILTER STORAGE
+# STORAGE OPTIONS
 # ============================================================
 
-def select_storage(source_df, key):
-
-    storage_options = numeric_options(
-        source_df["Storage (GB)"]
-        if "Storage (GB)" in source_df.columns
-        else pd.Series(dtype=float)
-    )
-
-    if not storage_options:
-        return np.nan, source_df.copy()
-
-    storage = show_selectable_numeric(
-        "Storage",
-        "Storage (GB)",
-        source_df,
-        storage_options[0],
-        key,
-        format_storage
-    )
-
-    filtered_df = source_df[
-        source_df["Storage (GB)"] == storage
-    ].copy()
-
-    return storage, filtered_df
+storage_options = numeric_options(
+    model_df["Storage (GB)"]
+    if "Storage (GB)" in model_df.columns
+    else pd.Series(dtype=float)
+)
 
 
 # ============================================================
@@ -766,10 +800,24 @@ def select_storage(source_df, key):
 
 if device_type == "iPhone":
 
-    storage, matching_df = select_storage(
-        model_df,
-        "iphone_storage"
-    )
+    if storage_options:
+
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "iphone_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
+            model_df["Storage (GB)"] == storage
+        ].copy()
+
+    else:
+
+        matching_df = model_df.copy()
 
 
 # ============================================================
@@ -778,10 +826,33 @@ if device_type == "iPhone":
 
 elif device_type == "iPad":
 
-    storage, matching_df = select_storage(
-        model_df,
-        "ipad_storage"
-    )
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
+
+    if storage_options:
+
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "ipad_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
+            model_df["Storage (GB)"] == storage
+        ].copy()
+
+    else:
+
+        matching_df = model_df.copy()
+
+
+    # --------------------------------------------------------
+    # CONNECTIVITY
+    # --------------------------------------------------------
 
     connectivity_options = clean_options(
         matching_df["Connectivity"]
@@ -789,16 +860,10 @@ elif device_type == "iPad":
         else pd.Series(dtype=str)
     )
 
-    connectivity_options = [
-        value
-        for value in connectivity_options
-        if str(value).strip()
-    ]
-
     if connectivity_options:
 
         connectivity = st.selectbox(
-            "Connectivity (Optional)",
+            "Connectivity",
             ["Not specified"] + connectivity_options,
             key="ipad_connectivity"
         )
@@ -809,7 +874,8 @@ elif device_type == "iPad":
         if connectivity:
 
             matching_df = matching_df[
-                matching_df["Connectivity"] == connectivity
+                matching_df["Connectivity"].astype(str).str.strip()
+                == connectivity
             ].copy()
 
 
@@ -819,10 +885,33 @@ elif device_type == "iPad":
 
 elif device_type == "Mac":
 
-    storage, matching_df = select_storage(
-        model_df,
-        "mac_storage"
-    )
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
+
+    if storage_options:
+
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "mac_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
+            model_df["Storage (GB)"] == storage
+        ].copy()
+
+    else:
+
+        matching_df = model_df.copy()
+
+
+    # --------------------------------------------------------
+    # STORAGE TYPE
+    # --------------------------------------------------------
 
     storage_type_options = clean_options(
         matching_df["Storage Type"]
@@ -830,23 +919,23 @@ elif device_type == "Mac":
         else pd.Series(dtype=str)
     )
 
-    storage_type_options = [
-        value
-        for value in storage_type_options
-        if str(value).strip()
-    ]
-
     if storage_type_options:
 
         storage_type = st.selectbox(
             "Storage Type",
-            storage_type_options,
+            ["Not specified"] + storage_type_options,
             key="mac_storage_type"
         )
 
-        matching_df = matching_df[
-            matching_df["Storage Type"] == storage_type
-        ].copy()
+        if storage_type == "Not specified":
+            storage_type = ""
+
+        if storage_type:
+
+            matching_df = matching_df[
+                matching_df["Storage Type"].astype(str).str.strip()
+                == storage_type
+            ].copy()
 
 
 # ============================================================
@@ -855,10 +944,35 @@ elif device_type == "Mac":
 
 elif device_type == "Apple Watch":
 
-    storage, matching_df = select_storage(
-        model_df,
-        "watch_storage"
-    )
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
+
+    if storage_options:
+
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "watch_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
+            model_df["Storage (GB)"] == storage
+        ].copy()
+
+    else:
+
+        # Storage is not available for some Watch records.
+        storage = np.nan
+        matching_df = model_df.copy()
+
+
+    # --------------------------------------------------------
+    # CONNECTIVITY
+    # --------------------------------------------------------
 
     connectivity_options = clean_options(
         matching_df["Connectivity"]
@@ -866,16 +980,10 @@ elif device_type == "Apple Watch":
         else pd.Series(dtype=str)
     )
 
-    connectivity_options = [
-        value
-        for value in connectivity_options
-        if str(value).strip()
-    ]
-
     if connectivity_options:
 
         connectivity = st.selectbox(
-            "Connectivity (Optional)",
+            "Connectivity",
             ["Not specified"] + connectivity_options,
             key="watch_connectivity"
         )
@@ -886,7 +994,8 @@ elif device_type == "Apple Watch":
         if connectivity:
 
             matching_df = matching_df[
-                matching_df["Connectivity"] == connectivity
+                matching_df["Connectivity"].astype(str).str.strip()
+                == connectivity
             ].copy()
 
 
@@ -896,61 +1005,57 @@ elif device_type == "Apple Watch":
 
 elif device_type == "AirPods":
 
-    # AirPods do not use storage as a customer-facing
-    # configuration.
-    storage = np.nan
+    matching_df = model_df.copy()
+
+
+    # --------------------------------------------------------
+    # CHARGING METHOD
+    # --------------------------------------------------------
+    #
+    # AirPods use Specification for charging information.
+    #
+    # --------------------------------------------------------
 
     charging_options = clean_options(
-        model_df["Specification"]
-        if "Specification" in model_df.columns
+        matching_df["Specification"]
+        if "Specification" in matching_df.columns
         else pd.Series(dtype=str)
     )
-
-    charging_options = [
-        value
-        for value in charging_options
-        if str(value).strip()
-    ]
 
     if charging_options:
 
         charging_method = st.selectbox(
-            "Charging Case",
+            "Charging Method",
             ["Not specified"] + charging_options,
-            key="airpods_charging_case"
+            key="airpods_charging_method"
         )
 
         if charging_method == "Not specified":
             charging_method = ""
 
-        matching_df = model_df.copy()
-
         if charging_method:
 
             matching_df = matching_df[
-                matching_df["Specification"] == charging_method
+                matching_df["Specification"].astype(str).str.strip()
+                == charging_method
             ].copy()
 
-    else:
 
-        matching_df = model_df.copy()
+    # AirPods do not use storage as a customer-facing selection.
+    storage = np.nan
 
 
 # ============================================================
-# OTHER DEVICES
+# FALLBACK
 # ============================================================
 
 else:
-
-    # Future device-specific rules are STC.
-    # For now, no additional customer-facing configuration
-    # is required.
 
     matching_df = model_df.copy()
 
 
 # ============================================================
-# VALIDATE MATCH
+# VALIDATE MARKET MATCH
 # ============================================================
 
 if matching_df.empty:
@@ -968,7 +1073,12 @@ else:
     selected_df = matching_df.copy()
 
 
+# ============================================================
+# SELECTED RECORD
+# ============================================================
+
 selected = selected_df.iloc[0]
+
 
 # ============================================================
 # ORIGINAL DETECTED VALUES
@@ -976,66 +1086,66 @@ selected = selected_df.iloc[0]
 
 original_model_year = (
     selected["Model_Year"]
-    if "Model_Year" in selected
+    if "Model_Year" in selected.index
     else np.nan
 )
 
 original_generation = (
     selected["Generation"]
-    if "Generation" in selected
+    if "Generation" in selected.index
     else np.nan
 )
 
 original_screen_size = (
     selected["Screen Size (inch)"]
-    if "Screen Size (inch)" in selected
+    if "Screen Size (inch)" in selected.index
     else np.nan
 )
 
 original_chipset = (
     selected["Chipset"]
-    if "Chipset" in selected
+    if "Chipset" in selected.index
     else ""
 )
 
 original_ram = (
     selected["RAM (GB)"]
-    if "RAM (GB)" in selected
+    if "RAM (GB)" in selected.index
     else np.nan
 )
 
 original_storage = (
     selected["Storage (GB)"]
-    if "Storage (GB)" in selected
+    if "Storage (GB)" in selected.index
     else np.nan
 )
 
 original_storage_type = (
     selected["Storage Type"]
-    if "Storage Type" in selected
+    if "Storage Type" in selected.index
     else ""
 )
 
 original_connectivity = (
     selected["Connectivity"]
-    if "Connectivity" in selected
+    if "Connectivity" in selected.index
     else ""
 )
 
 original_clock_speed_raw = (
     selected["Clock Speed"]
-    if "Clock Speed" in selected
+    if "Clock Speed" in selected.index
     else ""
 )
 
 original_specification = (
     selected["Specification"]
-    if "Specification" in selected
+    if "Specification" in selected.index
     else ""
 )
 
 # ============================================================
-# INITIALIZE BACKEND VALUES
+# BACKEND VALUES
 # ============================================================
 
 model_year = original_model_year
@@ -1043,12 +1153,24 @@ generation = original_generation
 screen_size = original_screen_size
 chipset = original_chipset
 ram = original_ram
-storage_type = original_storage_type
 clock_speed_raw = original_clock_speed_raw
 
 
+# Use the user's selected configuration where applicable.
+if storage is not np.nan:
+    if pd.notna(storage):
+        original_storage = storage
+
+storage = original_storage
+
+if storage_type:
+    original_storage_type = storage_type
+
+storage_type = original_storage_type
+
+
 # ============================================================
-# DETECTED / ADJUSTABLE DEVICE DETAILS
+# DEVICE DETAILS
 # ============================================================
 
 st.divider()
@@ -1057,8 +1179,7 @@ st.subheader("Device Details")
 
 st.caption(
     "These values are detected from the selected dataset "
-    "record. You can adjust individual specifications if "
-    "the detected configuration is not accurate."
+    "record and are used by the valuation model."
 )
 
 
@@ -1095,29 +1216,36 @@ st.divider()
 
 st.subheader("Selected Device")
 
-selected_description = str(model_name)
+selected_description: str = str(model_name)
+
+
+if sub_device:
+    selected_description += f" — {str(sub_device)}"
+
 
 if pd.notna(storage):
     selected_description += f" — {format_storage(storage)}"
 
-if (
-    device_type in ["iPad", "Watch"]
-    and connectivity
-):
-    selected_description += f" — {connectivity}"
 
-if (
-    device_type == "AirPods"
-    and charging_method
-):
-    selected_description += f" — {charging_method}"
+if storage_type:
+    selected_description += f" — {str(storage_type)}"
+
+
+if connectivity:
+    selected_description += f" — {str(connectivity)}"
+
+
+if charging_method:
+    selected_description += f" — {str(charging_method)}"
+
 
 st.info(
     f"**{selected_description}**"
 )
 
+
 # ============================================================
-# MARKET MATCH
+# MARKET EVIDENCE
 # ============================================================
 
 market_records = selected_df[
@@ -1125,17 +1253,13 @@ market_records = selected_df[
 ].copy()
 
 
-if market_records.empty:
-
-    market_prices = []
-
-else:
-
-    market_prices = (
-        market_records["Max. Trade-In Value (RM)"]
-        .astype(float)
-        .tolist()
-    )
+market_prices = (
+    market_records[
+        "Max. Trade-In Value (RM)"
+    ]
+    .astype(float)
+    .tolist()
+)
 
 
 # ============================================================
@@ -1154,40 +1278,8 @@ else:
 
 
 # ============================================================
-# ML PREDICTION
+# ML INPUT
 # ============================================================
-
-# ------------------------------------------------------------
-# STANDARDIZED MODEL
-# ------------------------------------------------------------
-
-standardized_model = (
-    selected["Standardized Model"]
-    if "Standardized Model" in selected
-    else ""
-)
-
-
-# ------------------------------------------------------------
-# PROVIDER / CATEGORY
-# ------------------------------------------------------------
-
-selected_provider = (
-    selected["Provider"]
-    if "Provider" in selected
-    else "Unknown"
-)
-
-selected_category = (
-    selected["Pricing Category"]
-    if "Pricing Category" in selected
-    else "Unknown"
-)
-
-
-# ------------------------------------------------------------
-# MODEL INPUT
-# ------------------------------------------------------------
 
 input_data = pd.DataFrame([{
 
@@ -1201,10 +1293,10 @@ input_data = pd.DataFrame([{
         standardized_model,
 
     "provider":
-        selected_provider,
+        provider,
 
     "pricing_category":
-        selected_category,
+        pricing_category,
 
     "model_year":
         model_year,
@@ -1222,9 +1314,7 @@ input_data = pd.DataFrame([{
         clock_speed_ghz,
 
     "chipset":
-        chipset
-        if chipset
-        else "Unknown",
+        chipset if chipset else "Unknown",
 
     "ram":
         ram,
@@ -1233,20 +1323,17 @@ input_data = pd.DataFrame([{
         storage,
 
     "storage_type":
-        storage_type
-        if storage_type
-        else "Unknown",
+        storage_type if storage_type else "Unknown",
 
     "connectivity":
-        connectivity
-        if connectivity
-        else np.nan
+        connectivity if connectivity else np.nan
+
 }])
 
 
-# ------------------------------------------------------------
-# PREDICT
-# ------------------------------------------------------------
+# ============================================================
+# ML PREDICTION
+# ============================================================
 
 try:
 
@@ -1271,74 +1358,47 @@ except Exception as e:
 
 
 # ============================================================
-# FINAL RECOMMENDATION
+# FINAL VALUATION
 # ============================================================
-
-provider_count = 0
-
-if not market_records.empty:
-
-    providers = (
-        market_records["Provider"]
-        .replace("", np.nan)
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-    provider_count = len(providers)
-
-
-# ------------------------------------------------------------
-# MARKET EVIDENCE FIRST
-# ------------------------------------------------------------
 
 if market_prices:
 
     recommended_offer = market_median
 
+    provider_count = (
+        market_records["Provider"]
+        .replace("", np.nan)
+        .dropna()
+        .nunique()
+    )
+
     if provider_count >= 3:
 
-        confidence_level = "Strong Market Evidence"
-
-        confidence_description = (
-            "The recommendation is based on observed "
-            "market pricing from multiple providers."
+        confidence_text = (
+            "Based on observed market prices "
+            "from multiple providers."
         )
 
     elif provider_count == 2:
 
-        confidence_level = "Good Market Evidence"
-
-        confidence_description = (
-            "The recommendation is based on observed "
-            "market pricing from two providers."
+        confidence_text = (
+            "Based on observed market prices "
+            "from two providers."
         )
 
     else:
 
-        confidence_level = "Limited Market Evidence"
-
-        confidence_description = (
-            "The recommendation is based on observed "
-            "market pricing from one provider."
+        confidence_text = (
+            "Based on observed market pricing."
         )
-
-
-# ------------------------------------------------------------
-# ML FALLBACK
-# ------------------------------------------------------------
 
 else:
 
     recommended_offer = ml_prediction
 
-    confidence_level = "Model-Based Estimate"
-
-    confidence_description = (
-        "No direct market price was available for "
-        "this exact configuration. The value is "
-        "estimated using the valuation model."
+    confidence_text = (
+        "Estimated using the valuation model "
+        "because no direct market price was available."
     )
 
 
@@ -1348,11 +1408,15 @@ else:
 
 st.divider()
 
-st.subheader("Estimated Market Value")
+st.subheader("Estimated Trade-In Value")
 
 st.metric(
     "Recommended Trade-In Offer",
     f"RM {recommended_offer:,.0f}"
+)
+
+st.caption(
+    confidence_text
 )
 
 # ============================================================

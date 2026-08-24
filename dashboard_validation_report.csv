@@ -1,0 +1,40 @@
+Test,Status,Details
+CSV can be loaded,PASS,
+model.pkl can be loaded,PASS,
+All required CSV columns exist,PASS,All expected columns present
+Dataset contains records,PASS,"4,174 rows"
+Expected device categories exist,PASS,All 5 device categories present
+No unexpected device categories exist,PASS,No unexpected categories
+Every record has a Standardized Model,PASS,Invalid model records: 0
+No duplicate configurations,PASS,Duplicate rows: 0
+No invalid storage values,PASS,Invalid storage records: 0
+No negative trade-in values,PASS,Negative values: 0
+iPhone records exist,PASS,838 records
+iPhone models exist,PASS,58 models
+iPhone does not require Sub-device,FAIL,Non-empty Sub-device records: 838
+iPhone has storage data,FAIL,Records with storage: 0
+iPad records exist,PASS,"1,119 records"
+iPad models exist,PASS,44 models
+iPad has Sub-device values,PASS,"Records with Sub-device: 1,119"
+iPad has storage data,FAIL,Storage data available
+iPad has connectivity information,PASS,"Records with connectivity: 1,119"
+Mac records exist,PASS,"1,874 records"
+Mac models exist,PASS,152 models
+Mac has Sub-device values,PASS,"Records with Sub-device: 1,874"
+Mac has storage data,FAIL,Records with storage: 0
+Mac has Storage Type information,PASS,"Records with Storage Type: 1,874"
+Apple Watch records exist,PASS,298 records
+Apple Watch models exist,PASS,19 models
+Apple Watch has Sub-device values,PASS,Records with Sub-device: 298
+Apple Watch has storage data,FAIL,Records with storage: 0
+Apple Watch has connectivity information,PASS,Records with connectivity: 298
+AirPods records exist,PASS,45 records
+AirPods models exist,PASS,7 models
+AirPods has Sub-device values,PASS,Records with Sub-device: 45
+AirPods has charging information,PASS,Records with Specification: 45
+Model contains expected input features,PASS,All expected features present
+Model is a Pipeline,PASS,Model type: Pipeline
+Model has preprocessing step,PASS,"Steps: ['preprocessor', 'model']"
+Final estimator is ExtraTreesRegressor,PASS,Final estimator: ExtraTreesRegressor
+Representative predictions succeed,PASS,5/5 predictions passed
+No duplicate device configurations,FAIL,Duplicate configuration records: 4169
