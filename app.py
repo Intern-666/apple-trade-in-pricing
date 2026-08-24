@@ -404,11 +404,13 @@ def load_data():
 
 model = load_model()
 
-st.write("MODEL TYPE:", type(model))
-st.write(
-    "MODEL FEATURES:",
-    getattr(model, "feature_names_in_", "Not available")
-)
+st.write("MODEL STEPS:")
+
+for name, step in model.named_steps.items():
+    st.write(
+        name,
+        type(step).__name__
+    )
 
 df = load_data()
 
