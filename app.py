@@ -666,21 +666,20 @@ device_df = df[
 ].copy()
 
 
-# ============================================================
+# ------------------------------------------------------------
 # SUB-DEVICE
-# ============================================================
-
-# Sub-device is used to make the model selection easier,
-# especially for Macs.
+# ------------------------------------------------------------
 
 sub_device = ""
 
-if "Sub-device" in device_df.columns:
+if device_type != "iPhone" and "Sub-device" in device_df.columns:
 
     sub_device_options = clean_options(
         device_df["Sub-device"]
     )
 
+    # Only show the dropdown if meaningful sub-device
+    # values actually exist.
     if sub_device_options:
 
         sub_device = st.selectbox(
@@ -692,6 +691,35 @@ if "Sub-device" in device_df.columns:
         device_df = device_df[
             device_df["Sub-device"] == sub_device
         ].copy()
+
+
+# ------------------------------------------------------------
+# MODEL
+# ------------------------------------------------------------
+
+models = clean_options(
+    device_df["Model"]
+)
+
+if not models:
+
+    st.warning(
+        "No models are available for this device configuration."
+    )
+
+    st.stop()
+
+
+model_name = st.selectbox(
+    "Model",
+    models,
+    key="model"
+)
+
+
+model_df = device_df[
+    device_df["Model"] == model_name
+].copy()
 
 
 # ============================================================
