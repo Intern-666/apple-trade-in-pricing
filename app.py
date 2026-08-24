@@ -690,36 +690,6 @@ if device_type != "iPhone" and "Sub-device" in device_df.columns:
             device_df["Sub-device"] == sub_device
         ].copy()
 
-
-# ------------------------------------------------------------
-# MODEL
-# ------------------------------------------------------------
-
-models = clean_options(
-    device_df["Standardized Model"]
-)
-
-if not models:
-
-    st.warning(
-        "No models are available for this device configuration."
-    )
-
-    st.stop()
-
-
-model_name = st.selectbox(
-    "Model",
-    models,
-    key="model"
-)
-
-
-model_df = device_df[
-    device_df["Standardized Model"] == model_name
-].copy()
-
-
 # ============================================================
 # STANDARDIZED MODEL
 # ============================================================
