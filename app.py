@@ -678,8 +678,6 @@ if device_type != "iPhone" and "Sub-device" in device_df.columns:
         device_df["Sub-device"]
     )
 
-    # Only show the dropdown if meaningful sub-device
-    # values actually exist.
     if sub_device_options:
 
         sub_device = st.selectbox(
@@ -698,7 +696,7 @@ if device_type != "iPhone" and "Sub-device" in device_df.columns:
 # ------------------------------------------------------------
 
 models = clean_options(
-    device_df["Model"]
+    device_df["Standardized Model"]
 )
 
 if not models:
@@ -718,7 +716,7 @@ model_name = st.selectbox(
 
 
 model_df = device_df[
-    device_df["Model"] == model_name
+    device_df["Standardized Model"] == model_name
 ].copy()
 
 
