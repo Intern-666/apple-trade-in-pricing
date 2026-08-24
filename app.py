@@ -403,6 +403,13 @@ def load_data():
 
 
 model = load_model()
+
+st.write("MODEL TYPE:", type(model))
+st.write(
+    "MODEL FEATURES:",
+    getattr(model, "feature_names_in_", "Not available")
+)
+
 df = load_data()
 
 st.write("FINAL CSV:", CSV_PATH)
