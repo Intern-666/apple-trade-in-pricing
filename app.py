@@ -331,7 +331,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model.pkl")
 CSV_PATH = os.path.join(
     BASE_DIR,
-    "structured_apple_devices_full.csv"
+    "master_apple_final.csv"
 )
 
 
@@ -404,6 +404,11 @@ def load_data():
 
 model = load_model()
 df = load_data()
+
+st.write("FINAL CSV:", CSV_PATH)
+st.write("Rows:", len(df))
+st.write("Devices:", sorted(df["Device"].dropna().unique().tolist()))
+st.write("Columns:", df.columns.tolist())
 
 
 # ============================================================
