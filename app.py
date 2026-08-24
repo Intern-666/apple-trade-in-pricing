@@ -403,22 +403,7 @@ def load_data():
 
 
 model = load_model()
-
-st.write("MODEL STEPS:")
-
-for name, step in model.named_steps.items():
-    st.write(
-        name,
-        type(step).__name__
-    )
-
 df = load_data()
-
-st.write("FINAL CSV:", CSV_PATH)
-st.write("Rows:", len(df))
-st.write("Devices:", sorted(df["Device"].dropna().unique().tolist()))
-st.write("Columns:", df.columns.tolist())
-
 
 # ============================================================
 # HELPER FUNCTIONS
