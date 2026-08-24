@@ -1216,20 +1216,6 @@ storage_type = original_storage_type
 
 
 # ============================================================
-# DEVICE DETAILS
-# ============================================================
-
-st.divider()
-
-st.subheader("Device Details")
-
-st.caption(
-    "These values are detected from the selected dataset "
-    "record and are used by the valuation model."
-)
-
-
-# ============================================================
 # DEVICE AGE
 # ============================================================
 
