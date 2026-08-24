@@ -1053,9 +1053,8 @@ else:
 
     matching_df = model_df.copy()
 
-
 # ============================================================
-# VALIDATE MARKET MATCH
+# FINAL SELECTED RECORD
 # ============================================================
 
 if matching_df.empty:
@@ -1073,12 +1072,59 @@ else:
     selected_df = matching_df.copy()
 
 
-# ============================================================
-# SELECTED RECORD
-# ============================================================
+if selected_df.empty:
+    st.error(
+        "No usable record was found for the selected device."
+    )
+    st.stop()
+
 
 selected = selected_df.iloc[0]
 
+
+# ============================================================
+# ML BACKEND VALUES
+# ============================================================
+
+standardized_model = str(
+    selected["Standardized Model"]
+    if "Standardized Model" in selected.index
+    else model_name
+)
+
+provider = str(
+    selected["Provider"]
+    if "Provider" in selected.index
+    else "Unknown"
+)
+
+pricing_category = str(
+    selected["Pricing Category"]
+    if "Pricing Category" in selected.index
+    else "Unknown"
+)
+
+# ============================================================
+# ML BACKEND VALUES
+# ============================================================
+
+standardized_model = str(
+    selected["Standardized Model"]
+    if "Standardized Model" in selected.index
+    else model_name
+)
+
+provider = str(
+    selected["Provider"]
+    if "Provider" in selected.index
+    else "Unknown"
+)
+
+pricing_category = str(
+    selected["Pricing Category"]
+    if "Pricing Category" in selected.index
+    else "Unknown"
+)
 
 # ============================================================
 # ORIGINAL DETECTED VALUES
