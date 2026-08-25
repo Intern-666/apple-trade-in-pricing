@@ -1330,88 +1330,123 @@ else:
 
 
 # ============================================================
-# ML INPUT — MODEL_V2.PKL
+# ML INPUT — MODEL_V2.PKL FEATURE SCHEMA
+# ============================================================
+#
+# IMPORTANT:
+# model_v2.pkl was trained using these exact column names:
+#
+# Model_Year
+# Storage (GB)
+# RAM Min (GB)
+# Mac Generation
+# Device
+# Sub-device
+# Standardized Model
+# Provider
+# Storage Type
+# Connectivity
+# Chipset
+#
+# Do NOT use the lowercase app-internal names here.
 # ============================================================
 
-# Get ML-specific fields directly from the selected record.
+# ------------------------------------------------------------
+# RAM MIN
+# ------------------------------------------------------------
 
 ram_min = selected.get(
     "RAM Min (GB)",
     np.nan
 )
 
+ram_min = pd.to_numeric(
+    pd.Series([ram_min]),
+    errors="coerce"
+).iloc[0]
+
+
+# ------------------------------------------------------------
+# MAC GENERATION
+# ------------------------------------------------------------
+
 mac_generation = selected.get(
     "Mac Generation",
-    np.nan
+    ""
 )
 
-# Make sure numeric fields are actually numeric.
-
-model_year = pd.to_numeric(
-    model_year,
-    errors="coerce"
-)
-
-selected_storage = pd.to_numeric(
-    selected_storage,
-    errors="coerce"
-)
-
-ram_min = pd.to_numeric(
-    ram_min,
-    errors="coerce"
-)
-
-# Mac Generation must remain categorical.
 if pd.isna(mac_generation):
-    mac_generation = np.nan
-else:
-    mac_generation = str(mac_generation).strip()
+    mac_generation = ""
 
-# Make sure categorical values are strings.
-device_type_ml = str(device_type).strip()
-sub_device_ml = str(
-    selected.get("Sub-device", "")
-).strip()
+mac_generation = str(mac_generation).strip()
 
-standardized_model_ml = str(
-    selected.get(
-        "Standardized Model",
-        model_name
-    )
-).strip()
 
-provider_ml = str(
-    selected.get(
-        "Provider",
-        ""
-    )
-).strip()
+# ------------------------------------------------------------
+# SUB-DEVICE
+# ------------------------------------------------------------
 
-storage_type_ml = str(
-    selected_storage_type
-).strip()
+selected_sub_device = selected.get(
+    "Sub-device",
+    ""
+)
 
-connectivity_ml = str(
-    selected_connectivity
-).strip()
+if pd.isna(selected_sub_device):
+    selected_sub_device = ""
 
-chipset_ml = str(
-    chipset
+selected_sub_device = str(
+    selected_sub_device
 ).strip()
 
 
 # ------------------------------------------------------------
-# EXACT FEATURES EXPECTED BY MODEL_V2.PKL
+# STORAGE TYPE
+# ------------------------------------------------------------
+
+selected_storage_type = (
+    storage_type
+    if storage_type
+    else str(
+        selected.get(
+            "Storage Type",
+            ""
+        )
+    ).strip()
+)
+
+
+# ------------------------------------------------------------
+# CONNECTIVITY
+# ------------------------------------------------------------
+
+selected_connectivity = (
+    connectivity
+    if connectivity
+    else str(
+        selected.get(
+            "Connectivity",
+            ""
+        )
+    ).strip()
+)
+
+
+# ------------------------------------------------------------
+# BUILD EXACT MODEL INPUT
 # ------------------------------------------------------------
 
 input_data = pd.DataFrame([{
 
     "Model_Year":
-        model_year,
+        pd.to_numeric(
+            model_year,
+            errors="coerce"
+        ),
 
     "Storage (GB)":
-        selected_storage,
+        pd.to_numeric(
+            selected_storage,
+            errors="coerce"
+        ),
 
     "RAM Min (GB)":
         ram_min,
@@ -1420,31 +1455,27 @@ input_data = pd.DataFrame([{
         mac_generation,
 
     "Device":
-        device_type_ml,
+        str(device_type).strip(),
 
     "Sub-device":
-        sub_device_ml,
+        selected_sub_device,
 
     "Standardized Model":
-        standardized_model_ml,
+        standardized_model,
 
     "Provider":
-        provider_ml,
+        provider,
 
     "Storage Type":
-        storage_type_ml
-        if storage_type_ml
-        else np.nan,
+        selected_storage_type,
 
     "Connectivity":
-        connectivity_ml
-        if connectivity_ml
-        else np.nan,
+        selected_connectivity,
 
     "Chipset":
-        chipset_ml
-        if chipset_ml
-        else np.nan
+        str(chipset).strip()
+        if chipset
+        else ""
 
 }])
 
@@ -1545,6 +1576,36 @@ with st.expander("ML Input Debug"):
         EXPECTED_MODEL_FEATURES
     )
 
+# ============================================================
+# VERIFY MODEL INPUT
+# ============================================================
+
+expected_features = [
+    "Model_Year",
+    "Storage (GB)",
+    "RAM Min (GB)",
+    "Mac Generation",
+    "Device",
+    "Sub-device",
+    "Standardized Model",
+    "Provider",
+    "Storage Type",
+    "Connectivity",
+    "Chipset"
+]
+
+missing_features = set(expected_features) - set(input_data.columns)
+
+if missing_features:
+    st.error(
+        f"Model input is missing features: {missing_features}"
+    )
+    st.stop()
+
+input_data = input_data[expected_features]
+
+st.write("### ML Input Debug")
+st.dataframe(input_data)
 
 # ============================================================
 # ML PREDICTION
