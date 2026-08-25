@@ -1,0 +1,41 @@
+{
+    "model_name": "V1 + RAM Min + Mac Generation",
+    "model_type": "ExtraTreesRegressor",
+    "validation": {
+        "split": "GroupShuffleSplit",
+        "test_size": 0.2,
+        "random_state": 42,
+        "train_samples": 3380,
+        "test_samples": 794
+    },
+    "features": {
+        "numeric": [
+            "Model_Year",
+            "Storage (GB)",
+            "RAM Min (GB)",
+            "Mac Generation"
+        ],
+        "categorical": [
+            "Device",
+            "Sub-device",
+            "Standardized Model",
+            "Provider",
+            "Storage Type",
+            "Connectivity",
+            "Chipset"
+        ]
+    },
+    "metrics": {
+        "MAE_RM": 130.2,
+        "R2": 0.984,
+        "Median_AE_RM": 55.62,
+        "Within_RM50_pct": 47.23,
+        "Within_RM200_pct": 81.74
+    },
+    "model_parameters": {
+        "n_estimators": 300,
+        "max_features": "sqrt",
+        "random_state": 42,
+        "n_jobs": -1
+    }
+}

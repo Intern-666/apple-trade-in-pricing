@@ -328,7 +328,7 @@ CURRENT_YEAR = 2026
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODEL_PATH = os.path.join(BASE_DIR, "model.pkl")
+MODEL_PATH = os.path.join(BASE_DIR, "model_v2.pkl")
 CSV_PATH = os.path.join(
     BASE_DIR,
     "master_apple_final.csv"
@@ -365,6 +365,7 @@ def load_data():
         "Chipset",
         "Storage Type",
         "Connectivity",
+        "Material",
         "Model Number",
         "Clock Speed"
     ]
@@ -386,7 +387,6 @@ def load_data():
         "Year",
         "Screen Size (inch)",
         "RAM (GB)",
-        "Storage (GB)",
         "Max. Trade-In Value (RM)"
     ]
 
@@ -398,6 +398,40 @@ def load_data():
                 data[col],
                 errors="coerce"
             )
+
+    # ========================================================
+    # NORMALIZE STORAGE
+    # ========================================================
+
+    if "Storage (GB)" in data.columns:
+
+        def parse_storage(value):
+
+            if pd.isna(value):
+                return np.nan
+
+            value = str(value).strip().upper()
+
+            match = re.match(
+                r"^([\d.]+)\s*(GB|TB)$",
+                value
+            )
+
+            if not match:
+                return np.nan
+
+            number = float(match.group(1))
+            unit = match.group(2)
+
+            if unit == "TB":
+                number *= 1024
+
+            return number
+
+        data["Storage (GB)"] = (
+            data["Storage (GB)"]
+            .apply(parse_storage)
+        )
 
     return data
 
@@ -466,31 +500,6 @@ def format_storage(value):
         return f"{tb:g} TB"
 
     return f"{int(value)} GB"
-
-
-def format_ram(value):
-
-    if pd.isna(value):
-        return "Not available"
-
-    return f"{float(value):g} GB"
-
-
-def format_screen(value):
-
-    if pd.isna(value):
-        return "Not available"
-
-    return f"{float(value):g} inch"
-
-
-def format_clock_speed(value):
-
-    if pd.isna(value):
-        return "Not available"
-
-    return f"{float(value):g} GHz"
-
 
 def extract_clock_speed(value):
 
@@ -944,30 +953,95 @@ elif device_type == "Mac":
 
 elif device_type == "Apple Watch":
 
+    matching_df = model_df.copy()
+
+    # --------------------------------------------------------
+    # CASE SIZE
+    # --------------------------------------------------------
+
+    case_size = ""
+
+    case_size_options = clean_options(
+        matching_df["Specification"]
+        if "Specification" in matching_df.columns
+        else pd.Series(dtype=str)
+    )
+
+    if case_size_options:
+
+        case_size = st.selectbox(
+            "Case Size",
+            case_size_options,
+            key="watch_case_size"
+        )
+
+        matching_df = matching_df[
+            matching_df["Specification"].astype(str).str.strip()
+            == case_size
+        ].copy()
+
+
+    # --------------------------------------------------------
+    # MATERIAL
+    # --------------------------------------------------------
+
+    material_options = clean_options(
+        matching_df["Material"]
+        if "Material" in matching_df.columns
+        else pd.Series(dtype=str)
+    )
+
+    if material_options:
+
+        material = st.selectbox(
+            "Material",
+            ["Not specified"] + material_options,
+            key="watch_material"
+        )
+
+        if material == "Not specified":
+            material = ""
+
+        if material:
+
+            matching_df = matching_df[
+                matching_df["Material"].astype(str).str.strip()
+                == material
+            ].copy()
+
+    else:
+
+        material = ""
+
+
     # --------------------------------------------------------
     # STORAGE
     # --------------------------------------------------------
+
+    storage_options = numeric_options(
+        matching_df["Storage (GB)"]
+        if "Storage (GB)" in matching_df.columns
+        else pd.Series(dtype=float)
+    )
 
     if storage_options:
 
         storage = show_selectable_numeric(
             "Storage",
             "Storage (GB)",
-            model_df,
+            matching_df,
             storage_options[0],
             "watch_storage",
             format_storage
         )
 
-        matching_df = model_df[
-            model_df["Storage (GB)"] == storage
+        matching_df = matching_df[
+            matching_df["Storage (GB)"] == storage
         ].copy()
 
     else:
 
-        # Storage is not available for some Watch records.
         storage = np.nan
-        matching_df = model_df.copy()
 
 
     # --------------------------------------------------------
@@ -1073,146 +1147,111 @@ else:
 
 
 if selected_df.empty:
+
     st.error(
         "No usable record was found for the selected device."
     )
+
     st.stop()
 
 
+# Use the first matching record for ML backend features.
 selected = selected_df.iloc[0]
 
-
-# ============================================================
-# ML BACKEND VALUES
-# ============================================================
-
-standardized_model = str(
-    selected["Standardized Model"]
-    if "Standardized Model" in selected.index
-    else model_name
-)
-
-provider = str(
-    selected["Provider"]
-    if "Provider" in selected.index
-    else "Unknown"
-)
-
-pricing_category = str(
-    selected["Pricing Category"]
-    if "Pricing Category" in selected.index
-    else "Unknown"
-)
-
-# ============================================================
-# ML BACKEND VALUES
-# ============================================================
-
-standardized_model = str(
-    selected["Standardized Model"]
-    if "Standardized Model" in selected.index
-    else model_name
-)
-
-provider = str(
-    selected["Provider"]
-    if "Provider" in selected.index
-    else "Unknown"
-)
-
-pricing_category = str(
-    selected["Pricing Category"]
-    if "Pricing Category" in selected.index
-    else "Unknown"
-)
-
-# ============================================================
-# ORIGINAL DETECTED VALUES
-# ============================================================
-
-original_model_year = (
-    selected["Model_Year"]
-    if "Model_Year" in selected.index
-    else np.nan
-)
-
-original_generation = (
-    selected["Generation"]
-    if "Generation" in selected.index
-    else np.nan
-)
-
-original_screen_size = (
-    selected["Screen Size (inch)"]
-    if "Screen Size (inch)" in selected.index
-    else np.nan
-)
-
-original_chipset = (
-    selected["Chipset"]
-    if "Chipset" in selected.index
-    else ""
-)
-
-original_ram = (
-    selected["RAM (GB)"]
-    if "RAM (GB)" in selected.index
-    else np.nan
-)
-
-original_storage = (
-    selected["Storage (GB)"]
-    if "Storage (GB)" in selected.index
-    else np.nan
-)
-
-original_storage_type = (
-    selected["Storage Type"]
-    if "Storage Type" in selected.index
-    else ""
-)
-
-original_connectivity = (
-    selected["Connectivity"]
-    if "Connectivity" in selected.index
-    else ""
-)
-
-original_clock_speed_raw = (
-    selected["Clock Speed"]
-    if "Clock Speed" in selected.index
-    else ""
-)
-
-original_specification = (
-    selected["Specification"]
-    if "Specification" in selected.index
-    else ""
-)
 
 # ============================================================
 # BACKEND VALUES
 # ============================================================
 
-model_year = original_model_year
-generation = original_generation
-screen_size = original_screen_size
-chipset = original_chipset
-ram = original_ram
-clock_speed_raw = original_clock_speed_raw
+standardized_model = str(
+    selected.get(
+        "Standardized Model",
+        model_name
+    )
+)
+
+provider = str(
+    selected.get(
+        "Provider",
+        "Unknown"
+    )
+)
+
+pricing_category = str(
+    selected.get(
+        "Pricing Category",
+        "Unknown"
+    )
+
+)
 
 
-# Use the user's selected configuration where applicable.
-if storage is not np.nan:
-    if pd.notna(storage):
-        original_storage = storage
+model_year = selected.get(
+    "Model_Year",
+    np.nan
+)
 
-storage = original_storage
+generation = selected.get(
+    "Generation",
+    np.nan
+)
 
-if storage_type:
-    original_storage_type = storage_type
+screen_size = selected.get(
+    "Screen Size (inch)",
+    np.nan
+)
 
-storage_type = original_storage_type
+chipset = selected.get(
+    "Chipset",
+    ""
+)
+
+ram = selected.get(
+    "RAM (GB)",
+    np.nan
+)
+
+clock_speed_raw = selected.get(
+    "Clock Speed",
+    ""
+)
+
+
+# ============================================================
+# SELECTED CONFIGURATION VALUES
+# ============================================================
+
+# The customer-facing selections override the values
+# detected from the selected dataset record.
+
+if pd.notna(storage):
+    selected_storage = storage
+else:
+    selected_storage = np.nan
+
+
+selected_storage_type = (
+    storage_type
+    if storage_type
+    else str(
+        selected.get(
+            "Storage Type",
+            ""
+        )
+    ).strip()
+)
+
+
+selected_connectivity = (
+    connectivity
+    if connectivity
+    else str(
+        selected.get(
+            "Connectivity",
+            ""
+        )
+    ).strip()
+)
 
 
 # ============================================================
@@ -1241,42 +1280,6 @@ clock_speed_ghz = extract_clock_speed(
 
 
 # ============================================================
-# SELECTED DEVICE SUMMARY
-# ============================================================
-
-st.divider()
-
-st.subheader("Selected Device")
-
-selected_description: str = str(model_name)
-
-
-if sub_device:
-    selected_description += f" — {str(sub_device)}"
-
-
-if pd.notna(storage):
-    selected_description += f" — {format_storage(storage)}"
-
-
-if storage_type:
-    selected_description += f" — {str(storage_type)}"
-
-
-if connectivity:
-    selected_description += f" — {str(connectivity)}"
-
-
-if charging_method:
-    selected_description += f" — {str(charging_method)}"
-
-
-st.info(
-    f"**{selected_description}**"
-)
-
-
-# ============================================================
 # MARKET EVIDENCE
 # ============================================================
 
@@ -1285,23 +1288,20 @@ market_records = selected_df[
 ].copy()
 
 
-market_prices = (
-    market_records[
-        "Max. Trade-In Value (RM)"
-    ]
-    .astype(float)
-    .tolist()
-)
+market_prices = pd.to_numeric(
+    market_records["Max. Trade-In Value (RM)"],
+    errors="coerce"
+).dropna()
 
 
 # ============================================================
 # MARKET MEDIAN
 # ============================================================
 
-if market_prices:
+if not market_prices.empty:
 
     market_median = float(
-        np.median(market_prices)
+        market_prices.median()
     )
 
 else:
@@ -1346,19 +1346,25 @@ input_data = pd.DataFrame([{
         clock_speed_ghz,
 
     "chipset":
-        chipset if chipset else "Unknown",
+        chipset
+        if chipset
+        else "Unknown",
 
     "ram":
         ram,
 
     "storage":
-        storage,
+        selected_storage,
 
     "storage_type":
-        storage_type if storage_type else "Unknown",
+        selected_storage_type
+        if selected_storage_type
+        else "Unknown",
 
     "connectivity":
-        connectivity if connectivity else np.nan
+        selected_connectivity
+        if selected_connectivity
+        else np.nan
 
 }])
 
@@ -1390,76 +1396,163 @@ except Exception as e:
 
 
 # ============================================================
-# FINAL VALUATION
+# ESTIMATE METHOD
 # ============================================================
 
-if market_prices:
+st.divider()
 
-    recommended_offer = market_median
+st.subheader("Estimate Method")
 
-    provider_count = (
-        market_records["Provider"]
-        .replace("", np.nan)
-        .dropna()
-        .nunique()
-    )
+estimate_method = st.radio(
+    "Choose how the estimate is calculated",
+    [
+        "Market Estimate",
+        "Smart Estimate"
+    ],
+    horizontal=True,
+    key="estimate_method"
+)
 
-    if provider_count >= 3:
 
-        confidence_text = (
-            "Based on observed market prices "
-            "from multiple providers."
+# ============================================================
+# DEFAULT VALUES
+# ============================================================
+
+recommended_offer = np.nan
+confidence_text = ""
+estimate_note = ""
+estimate_method_display = estimate_method
+
+
+# ============================================================
+# MARKET ESTIMATE
+# ============================================================
+
+if estimate_method == "Market Estimate":
+
+    if not market_prices.empty:
+
+        recommended_offer = market_median
+
+        provider_count = (
+            market_records["Provider"]
+            .replace("", np.nan)
+            .dropna()
+            .nunique()
         )
 
-    elif provider_count == 2:
+        if provider_count >= 3:
 
-        confidence_text = (
-            "Based on observed market prices "
-            "from two providers."
+            confidence_text = (
+                "Based on observed market prices "
+                "from multiple providers."
+            )
+
+        elif provider_count == 2:
+
+            confidence_text = (
+                "Based on observed market prices "
+                "from two providers."
+            )
+
+        else:
+
+            confidence_text = (
+                "Based on observed market pricing."
+            )
+
+        estimate_note = (
+            "Uses the median of available market "
+            "trade-in values."
         )
 
     else:
 
+        # No direct market evidence.
+        # Automatically fall back to Smart Estimate.
+
+        recommended_offer = ml_prediction
+
         confidence_text = (
-            "Based on observed market pricing."
+            "No direct market price was available, "
+            "so a Smart Estimate is shown instead."
         )
 
+        estimate_note = (
+            "Estimated using historical device "
+            "trade-in data and specifications."
+        )
+
+        estimate_method_display = "Smart Estimate"
+
 else:
+
+    # ========================================================
+    # SMART ESTIMATE
+    # ========================================================
 
     recommended_offer = ml_prediction
 
     confidence_text = (
-        "Estimated using the valuation model "
-        "because no direct market price was available."
+        "Estimated using historical trade-in data "
+        "and device specifications."
     )
+
+    estimate_note = (
+        "This estimate may be useful for configurations "
+        "with limited or no observed market pricing."
+    )
+
+    estimate_method_display = "Smart Estimate"
+
+
+# ============================================================
+# MARKET METHOD DISPLAY
+# ============================================================
+
+if estimate_method == "Market Estimate" and not market_prices.empty:
+    estimate_method_display = "Market Estimate"
 
 
 # ============================================================
 # CUSTOMER-FACING VALUATION
 # ============================================================
 
-st.divider()
-
 st.subheader("Estimated Trade-In Value")
 
-st.metric(
-    "Recommended Trade-In Offer",
-    f"RM {recommended_offer:,.0f}"
+st.markdown(
+    f"""
+    <div class="recommendation-card">
+        <div class="recommendation-title">
+            {estimate_method_display}
+        </div>
+
+        <div class="recommendation-value">
+            RM {recommended_offer:,.0f}
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 st.caption(
     confidence_text
 )
 
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.divider()
-
 st.caption(
-    "This dashboard combines machine-learning valuation "
-    "with observed market trade-in prices. Actual offers "
-    "may vary based on device condition, demand, and "
-    "current market conditions."
+    estimate_note
 )
+
+
+# ============================================================
+# SMART ESTIMATE DISCLAIMER
+# ============================================================
+
+if estimate_method_display == "Smart Estimate":
+
+    st.warning(
+        "Smart Estimate is an estimate only. "
+        "It uses historical trade-in patterns to estimate "
+        "the potential value of this configuration. "
+        "Actual trade-in values may differ."
+    )

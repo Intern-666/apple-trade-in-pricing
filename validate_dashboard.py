@@ -41,6 +41,7 @@
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import re
 import joblib
 import warnings
 
@@ -58,6 +59,28 @@ MODEL_PATH = BASE_DIR / "model.pkl"
 
 CURRENT_YEAR = 2026
 
+def parse_storage(value):
+
+    if pd.isna(value):
+        return np.nan
+
+    value = str(value).strip().upper()
+
+    match = re.match(
+        r"^([\d.]+)\s*(GB|TB)$",
+        value
+    )
+
+    if not match:
+        return np.nan
+
+    number = float(match.group(1))
+    unit = match.group(2)
+
+    if unit == "TB":
+        number *= 1024
+
+    return number
 
 # =============================================================================
 # TEST ENGINE
@@ -94,6 +117,7 @@ def section(title):
     print("=" * 80)
     print(title)
     print("=" * 80)
+
 
 
 # =============================================================================
