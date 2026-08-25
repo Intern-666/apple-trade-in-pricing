@@ -2,7 +2,6 @@ from pathlib import Path
 import os
 import re
 
-import joblib
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -17,8 +16,7 @@ CURRENT_YEAR = 2026
 BASE_DIR = Path(__file__).resolve().parent
 
 ICON_PATH = BASE_DIR / "imycom.png"
-MODEL_PATH = BASE_DIR / "model_v2.pkl"
-CSV_PATH = BASE_DIR / "master_apple_final_ml.csv"
+CSV_PATH = BASE_DIR / "master_apple_final.csv"
 
 
 st.set_page_config(
@@ -286,15 +284,6 @@ st.markdown(
 
 
 # ============================================================
-# LOAD MODEL
-# ============================================================
-
-@st.cache_resource
-def load_model():
-    return joblib.load(MODEL_PATH)
-
-
-# ============================================================
 # LOAD DATA
 # ============================================================
 
@@ -303,6 +292,7 @@ def load_data():
 
     data = pd.read_csv(CSV_PATH)
 
+    # Clean column names
     data.columns = data.columns.str.strip()
 
     # --------------------------------------------------------
@@ -373,6 +363,13 @@ def load_data():
 
             value = str(value).strip().upper()
 
+            # Already numeric
+            try:
+                numeric_value = float(value)
+                return numeric_value
+            except ValueError:
+                pass
+
             match = re.match(
                 r"^([\d.]+)\s*(GB|TB)$",
                 value
@@ -397,18 +394,46 @@ def load_data():
 
 
 # ============================================================
-# INITIALIZE
+# INITIALIZE DATASET
 # ============================================================
 
 try:
 
-    model = load_model()
     df = load_data()
 
 except Exception as e:
 
-    st.error("Unable to load the model or dataset.")
+    st.error(
+        "Unable to load master_apple_final.csv."
+    )
+
     st.exception(e)
+    st.stop()
+
+
+# ============================================================
+# BASIC DATASET VALIDATION
+# ============================================================
+
+required_columns = [
+    "Device",
+    "Standardized Model",
+    "Max. Trade-In Value (RM)"
+]
+
+missing_columns = [
+    col
+    for col in required_columns
+    if col not in df.columns
+]
+
+if missing_columns:
+
+    st.error(
+        "The master dataset is missing required columns: "
+        f"{missing_columns}"
+    )
+
     st.stop()
 
 
@@ -436,6 +461,9 @@ def clean_options(series):
 
 
 def numeric_options(series):
+
+    if series is None:
+        return []
 
     values = (
         pd.to_numeric(
@@ -469,23 +497,6 @@ def format_storage(value):
     return f"{int(value)} GB"
 
 
-def extract_clock_speed(value):
-
-    if pd.isna(value):
-        return np.nan
-
-    match = re.search(
-        r"(\d+(?:\.\d+)?)\s*GHz",
-        str(value),
-        re.IGNORECASE
-    )
-
-    if match:
-        return float(match.group(1))
-
-    return np.nan
-
-
 def show_selectable_numeric(
     label,
     column,
@@ -495,10 +506,12 @@ def show_selectable_numeric(
     formatter=None
 ):
 
+    if column not in source_df.columns:
+
+        return np.nan
+
     options = numeric_options(
         source_df[column]
-        if column in source_df.columns
-        else pd.Series(dtype=float)
     )
 
     if pd.notna(current_value):
@@ -506,10 +519,15 @@ def show_selectable_numeric(
         current_value = float(current_value)
 
         if current_value not in options:
-            options.insert(0, current_value)
+
+            options.insert(
+                0,
+                current_value
+            )
 
     if not options:
-        return current_value
+
+        return np.nan
 
     formatted_options = [
         formatter(value)
@@ -520,8 +538,10 @@ def show_selectable_numeric(
 
     current_index = (
         options.index(current_value)
-        if pd.notna(current_value)
-        and current_value in options
+        if (
+            pd.notna(current_value)
+            and current_value in options
+        )
         else 0
     )
 
@@ -549,6 +569,7 @@ with col1:
     st.write("")
 
     if ICON_PATH.exists():
+
         st.image(
             str(ICON_PATH),
             width=220
@@ -583,8 +604,6 @@ st.subheader("Device Selection")
 
 device_types = clean_options(
     df["Device"]
-    if "Device" in df.columns
-    else pd.Series(dtype=str)
 )
 
 if not device_types:
@@ -655,16 +674,6 @@ if (
 # ============================================================
 # MODEL
 # ============================================================
-
-if "Standardized Model" not in device_df.columns:
-
-    st.error(
-        "The master dataset does not contain "
-        "'Standardized Model'."
-    )
-
-    st.stop()
-
 
 models = clean_options(
     device_df["Standardized Model"]
@@ -797,6 +806,7 @@ elif device_type == "iPad":
         )
 
         if connectivity == "Not specified":
+
             connectivity = ""
 
         if connectivity:
@@ -855,6 +865,7 @@ elif device_type == "Mac":
         )
 
         if storage_type == "Not specified":
+
             storage_type = ""
 
         if storage_type:
@@ -915,6 +926,7 @@ elif device_type == "Apple Watch":
         )
 
         if material == "Not specified":
+
             material = ""
 
         if material:
@@ -949,10 +961,6 @@ elif device_type == "Apple Watch":
             matching_df["Storage (GB)"] == storage
         ].copy()
 
-    else:
-
-        storage = np.nan
-
     # --------------------------------------------------------
     # CONNECTIVITY
     # --------------------------------------------------------
@@ -972,6 +980,7 @@ elif device_type == "Apple Watch":
         )
 
         if connectivity == "Not specified":
+
             connectivity = ""
 
         if connectivity:
@@ -1005,6 +1014,7 @@ elif device_type == "AirPods":
         )
 
         if charging_method == "Not specified":
+
             charging_method = ""
 
         if charging_method:
@@ -1027,179 +1037,24 @@ else:
 
 
 # ============================================================
-# FINAL SELECTED RECORD
+# MARKET PRICE CALCULATION
+# ============================================================
+#
+# IMPORTANT:
+#
+# There is NO ML MODEL anymore.
+#
+# The app uses the median of the available trade-in prices
+# for the selected configuration.
+#
+# If the exact configuration has no price, the app falls
+# back to all available priced records for the selected model.
+#
 # ============================================================
 
-if matching_df.empty:
-
-    st.warning(
-        "No exact market configuration was found for "
-        "the selected specifications. The Smart Estimate "
-        "will use the model features from the base model."
-    )
-
-    selected_df = model_df.copy()
-
-else:
-
-    selected_df = matching_df.copy()
-
-
-if selected_df.empty:
-
-    st.error(
-        "No usable record was found for the selected device."
-    )
-
-    st.stop()
-
-
-selected = selected_df.iloc[0]
-
-
-# ============================================================
-# BACKEND VALUES
-# ============================================================
-
-standardized_model = str(
-    selected.get(
-        "Standardized Model",
-        model_name
-    )
-).strip()
-
-
-provider = str(
-    selected.get(
-        "Provider",
-        ""
-    )
-).strip()
-
-
-pricing_category = str(
-    selected.get(
-        "Pricing Category",
-        ""
-    )
-).strip()
-
-
-model_year = pd.to_numeric(
-    selected.get(
-        "Model_Year",
-        np.nan
-    ),
-    errors="coerce"
-)
-
-
-generation = pd.to_numeric(
-    selected.get(
-        "Generation",
-        np.nan
-    ),
-    errors="coerce"
-)
-
-
-screen_size = pd.to_numeric(
-    selected.get(
-        "Screen Size (inch)",
-        np.nan
-    ),
-    errors="coerce"
-)
-
-
-ram = pd.to_numeric(
-    selected.get(
-        "RAM (GB)",
-        np.nan
-    ),
-    errors="coerce"
-)
-
-
-chipset = selected.get(
-    "Chipset",
-    ""
-)
-
-if pd.isna(chipset):
-    chipset = ""
-
-chipset = str(chipset).strip()
-
-
-clock_speed_raw = selected.get(
-    "Clock Speed",
-    ""
-)
-
-clock_speed_ghz = extract_clock_speed(
-    clock_speed_raw
-)
-
-
-# ============================================================
-# CUSTOMER SELECTED CONFIGURATION
-# ============================================================
-
-selected_storage = pd.to_numeric(
-    pd.Series([storage]),
-    errors="coerce"
-).iloc[0]
-
-
-selected_storage_type = (
-    str(storage_type).strip()
-    if storage_type
-    else str(
-        selected.get(
-            "Storage Type",
-            ""
-        )
-    ).strip()
-)
-
-
-selected_connectivity = (
-    str(connectivity).strip()
-    if connectivity
-    else str(
-        selected.get(
-            "Connectivity",
-            ""
-        )
-    ).strip()
-)
-
-
-# ============================================================
-# DEVICE AGE
-# ============================================================
-
-if pd.notna(model_year):
-
-    device_age = max(
-        0,
-        CURRENT_YEAR - float(model_year)
-    )
-
-else:
-
-    device_age = np.nan
-
-
-# ============================================================
-# MARKET EVIDENCE
-# ============================================================
-
-market_records = selected_df[
-    selected_df["Max. Trade-In Value (RM)"].notna()
-].copy()
-
+# First choice:
+# exact selected configuration
+market_records = matching_df.copy()
 
 market_prices = pd.to_numeric(
     market_records["Max. Trade-In Value (RM)"],
@@ -1207,319 +1062,113 @@ market_prices = pd.to_numeric(
 ).dropna()
 
 
-if not market_prices.empty:
+# ------------------------------------------------------------
+# FALLBACK TO MODEL
+# ------------------------------------------------------------
 
-    market_median = float(
-        market_prices.median()
-    )
+if market_prices.empty:
 
-else:
+    market_records = model_df.copy()
 
-    market_median = np.nan
-
-
-# ============================================================
-# SMART ESTIMATE — MODEL_V2
-# ============================================================
-
-# IMPORTANT:
-#
-# model_v2.pkl expects EXACTLY these 15 features:
-#
-# device_type
-# model
-# standardized_model
-# provider
-# pricing_category
-# model_year
-# device_age
-# generation
-# screen_size
-# clock_speed_ghz
-# chipset
-# ram
-# storage
-# storage_type
-# connectivity
-#
-# DO NOT add the old:
-# Model_Year
-# Storage (GB)
-# RAM Min (GB)
-# Mac Generation
-# Device
-# Sub-device
-# etc.
-#
-
-input_data = pd.DataFrame([{
-
-    "device_type":
-        str(device_type).strip(),
-
-    "model":
-        str(model_name).strip(),
-
-    "standardized_model":
-        standardized_model,
-
-    "provider":
-        provider,
-
-    "pricing_category":
-        pricing_category,
-
-    "model_year":
-        model_year,
-
-    "device_age":
-        device_age,
-
-    "generation":
-        generation,
-
-    "screen_size":
-        screen_size,
-
-    "clock_speed_ghz":
-        clock_speed_ghz,
-
-    "chipset":
-        chipset,
-
-    "ram":
-        ram,
-
-    "storage":
-        selected_storage,
-
-    "storage_type":
-        selected_storage_type,
-
-    "connectivity":
-        selected_connectivity
-
-}])
+    market_prices = pd.to_numeric(
+        market_records["Max. Trade-In Value (RM)"],
+        errors="coerce"
+    ).dropna()
 
 
-# ============================================================
-# VERIFY AGAINST model_v2.pkl
-# ============================================================
+# ------------------------------------------------------------
+# FINAL VALIDATION
+# ------------------------------------------------------------
 
-try:
-
-    expected_features = list(
-        model.named_steps[
-            "preprocessor"
-        ].feature_names_in_
-    )
-
-except Exception as e:
+if market_prices.empty:
 
     st.error(
-        "Unable to determine the input schema "
-        "from model_v2.pkl."
-    )
-
-    st.exception(e)
-    st.stop()
-
-
-missing_features = [
-    feature
-    for feature in expected_features
-    if feature not in input_data.columns
-]
-
-
-extra_features = [
-    feature
-    for feature in input_data.columns
-    if feature not in expected_features
-]
-
-
-if missing_features:
-
-    st.error(
-        "model_v2.pkl expects features that are missing "
-        f"from the app input: {missing_features}"
+        "No market trade-in price is available for this device "
+        "configuration."
     )
 
     st.stop()
 
 
-if extra_features:
-
-    st.error(
-        "The app is sending unexpected features to "
-        f"model_v2.pkl: {extra_features}"
-    )
-
-    st.stop()
-
-
-# Force exact order expected by the model
-input_data = input_data[
-    expected_features
-]
-
-
 # ============================================================
-# ML PREDICTION
+# MEDIAN ESTIMATE
 # ============================================================
 
-try:
-
-    ml_prediction = model.predict(
-        input_data
-    )[0]
-
-    ml_prediction = max(
-        0,
-        float(ml_prediction)
-    )
-
-except Exception as e:
-
-    st.error(
-        "Unable to generate Smart Estimate."
-    )
-
-    st.exception(e)
-    st.stop()
-
-
-# ============================================================
-# ESTIMATE METHOD
-# ============================================================
-
-st.divider()
-
-st.subheader("Estimate Method")
-
-
-estimate_method = st.radio(
-    "Choose how the estimate is calculated",
-    [
-        "Market Estimate",
-        "Smart Estimate"
-    ],
-    horizontal=True,
-    key="estimate_method"
+recommended_offer = float(
+    market_prices.median()
 )
 
 
-if estimate_method == "Market Estimate":
+# ============================================================
+# PROVIDER INFORMATION
+# ============================================================
 
-    st.caption(
-        "Uses observed market trade-in prices. "
-        "The ML depreciation model is not used for this estimate."
+provider_count = 0
+
+if "Provider" in market_records.columns:
+
+    provider_count = (
+        market_records["Provider"]
+        .replace("", np.nan)
+        .dropna()
+        .nunique()
     )
 
-else:
-
-    st.caption(
-        "Uses model_v2.pkl, including device age and "
-        "historical trade-in patterns."
-    )
-
 
 # ============================================================
-# DEFAULT VALUES
+# CONFIDENCE TEXT
 # ============================================================
 
-recommended_offer = np.nan
-
-confidence_text = ""
-
-estimate_note = ""
-
-estimate_method_display = estimate_method
-
-
-# ============================================================
-# MARKET ESTIMATE
-# ============================================================
-
-if estimate_method == "Market Estimate":
-
-    if not market_prices.empty:
-
-        recommended_offer = market_median
-
-        provider_count = (
-            market_records["Provider"]
-            .replace("", np.nan)
-            .dropna()
-            .nunique()
-        )
-
-        if provider_count >= 3:
-
-            confidence_text = (
-                "Based on observed market prices "
-                "from multiple providers."
-            )
-
-        elif provider_count == 2:
-
-            confidence_text = (
-                "Based on observed market prices "
-                "from two providers."
-            )
-
-        else:
-
-            confidence_text = (
-                "Based on observed market pricing."
-            )
-
-        estimate_note = (
-            "Uses the median of available market "
-            "trade-in values."
-        )
-
-    else:
-
-        recommended_offer = ml_prediction
-
-        confidence_text = (
-            "No direct market price was available, "
-            "so a Smart Estimate is shown instead."
-        )
-
-        estimate_note = (
-            "Estimated using historical device "
-            "trade-in data and specifications."
-        )
-
-        estimate_method_display = "Smart Estimate"
-
-
-# ============================================================
-# SMART ESTIMATE
-# ============================================================
-
-else:
-
-    recommended_offer = ml_prediction
+if provider_count >= 3:
 
     confidence_text = (
-        "Estimated using historical trade-in data "
-        "and device specifications."
+        "Based on observed market prices from multiple providers."
     )
+
+elif provider_count == 2:
+
+    confidence_text = (
+        "Based on observed market prices from two providers."
+    )
+
+elif provider_count == 1:
+
+    confidence_text = (
+        "Based on observed market pricing from one provider."
+    )
+
+else:
+
+    confidence_text = (
+        "Based on available market trade-in pricing."
+    )
+
+
+# ============================================================
+# ESTIMATE NOTE
+# ============================================================
+
+if market_records is matching_df:
 
     estimate_note = (
-        "Uses model_v2.pkl to estimate the device value."
+        "Uses the median of available trade-in values "
+        "for the selected configuration."
     )
 
-    estimate_method_display = "Smart Estimate"
+else:
+
+    estimate_note = (
+        "No price was available for the exact selected "
+        "configuration, so the median of available trade-in "
+        "values for the selected model is shown."
+    )
 
 
 # ============================================================
 # CUSTOMER-FACING VALUATION
 # ============================================================
+
+st.divider()
 
 st.subheader("Estimated Trade-In Value")
 
@@ -1529,7 +1178,7 @@ st.html(
     <div class="recommendation-card">
 
         <div class="recommendation-title">
-            {estimate_method_display}
+            Market Estimate
         </div>
 
         <div class="recommendation-value">
@@ -1545,23 +1194,77 @@ st.html(
 # ESTIMATE EXPLANATION
 # ============================================================
 
-if confidence_text:
+st.caption(confidence_text)
 
-    st.caption(confidence_text)
-
-
-if estimate_note:
-
-    st.caption(estimate_note)
+st.caption(estimate_note)
 
 
 # ============================================================
-# SMART ESTIMATE DISCLAIMER
+# OPTIONAL MARKET DATA SUMMARY
 # ============================================================
 
-if estimate_method_display == "Smart Estimate":
+with st.expander("Market Evidence"):
 
-    st.warning(
-        "Estimate only. Actual trade-in values may differ "
-        "based on market conditions and device configuration."
-    )
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        st.metric(
+            "Market Records",
+            len(market_prices)
+        )
+
+    with col2:
+
+        st.metric(
+            "Median",
+            f"RM {recommended_offer:,.0f}"
+        )
+
+    with col3:
+
+        st.metric(
+            "Providers",
+            provider_count
+        )
+
+
+    evidence_columns = [
+        col
+        for col in [
+            "Provider",
+            "Device",
+            "Standardized Model",
+            "Storage (GB)",
+            "Storage Type",
+            "Connectivity",
+            "Specification",
+            "Material",
+            "Max. Trade-In Value (RM)"
+        ]
+        if col in market_records.columns
+    ]
+
+    if evidence_columns:
+
+        evidence = market_records[
+            evidence_columns
+        ].copy()
+
+        if "Storage (GB)" in evidence.columns:
+
+            evidence["Storage (GB)"] = (
+                evidence["Storage (GB)"]
+                .apply(format_storage)
+            )
+
+        evidence = evidence.sort_values(
+            "Max. Trade-In Value (RM)",
+            ascending=False
+        )
+
+        st.dataframe(
+            evidence,
+            use_container_width=True,
+            hide_index=True
+        )
