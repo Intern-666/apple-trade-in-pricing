@@ -14,7 +14,7 @@ import streamlit as st
 
 CURRENT_YEAR = 2026
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).resolve().parent
 
 ICON_PATH = BASE_DIR / "imycom.png"
 MODEL_PATH = BASE_DIR / "model_v2.pkl"
@@ -29,12 +29,16 @@ st.set_page_config(
 
 
 # ============================================================
-# CSS
+# iMALAYSIAN RED THEME
 # ============================================================
 
 st.markdown(
     """
     <style>
+
+    /* ========================================================
+       GLOBAL
+       ======================================================== */
 
     @import url(
         'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
@@ -43,7 +47,9 @@ st.markdown(
     :root {
         --red: #E30613;
         --dark-red: #C4000B;
+        --deep-red: #A80009;
         --white: #FFFFFF;
+        --off-white: #F8F8F8;
         --dark: #1F1F1F;
         --grey: #666666;
         --border: #E2E2E2;
@@ -68,12 +74,17 @@ st.markdown(
     .block-container {
         background-color: var(--white);
         border-radius: 14px;
-        max-width: 1100px;
         padding: 1.5rem 2.2rem 3rem 2.2rem;
         margin-top: 1rem;
         margin-bottom: 2rem;
+        max-width: 1100px;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
     }
+
+
+    /* ========================================================
+       HEADER
+       ======================================================== */
 
     .imalaysian-title {
         color: var(--dark) !important;
@@ -81,21 +92,34 @@ st.markdown(
         font-weight: 800 !important;
         letter-spacing: -0.5px;
         line-height: 1.2;
-        margin: 1rem 0 0.5rem 0 !important;
+        margin-top: 2.5rem !important;
+        margin-bottom: 0.5rem !important;
     }
 
     .imalaysian-subtitle {
         color: var(--dark) !important;
-        font-size: 1.1rem !important;
+        font-size: 1.15rem !important;
         font-weight: 400 !important;
-        margin-top: 0.3rem !important;
+        line-height: 1.4;
+        margin-top: 0 !important;
         opacity: 0.92;
+    }
+
+
+    /* ========================================================
+       HEADINGS
+       ======================================================== */
+
+    h1 {
+        color: var(--white) !important;
+        font-weight: 800 !important;
     }
 
     h2,
     h3 {
         color: var(--dark) !important;
         font-weight: 700 !important;
+        letter-spacing: -0.3px;
     }
 
     h2::after,
@@ -109,11 +133,21 @@ st.markdown(
         border-radius: 1px;
     }
 
+
+    /* ========================================================
+       DIVIDERS
+       ======================================================== */
+
     hr {
         border: none !important;
         border-top: 1px solid var(--border) !important;
         margin: 1.4rem 0 !important;
     }
+
+
+    /* ========================================================
+       SELECT BOXES
+       ======================================================== */
 
     div[data-baseweb="select"] > div {
         background-color: var(--secondary-background-color) !important;
@@ -135,19 +169,55 @@ st.markdown(
         box-shadow: 0 0 0 1px var(--red) !important;
     }
 
+
+    /* ========================================================
+       BUTTONS
+       ======================================================== */
+
     .stButton > button {
         background-color: var(--red) !important;
         color: var(--white) !important;
         border: 1px solid var(--red) !important;
         border-radius: 6px !important;
         min-height: 46px;
+        font-family: "Inter", Arial, sans-serif !important;
         font-weight: 700 !important;
+        font-size: 0.95rem !important;
     }
 
     .stButton > button:hover {
         background-color: var(--dark-red) !important;
         border-color: var(--dark-red) !important;
+        color: var(--white) !important;
     }
+
+
+    /* ========================================================
+       METRIC CARDS
+       ======================================================== */
+
+    div[data-testid="stMetric"] {
+        background-color: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: var(--grey) !important;
+        font-weight: 600 !important;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: var(--dark) !important;
+        font-weight: 800 !important;
+    }
+
+
+    /* ========================================================
+       RECOMMENDATION
+       ======================================================== */
 
     .recommendation-card {
         background-color: var(--red);
@@ -155,7 +225,7 @@ st.markdown(
         padding: 1.6rem;
         margin: 1rem 0;
         text-align: center;
-        box-shadow: 0 5px 14px rgba(0,0,0,0.15);
+        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
     }
 
     .recommendation-title {
@@ -168,15 +238,45 @@ st.markdown(
 
     .recommendation-value {
         color: var(--white);
+        font-family: "Inter", Arial, sans-serif;
         font-size: 2.8rem;
         font-weight: 800;
+        letter-spacing: -1px;
         margin-top: 0.3rem;
     }
+
+
+    /* ========================================================
+       ALERTS
+       ======================================================== */
+
+    div[data-testid="stAlert"] {
+        border-radius: 7px !important;
+    }
+
+
+    /* ========================================================
+       TABLE
+       ======================================================== */
 
     div[data-testid="stDataFrame"] {
         border: 1px solid var(--border);
         border-radius: 7px;
         overflow: hidden;
+    }
+
+
+    /* ========================================================
+       TEXT
+       ======================================================== */
+
+    p,
+    label {
+        color: var(--dark);
+    }
+
+    .stCaption {
+        color: var(--grey) !important;
     }
 
     </style>
@@ -203,11 +303,7 @@ def load_data():
 
     data = pd.read_csv(CSV_PATH)
 
-    data.columns = (
-        data.columns
-        .astype(str)
-        .str.strip()
-    )
+    data.columns = data.columns.str.strip()
 
     # --------------------------------------------------------
     # TEXT COLUMNS
@@ -265,7 +361,7 @@ def load_data():
             )
 
     # --------------------------------------------------------
-    # STORAGE
+    # NORMALIZE STORAGE
     # --------------------------------------------------------
 
     if "Storage (GB)" in data.columns:
@@ -300,12 +396,24 @@ def load_data():
     return data
 
 
-model = load_model()
-df = load_data()
+# ============================================================
+# INITIALIZE
+# ============================================================
+
+try:
+
+    model = load_model()
+    df = load_data()
+
+except Exception as e:
+
+    st.error("Unable to load the model or dataset.")
+    st.exception(e)
+    st.stop()
 
 
 # ============================================================
-# HELPERS
+# HELPER FUNCTIONS
 # ============================================================
 
 def clean_options(series):
@@ -378,10 +486,11 @@ def extract_clock_speed(value):
     return np.nan
 
 
-def select_numeric(
+def show_selectable_numeric(
     label,
     column,
     source_df,
+    current_value,
     key,
     formatter=None
 ):
@@ -392,57 +501,40 @@ def select_numeric(
         else pd.Series(dtype=float)
     )
 
-    if not options:
-        return np.nan
+    if pd.notna(current_value):
 
-    display_options = [
-        formatter(x)
+        current_value = float(current_value)
+
+        if current_value not in options:
+            options.insert(0, current_value)
+
+    if not options:
+        return current_value
+
+    formatted_options = [
+        formatter(value)
         if formatter
-        else str(x)
-        for x in options
+        else str(value)
+        for value in options
     ]
 
-    selected = st.selectbox(
+    current_index = (
+        options.index(current_value)
+        if pd.notna(current_value)
+        and current_value in options
+        else 0
+    )
+
+    selected_display = st.selectbox(
         label,
-        display_options,
+        formatted_options,
+        index=current_index,
         key=key
     )
 
     return options[
-        display_options.index(selected)
+        formatted_options.index(selected_display)
     ]
-
-
-def select_text(
-    label,
-    column,
-    source_df,
-    key,
-    include_not_specified=False
-):
-
-    options = clean_options(
-        source_df[column]
-        if column in source_df.columns
-        else pd.Series(dtype=str)
-    )
-
-    if not options:
-        return ""
-
-    if include_not_specified:
-        options = ["Not specified"] + options
-
-    selected = st.selectbox(
-        label,
-        options,
-        key=key
-    )
-
-    if selected == "Not specified":
-        return ""
-
-    return selected
 
 
 # ============================================================
@@ -452,6 +544,9 @@ def select_text(
 col1, col2 = st.columns([1, 3])
 
 with col1:
+
+    st.write("")
+    st.write("")
 
     if ICON_PATH.exists():
         st.image(
@@ -482,14 +577,20 @@ with col2:
 st.subheader("Device Selection")
 
 
+# ============================================================
+# DEVICE TYPE
+# ============================================================
+
 device_types = clean_options(
     df["Device"]
+    if "Device" in df.columns
+    else pd.Series(dtype=str)
 )
 
 if not device_types:
 
     st.error(
-        "No device types are available."
+        "No device types are available in the master dataset."
     )
 
     st.stop()
@@ -502,6 +603,10 @@ device_type = st.selectbox(
 )
 
 
+# ============================================================
+# DEVICE DATA
+# ============================================================
+
 device_df = df[
     df["Device"].astype(str).str.strip()
     == device_type
@@ -511,7 +616,7 @@ device_df = df[
 if device_df.empty:
 
     st.warning(
-        "No records are available for this device type."
+        "No records are available for the selected device type."
     )
 
     st.stop()
@@ -554,7 +659,8 @@ if (
 if "Standardized Model" not in device_df.columns:
 
     st.error(
-        "Standardized Model column is missing."
+        "The master dataset does not contain "
+        "'Standardized Model'."
     )
 
     st.stop()
@@ -568,7 +674,7 @@ models = clean_options(
 if not models:
 
     st.warning(
-        "No models are available."
+        "No models are available for the selected configuration."
     )
 
     st.stop()
@@ -590,7 +696,7 @@ model_df = device_df[
 if model_df.empty:
 
     st.error(
-        "No records found for this model."
+        "No records were found for the selected model."
     )
 
     st.stop()
@@ -600,12 +706,21 @@ if model_df.empty:
 # INITIAL VALUES
 # ============================================================
 
-storage = np.nan
-storage_type = ""
 connectivity = ""
 charging_method = ""
-material = ""
-case_size = ""
+storage = np.nan
+storage_type = ""
+
+
+# ============================================================
+# STORAGE OPTIONS
+# ============================================================
+
+storage_options = numeric_options(
+    model_df["Storage (GB)"]
+    if "Storage (GB)" in model_df.columns
+    else pd.Series(dtype=float)
+)
 
 
 # ============================================================
@@ -614,23 +729,24 @@ case_size = ""
 
 if device_type == "iPhone":
 
-    storage = select_numeric(
-        "Storage",
-        "Storage (GB)",
-        model_df,
-        "iphone_storage",
-        format_storage
-    )
+    if storage_options:
 
-    if pd.notna(storage):
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "iphone_storage",
+            format_storage
+        )
 
-        selected_df = model_df[
+        matching_df = model_df[
             model_df["Storage (GB)"] == storage
         ].copy()
 
     else:
 
-        selected_df = model_df.copy()
+        matching_df = model_df.copy()
 
 
 # ============================================================
@@ -639,39 +755,56 @@ if device_type == "iPhone":
 
 elif device_type == "iPad":
 
-    storage = select_numeric(
-        "Storage",
-        "Storage (GB)",
-        model_df,
-        "ipad_storage",
-        format_storage
-    )
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
 
-    if pd.notna(storage):
+    if storage_options:
 
-        selected_df = model_df[
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "ipad_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
             model_df["Storage (GB)"] == storage
         ].copy()
 
     else:
 
-        selected_df = model_df.copy()
+        matching_df = model_df.copy()
 
+    # --------------------------------------------------------
+    # CONNECTIVITY
+    # --------------------------------------------------------
 
-    connectivity = select_text(
-        "Connectivity",
-        "Connectivity",
-        selected_df,
-        "ipad_connectivity",
-        include_not_specified=True
+    connectivity_options = clean_options(
+        matching_df["Connectivity"]
+        if "Connectivity" in matching_df.columns
+        else pd.Series(dtype=str)
     )
 
-    if connectivity:
+    if connectivity_options:
 
-        selected_df = selected_df[
-            selected_df["Connectivity"].astype(str).str.strip()
-            == connectivity
-        ].copy()
+        connectivity = st.selectbox(
+            "Connectivity",
+            ["Not specified"] + connectivity_options,
+            key="ipad_connectivity"
+        )
+
+        if connectivity == "Not specified":
+            connectivity = ""
+
+        if connectivity:
+
+            matching_df = matching_df[
+                matching_df["Connectivity"].astype(str).str.strip()
+                == connectivity
+            ].copy()
 
 
 # ============================================================
@@ -680,39 +813,56 @@ elif device_type == "iPad":
 
 elif device_type == "Mac":
 
-    storage = select_numeric(
-        "Storage",
-        "Storage (GB)",
-        model_df,
-        "mac_storage",
-        format_storage
-    )
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
 
-    if pd.notna(storage):
+    if storage_options:
 
-        selected_df = model_df[
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            model_df,
+            storage_options[0],
+            "mac_storage",
+            format_storage
+        )
+
+        matching_df = model_df[
             model_df["Storage (GB)"] == storage
         ].copy()
 
     else:
 
-        selected_df = model_df.copy()
+        matching_df = model_df.copy()
 
+    # --------------------------------------------------------
+    # STORAGE TYPE
+    # --------------------------------------------------------
 
-    storage_type = select_text(
-        "Storage Type",
-        "Storage Type",
-        selected_df,
-        "mac_storage_type",
-        include_not_specified=True
+    storage_type_options = clean_options(
+        matching_df["Storage Type"]
+        if "Storage Type" in matching_df.columns
+        else pd.Series(dtype=str)
     )
 
-    if storage_type:
+    if storage_type_options:
 
-        selected_df = selected_df[
-            selected_df["Storage Type"].astype(str).str.strip()
-            == storage_type
-        ].copy()
+        storage_type = st.selectbox(
+            "Storage Type",
+            ["Not specified"] + storage_type_options,
+            key="mac_storage_type"
+        )
+
+        if storage_type == "Not specified":
+            storage_type = ""
+
+        if storage_type:
+
+            matching_df = matching_df[
+                matching_df["Storage Type"].astype(str).str.strip()
+                == storage_type
+            ].copy()
 
 
 # ============================================================
@@ -721,69 +871,115 @@ elif device_type == "Mac":
 
 elif device_type == "Apple Watch":
 
-    selected_df = model_df.copy()
+    matching_df = model_df.copy()
 
+    # --------------------------------------------------------
+    # CASE SIZE
+    # --------------------------------------------------------
 
-    case_size = select_text(
-        "Case Size",
-        "Specification",
-        selected_df,
-        "watch_case_size"
+    case_size_options = clean_options(
+        matching_df["Specification"]
+        if "Specification" in matching_df.columns
+        else pd.Series(dtype=str)
     )
 
-    if case_size:
+    if case_size_options:
 
-        selected_df = selected_df[
-            selected_df["Specification"].astype(str).str.strip()
+        case_size = st.selectbox(
+            "Case Size",
+            case_size_options,
+            key="watch_case_size"
+        )
+
+        matching_df = matching_df[
+            matching_df["Specification"].astype(str).str.strip()
             == case_size
         ].copy()
 
+    # --------------------------------------------------------
+    # MATERIAL
+    # --------------------------------------------------------
 
-    material = select_text(
-        "Material",
-        "Material",
-        selected_df,
-        "watch_material",
-        include_not_specified=True
+    material_options = clean_options(
+        matching_df["Material"]
+        if "Material" in matching_df.columns
+        else pd.Series(dtype=str)
     )
 
-    if material:
+    if material_options:
 
-        selected_df = selected_df[
-            selected_df["Material"].astype(str).str.strip()
-            == material
-        ].copy()
+        material = st.selectbox(
+            "Material",
+            ["Not specified"] + material_options,
+            key="watch_material"
+        )
 
+        if material == "Not specified":
+            material = ""
 
-    storage = select_numeric(
-        "Storage",
-        "Storage (GB)",
-        selected_df,
-        "watch_storage",
-        format_storage
+        if material:
+
+            matching_df = matching_df[
+                matching_df["Material"].astype(str).str.strip()
+                == material
+            ].copy()
+
+    # --------------------------------------------------------
+    # STORAGE
+    # --------------------------------------------------------
+
+    watch_storage_options = numeric_options(
+        matching_df["Storage (GB)"]
+        if "Storage (GB)" in matching_df.columns
+        else pd.Series(dtype=float)
     )
 
-    if pd.notna(storage):
+    if watch_storage_options:
 
-        selected_df = selected_df[
-            selected_df["Storage (GB)"] == storage
+        storage = show_selectable_numeric(
+            "Storage",
+            "Storage (GB)",
+            matching_df,
+            watch_storage_options[0],
+            "watch_storage",
+            format_storage
+        )
+
+        matching_df = matching_df[
+            matching_df["Storage (GB)"] == storage
         ].copy()
 
+    else:
 
-    connectivity = select_text(
-        "Connectivity",
-        "Connectivity",
-        selected_df,
-        "watch_connectivity",
-        include_not_specified=True
+        storage = np.nan
+
+    # --------------------------------------------------------
+    # CONNECTIVITY
+    # --------------------------------------------------------
+
+    connectivity_options = clean_options(
+        matching_df["Connectivity"]
+        if "Connectivity" in matching_df.columns
+        else pd.Series(dtype=str)
     )
 
-    if connectivity:
+    if connectivity_options:
 
-        selected_df = selected_df[
-            selected_df["Connectivity"].astype(str).str.strip()
-            == connectivity
-        ].copy()
+        connectivity = st.selectbox(
+            "Connectivity",
+            ["Not specified"] + connectivity_options,
+            key="watch_connectivity"
+        )
+
+        if connectivity == "Not specified":
+            connectivity = ""
+
+        if connectivity:
+
+            matching_df = matching_df[
+                matching_df["Connectivity"].astype(str).str.strip()
+                == connectivity
+            ].copy()
 
 
 # ============================================================
@@ -792,22 +988,33 @@ elif device_type == "Apple Watch":
 
 elif device_type == "AirPods":
 
-    selected_df = model_df.copy()
+    matching_df = model_df.copy()
 
-    charging_method = select_text(
-        "Charging Method",
-        "Specification",
-        selected_df,
-        "airpods_charging_method",
-        include_not_specified=True
+    charging_options = clean_options(
+        matching_df["Specification"]
+        if "Specification" in matching_df.columns
+        else pd.Series(dtype=str)
     )
 
-    if charging_method:
+    if charging_options:
 
-        selected_df = selected_df[
-            selected_df["Specification"].astype(str).str.strip()
-            == charging_method
-        ].copy()
+        charging_method = st.selectbox(
+            "Charging Method",
+            ["Not specified"] + charging_options,
+            key="airpods_charging_method"
+        )
+
+        if charging_method == "Not specified":
+            charging_method = ""
+
+        if charging_method:
+
+            matching_df = matching_df[
+                matching_df["Specification"].astype(str).str.strip()
+                == charging_method
+            ].copy()
+
+    storage = np.nan
 
 
 # ============================================================
@@ -816,41 +1023,42 @@ elif device_type == "AirPods":
 
 else:
 
-    selected_df = model_df.copy()
+    matching_df = model_df.copy()
 
 
 # ============================================================
-# FALLBACK IF CONFIGURATION FILTER IS EMPTY
+# FINAL SELECTED RECORD
 # ============================================================
 
-if selected_df.empty:
+if matching_df.empty:
 
     st.warning(
-        "No exact market configuration was found. "
-        "Using the model-level record for the Smart Estimate."
+        "No exact market configuration was found for "
+        "the selected specifications. The Smart Estimate "
+        "will use the model features from the base model."
     )
 
     selected_df = model_df.copy()
+
+else:
+
+    selected_df = matching_df.copy()
 
 
 if selected_df.empty:
 
     st.error(
-        "No usable record was found."
+        "No usable record was found for the selected device."
     )
 
     st.stop()
 
 
-# ============================================================
-# SELECT RECORD FOR ML FEATURES
-# ============================================================
-
 selected = selected_df.iloc[0]
 
 
 # ============================================================
-# EXTRACT FEATURES
+# BACKEND VALUES
 # ============================================================
 
 standardized_model = str(
@@ -924,8 +1132,28 @@ if pd.isna(chipset):
 chipset = str(chipset).strip()
 
 
-storage_type_selected = (
-    storage_type
+clock_speed_raw = selected.get(
+    "Clock Speed",
+    ""
+)
+
+clock_speed_ghz = extract_clock_speed(
+    clock_speed_raw
+)
+
+
+# ============================================================
+# CUSTOMER SELECTED CONFIGURATION
+# ============================================================
+
+selected_storage = pd.to_numeric(
+    pd.Series([storage]),
+    errors="coerce"
+).iloc[0]
+
+
+selected_storage_type = (
+    str(storage_type).strip()
     if storage_type
     else str(
         selected.get(
@@ -936,8 +1164,8 @@ storage_type_selected = (
 )
 
 
-connectivity_selected = (
-    connectivity
+selected_connectivity = (
+    str(connectivity).strip()
     if connectivity
     else str(
         selected.get(
@@ -945,14 +1173,6 @@ connectivity_selected = (
             ""
         )
     ).strip()
-)
-
-
-clock_speed_ghz = extract_clock_speed(
-    selected.get(
-        "Clock Speed",
-        ""
-    )
 )
 
 
@@ -973,10 +1193,66 @@ else:
 
 
 # ============================================================
-# BUILD COMPLETE ML INPUT
+# MARKET EVIDENCE
 # ============================================================
 
-raw_features = {
+market_records = selected_df[
+    selected_df["Max. Trade-In Value (RM)"].notna()
+].copy()
+
+
+market_prices = pd.to_numeric(
+    market_records["Max. Trade-In Value (RM)"],
+    errors="coerce"
+).dropna()
+
+
+if not market_prices.empty:
+
+    market_median = float(
+        market_prices.median()
+    )
+
+else:
+
+    market_median = np.nan
+
+
+# ============================================================
+# SMART ESTIMATE — MODEL_V2
+# ============================================================
+
+# IMPORTANT:
+#
+# model_v2.pkl expects EXACTLY these 15 features:
+#
+# device_type
+# model
+# standardized_model
+# provider
+# pricing_category
+# model_year
+# device_age
+# generation
+# screen_size
+# clock_speed_ghz
+# chipset
+# ram
+# storage
+# storage_type
+# connectivity
+#
+# DO NOT add the old:
+# Model_Year
+# Storage (GB)
+# RAM Min (GB)
+# Mac Generation
+# Device
+# Sub-device
+# etc.
+#
+
+input_data = pd.DataFrame([{
 
     "device_type":
         str(device_type).strip(),
@@ -1015,18 +1291,19 @@ raw_features = {
         ram,
 
     "storage":
-        storage,
+        selected_storage,
 
     "storage_type":
-        storage_type_selected,
+        selected_storage_type,
 
     "connectivity":
-        connectivity_selected
-}
+        selected_connectivity
+
+}])
 
 
 # ============================================================
-# DETERMINE EXACT MODEL SCHEMA
+# VERIFY AGAINST model_v2.pkl
 # ============================================================
 
 try:
@@ -1040,45 +1317,52 @@ try:
 except Exception as e:
 
     st.error(
-        "Could not determine the feature schema "
-        "inside model_v2.pkl."
+        "Unable to determine the input schema "
+        "from model_v2.pkl."
     )
 
     st.exception(e)
-
     st.stop()
 
 
-# ============================================================
-# BUILD MODEL INPUT USING ACTUAL PKL SCHEMA
-# ============================================================
-
-missing_from_backend = [
+missing_features = [
     feature
     for feature in expected_features
-    if feature not in raw_features
+    if feature not in input_data.columns
 ]
 
 
-if missing_from_backend:
+extra_features = [
+    feature
+    for feature in input_data.columns
+    if feature not in expected_features
+]
+
+
+if missing_features:
 
     st.error(
-        "The PKL expects features that the app does not provide:"
-    )
-
-    st.write(
-        missing_from_backend
+        "model_v2.pkl expects features that are missing "
+        f"from the app input: {missing_features}"
     )
 
     st.stop()
 
 
-input_data = pd.DataFrame([
-    {
-        feature: raw_features[feature]
-        for feature in expected_features
-    }
-])
+if extra_features:
+
+    st.error(
+        "The app is sending unexpected features to "
+        f"model_v2.pkl: {extra_features}"
+    )
+
+    st.stop()
+
+
+# Force exact order expected by the model
+input_data = input_data[
+    expected_features
+]
 
 
 # ============================================================
@@ -1103,84 +1387,7 @@ except Exception as e:
     )
 
     st.exception(e)
-
     st.stop()
-
-
-# ============================================================
-# MARKET EVIDENCE
-# ============================================================
-
-market_records = selected_df[
-    pd.to_numeric(
-        selected_df["Max. Trade-In Value (RM)"],
-        errors="coerce"
-    ).notna()
-].copy()
-
-
-market_prices = pd.to_numeric(
-    market_records[
-        "Max. Trade-In Value (RM)"
-    ],
-    errors="coerce"
-).dropna()
-
-
-if not market_prices.empty:
-
-    market_median = float(
-        market_prices.median()
-    )
-
-else:
-
-    market_median = np.nan
-
-
-# ============================================================
-# DEBUG
-# ============================================================
-
-with st.expander("Technical Details"):
-
-    st.write(
-        "Model file:",
-        MODEL_PATH.name
-    )
-
-    st.write(
-        "Dataset:",
-        CSV_PATH.name
-    )
-
-    st.write(
-        "Model expected features:",
-        expected_features
-    )
-
-    st.write(
-        "ML input:"
-    )
-
-    st.dataframe(
-        input_data,
-        use_container_width=True
-    )
-
-    st.write(
-        "Smart Estimate:",
-        f"RM {ml_prediction:,.2f}"
-    )
-
-    st.write(
-        "Market Median:",
-        (
-            f"RM {market_median:,.2f}"
-            if pd.notna(market_median)
-            else "No market data"
-        )
-    )
 
 
 # ============================================================
@@ -1203,45 +1410,96 @@ estimate_method = st.radio(
 )
 
 
-# ============================================================
-# SELECT FINAL VALUE
-# ============================================================
+if estimate_method == "Market Estimate":
 
-if (
-    estimate_method == "Market Estimate"
-    and not market_prices.empty
-):
-
-    recommended_offer = market_median
-
-    provider_count = (
-        market_records["Provider"]
-        .replace("", np.nan)
-        .dropna()
-        .nunique()
+    st.caption(
+        "Uses observed market trade-in prices. "
+        "The ML depreciation model is not used for this estimate."
     )
 
-    if provider_count >= 3:
+else:
 
-        confidence_text = (
-            "Based on observed market prices "
-            "from multiple providers."
+    st.caption(
+        "Uses model_v2.pkl, including device age and "
+        "historical trade-in patterns."
+    )
+
+
+# ============================================================
+# DEFAULT VALUES
+# ============================================================
+
+recommended_offer = np.nan
+
+confidence_text = ""
+
+estimate_note = ""
+
+estimate_method_display = estimate_method
+
+
+# ============================================================
+# MARKET ESTIMATE
+# ============================================================
+
+if estimate_method == "Market Estimate":
+
+    if not market_prices.empty:
+
+        recommended_offer = market_median
+
+        provider_count = (
+            market_records["Provider"]
+            .replace("", np.nan)
+            .dropna()
+            .nunique()
         )
 
-    elif provider_count == 2:
+        if provider_count >= 3:
 
-        confidence_text = (
-            "Based on observed market prices "
-            "from two providers."
+            confidence_text = (
+                "Based on observed market prices "
+                "from multiple providers."
+            )
+
+        elif provider_count == 2:
+
+            confidence_text = (
+                "Based on observed market prices "
+                "from two providers."
+            )
+
+        else:
+
+            confidence_text = (
+                "Based on observed market pricing."
+            )
+
+        estimate_note = (
+            "Uses the median of available market "
+            "trade-in values."
         )
 
     else:
 
+        recommended_offer = ml_prediction
+
         confidence_text = (
-            "Based on observed market pricing."
+            "No direct market price was available, "
+            "so a Smart Estimate is shown instead."
         )
 
-    estimate_method_display = "Market Estimate"
+        estimate_note = (
+            "Estimated using historical device "
+            "trade-in data and specifications."
+        )
+
+        estimate_method_display = "Smart Estimate"
+
+
+# ============================================================
+# SMART ESTIMATE
+# ============================================================
 
 else:
 
@@ -1252,16 +1510,18 @@ else:
         "and device specifications."
     )
 
+    estimate_note = (
+        "Uses model_v2.pkl to estimate the device value."
+    )
+
     estimate_method_display = "Smart Estimate"
 
 
 # ============================================================
-# FINAL DISPLAY
+# CUSTOMER-FACING VALUATION
 # ============================================================
 
-st.subheader(
-    "Estimated Trade-In Value"
-)
+st.subheader("Estimated Trade-In Value")
 
 
 st.html(
@@ -1281,10 +1541,23 @@ st.html(
 )
 
 
-st.caption(
-    confidence_text
-)
+# ============================================================
+# ESTIMATE EXPLANATION
+# ============================================================
 
+if confidence_text:
+
+    st.caption(confidence_text)
+
+
+if estimate_note:
+
+    st.caption(estimate_note)
+
+
+# ============================================================
+# SMART ESTIMATE DISCLAIMER
+# ============================================================
 
 if estimate_method_display == "Smart Estimate":
 
