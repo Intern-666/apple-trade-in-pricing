@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 import textwrap
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -30,7 +31,7 @@ st.set_page_config(
 # ============================================================
 
 st.markdown(
-    """
+    textwrap.dedent("""
     <style>
 
     /* ========================================================
@@ -635,7 +636,7 @@ st.markdown(
 
 
     </style>
-    """,
+    """),
     unsafe_allow_html=True
 )
 
@@ -989,7 +990,7 @@ with col1:
 with col2:
 
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="imalaysian-title">
             Apple Trade-In Competitive Pricing
         </div>
@@ -997,7 +998,7 @@ with col2:
         <div class="imalaysian-subtitle">
             Market-based trade-in valuation and competitive pricing
         </div>
-        """,
+        """),
         unsafe_allow_html=True
     )
 
@@ -1020,15 +1021,20 @@ selection_col, condition_col = st.columns(
 # ============================================================
 
 with selection_col:
+
     st.markdown(
         textwrap.dedent("""
         <div class="selection-panel">
+
             <div class="panel-title">
                 Device Selection
             </div>
+
             <div class="panel-subtitle">
-                Select the device and configuration you want to evaluate.
+                Select the device and configuration you want
+                to evaluate.
             </div>
+
         </div>
         """),
         unsafe_allow_html=True
@@ -1553,7 +1559,7 @@ with selection_col:
 with condition_col:
 
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="condition-panel">
 
             <div class="panel-title">
@@ -1566,7 +1572,7 @@ with condition_col:
             </div>
 
         </div>
-        """,
+        """),
         unsafe_allow_html=True
     )
 
@@ -1576,7 +1582,7 @@ with condition_col:
     # --------------------------------------------------------
 
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="condition-placeholder">
 
             <div class="condition-placeholder-title">
@@ -1589,7 +1595,7 @@ with condition_col:
             </div>
 
         </div>
-        """,
+        """),
         unsafe_allow_html=True
     )
 
@@ -1618,7 +1624,7 @@ with condition_col:
     ):
 
         st.markdown(
-            f"""
+            textwrap.dedent(f"""
             <div class="question-placeholder">
 
                 <div class="question-placeholder-number">
@@ -1630,7 +1636,7 @@ with condition_col:
                 </div>
 
             </div>
-            """,
+            """),
             unsafe_allow_html=True
         )
 
@@ -1655,7 +1661,7 @@ with condition_col:
     st.divider()
 
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="panel-title">
             Market Estimate
         </div>
@@ -1663,7 +1669,7 @@ with condition_col:
         <div class="panel-subtitle">
             Current market value before condition adjustment.
         </div>
-        """,
+        """),
         unsafe_allow_html=True
     )
 
@@ -1777,7 +1783,7 @@ with condition_col:
     # ========================================================
 
     st.markdown(
-        f"""
+        textwrap.dedent(f"""
         <div class="recommendation-card">
 
             <div class="recommendation-title">
@@ -1789,7 +1795,7 @@ with condition_col:
             </div>
 
         </div>
-        """,
+        """),
         unsafe_allow_html=True
     )
 
