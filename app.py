@@ -1498,10 +1498,7 @@ else:
         "and device specifications."
     )
 
-    estimate_note = (
-        "This estimate may be useful for configurations "
-        "with limited or no observed market pricing."
-    )
+    estimate_note = ""
 
     estimate_method_display = "Smart Estimate"
 
@@ -1536,9 +1533,6 @@ st.html(
 
 st.caption(confidence_text)
 
-st.caption(estimate_note)
-
-
 # ============================================================
 # SMART ESTIMATE DISCLAIMER
 # ============================================================
@@ -1546,8 +1540,6 @@ st.caption(estimate_note)
 if estimate_method_display == "Smart Estimate":
 
     st.warning(
-        "Smart Estimate is an estimate only. "
-        "It uses historical trade-in patterns to estimate "
-        "the potential value of this configuration. "
-        "Actual trade-in values may differ."
+        "Estimate only. Actual trade-in values may differ "
+        "based on market conditions and device configuration."
     )
