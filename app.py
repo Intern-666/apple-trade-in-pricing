@@ -1022,7 +1022,7 @@ selection_col, condition_col = st.columns(
 
 with selection_col:
 
-    st.markdown(
+    st.html(
         textwrap.dedent("""
         <div class="selection-panel">
 
@@ -1037,7 +1037,6 @@ with selection_col:
 
         </div>
         """),
-        unsafe_allow_html=True
     )
 
 
