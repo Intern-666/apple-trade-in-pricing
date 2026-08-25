@@ -30,7 +30,7 @@ st.set_page_config(
 # iMALAYSIAN RED THEME
 # ============================================================
 
-st.markdown(
+st.html(
     textwrap.dedent("""
     <style>
 
@@ -637,7 +637,6 @@ st.markdown(
 
     </style>
     """),
-    unsafe_allow_html=True
 )
 
 
