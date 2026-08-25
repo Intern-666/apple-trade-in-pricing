@@ -1,23 +1,32 @@
 from pathlib import Path
-import streamlit as st
-import pandas as pd
-import joblib
-import numpy as np
 import os
 import re
+
+import joblib
+import numpy as np
+import pandas as pd
+import streamlit as st
 
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
 
-ICON_PATH = Path(__file__).parent / "imycom.png"
+CURRENT_YEAR = 2026
+
+BASE_DIR = Path(__file__).resolve().parent
+
+ICON_PATH = BASE_DIR / "imycom.png"
+MODEL_PATH = BASE_DIR / "model_v2.pkl"
+CSV_PATH = BASE_DIR / "master_apple_final_ml.csv"
+
 
 st.set_page_config(
     page_title="Apple Trade-In Competitive Pricing",
     page_icon=str(ICON_PATH),
     layout="centered"
 )
+
 
 # ============================================================
 # iMALAYSIAN RED THEME
@@ -65,65 +74,35 @@ st.markdown(
     .block-container {
         background-color: var(--white);
         border-radius: 14px;
-        padding: 2rem 2.2rem 3rem 2.2rem;
+        padding: 1.5rem 2.2rem 3rem 2.2rem;
         margin-top: 1rem;
         margin-bottom: 2rem;
+        max-width: 1100px;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
     }
 
-    .block-container {
-        max-width: 1100px;
-        padding-top: 1.5rem;
-        padding-bottom: 3rem;
-    }
-
 
     /* ========================================================
-        HEADER AREA
-        ======================================================== */
-
-        .imalaysian-header {
-            background-color: var(--red);
-            padding: 3rem 0 1.5rem 0;
-            text-align: center;
-        }
-
-        .imalaysian-logo-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 1.8rem;
-        }
-
-        .imalaysian-title {
-            color: var(--dark) !important;
-            font-size: 2.5rem !important;
-            font-weight: 800 !important;
-            letter-spacing: -0.5px;
-            line-height: 4;
-            margin: 0 !important;
-        }
-
-        .imalaysian-subtitle {
-            color: var(--dark) !important;
-            font-size: 1.25rem !important;
-            font-weight: 400 !important;
-            line-height: 0;
-            margin-top: -2rem !important;
-            opacity: 0.92;
-        }
-
-
-    /* ========================================================
-       WHITE CONTENT AREA
+       HEADER
        ======================================================== */
 
-    .content-panel {
-        background-color: var(--white);
-        border-radius: 12px;
-        padding: 1.8rem;
-        margin-top: 0.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    .imalaysian-title {
+        color: var(--dark) !important;
+        font-size: 2.5rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+        line-height: 1.2;
+        margin-top: 2.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .imalaysian-subtitle {
+        color: var(--dark) !important;
+        font-size: 1.15rem !important;
+        font-weight: 400 !important;
+        line-height: 1.4;
+        margin-top: 0 !important;
+        opacity: 0.92;
     }
 
 
@@ -136,19 +115,12 @@ st.markdown(
         font-weight: 800 !important;
     }
 
-    h2 {
+    h2,
+    h3 {
         color: var(--dark) !important;
         font-weight: 700 !important;
         letter-spacing: -0.3px;
     }
-
-    h3 {
-        color: var(--dark) !important;
-        font-weight: 700 !important;
-    }
-
-
-    /* Red accent below section headings */
 
     h2::after,
     h3::after {
@@ -183,7 +155,7 @@ st.markdown(
         border-radius: 6px !important;
         min-height: 42px;
     }
-    
+
     div[data-baseweb="select"] span {
         color: var(--text-color) !important;
     }
@@ -229,7 +201,7 @@ st.markdown(
         border: 1px solid var(--border);
         border-radius: 8px;
         padding: 1rem;
-        box-shadow: 0 2px 7px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
     }
 
     div[data-testid="stMetricLabel"] {
@@ -253,7 +225,7 @@ st.markdown(
         padding: 1.6rem;
         margin: 1rem 0;
         text-align: center;
-        box-shadow: 0 5px 14px rgba(0,0,0,0.15);
+        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
     }
 
     .recommendation-title {
@@ -275,7 +247,7 @@ st.markdown(
 
 
     /* ========================================================
-       INFO / WARNING / SUCCESS
+       ALERTS
        ======================================================== */
 
     div[data-testid="stAlert"] {
@@ -307,31 +279,9 @@ st.markdown(
         color: var(--grey) !important;
     }
 
-
-    /* ========================================================
-       FOOTER
-       ======================================================== */
-
-    .imalaysian-footer {
-        text-align: center;
-        color: rgba(255,255,255,0.85);
-        font-size: 0.8rem;
-        padding: 1rem 0;
-    }
-
     </style>
     """,
     unsafe_allow_html=True
-)
-
-CURRENT_YEAR = 2026
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-MODEL_PATH = os.path.join(BASE_DIR, "model_v2.pkl")
-CSV_PATH = os.path.join(
-    BASE_DIR,
-    "master_apple_final_ml.csv"
 )
 
 
@@ -355,9 +305,9 @@ def load_data():
 
     data.columns = data.columns.str.strip()
 
-    # ========================================================
+    # --------------------------------------------------------
     # TEXT COLUMNS
-    # ========================================================
+    # --------------------------------------------------------
 
     text_columns = [
         "Pricing Category",
@@ -387,9 +337,9 @@ def load_data():
                 .str.strip()
             )
 
-    # ========================================================
+    # --------------------------------------------------------
     # NUMERIC COLUMNS
-    # ========================================================
+    # --------------------------------------------------------
 
     numeric_columns = [
         "Model_Year",
@@ -410,9 +360,9 @@ def load_data():
                 errors="coerce"
             )
 
-    # ========================================================
+    # --------------------------------------------------------
     # NORMALIZE STORAGE
-    # ========================================================
+    # --------------------------------------------------------
 
     if "Storage (GB)" in data.columns:
 
@@ -446,17 +396,27 @@ def load_data():
     return data
 
 
-model = load_model()
-df = load_data()
+# ============================================================
+# INITIALIZE
+# ============================================================
+
+try:
+
+    model = load_model()
+    df = load_data()
+
+except Exception as e:
+
+    st.error("Unable to load the model or dataset.")
+    st.exception(e)
+    st.stop()
+
 
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
 
 def clean_options(series):
-    """
-    Return unique non-empty values from a dataframe column.
-    """
 
     if series is None:
         return []
@@ -476,9 +436,6 @@ def clean_options(series):
 
 
 def numeric_options(series):
-    """
-    Return unique numeric values from a dataframe column.
-    """
 
     values = (
         pd.to_numeric(
@@ -511,6 +468,7 @@ def format_storage(value):
 
     return f"{int(value)} GB"
 
+
 def extract_clock_speed(value):
 
     if pd.isna(value):
@@ -528,53 +486,6 @@ def extract_clock_speed(value):
     return np.nan
 
 
-def show_selectable_text(
-    label,
-    column,
-    source_df,
-    current_value,
-    key
-):
-    """
-    Creates a dropdown using values that actually exist
-    in the relevant dataset records.
-    """
-
-    options = clean_options(
-        source_df[column]
-        if column in source_df.columns
-        else pd.Series(dtype=str)
-    )
-
-    current_value = (
-        str(current_value).strip()
-        if not pd.isna(current_value)
-        else ""
-    )
-
-    if current_value and current_value not in options:
-        options.insert(0, current_value)
-
-    if not options:
-
-        return st.text_input(
-            label,
-            value=current_value,
-            key=key
-        )
-
-    return st.selectbox(
-        label,
-        options,
-        index=(
-            options.index(current_value)
-            if current_value in options
-            else 0
-        ),
-        key=key
-    )
-
-
 def show_selectable_numeric(
     label,
     column,
@@ -583,9 +494,6 @@ def show_selectable_numeric(
     key,
     formatter=None
 ):
-    """
-    Creates a dropdown for numeric specifications.
-    """
 
     options = numeric_options(
         source_df[column]
@@ -601,7 +509,6 @@ def show_selectable_numeric(
             options.insert(0, current_value)
 
     if not options:
-
         return current_value
 
     formatted_options = [
@@ -629,22 +536,26 @@ def show_selectable_numeric(
         formatted_options.index(selected_display)
     ]
 
+
 # ============================================================
 # HEADER
 # ============================================================
 
-logo_path = os.path.join(BASE_DIR, "imycom.png")
-
 col1, col2 = st.columns([1, 3])
 
 with col1:
+
     st.write("")
     st.write("")
 
-    if os.path.exists(logo_path):
-        st.image(logo_path, width=220)
+    if ICON_PATH.exists():
+        st.image(
+            str(ICON_PATH),
+            width=220
+        )
 
 with col2:
+
     st.markdown(
         """
         <div class="imalaysian-title">
@@ -657,6 +568,7 @@ with col2:
         """,
         unsafe_allow_html=True
     )
+
 
 # ============================================================
 # DEVICE SELECTION
@@ -676,8 +588,13 @@ device_types = clean_options(
 )
 
 if not device_types:
-    st.error("No device types are available in the master dataset.")
+
+    st.error(
+        "No device types are available in the master dataset."
+    )
+
     st.stop()
+
 
 device_type = st.selectbox(
     "Device Type",
@@ -691,33 +608,31 @@ device_type = st.selectbox(
 # ============================================================
 
 device_df = df[
-    df["Device"].astype(str).str.strip() == device_type
+    df["Device"].astype(str).str.strip()
+    == device_type
 ].copy()
 
 
 if device_df.empty:
+
     st.warning(
         "No records are available for the selected device type."
     )
+
     st.stop()
 
 
 # ============================================================
 # SUB-DEVICE
 # ============================================================
-#
-# iPhone:
-#     No Sub-device selection.
-#
-# Other devices:
-#     Sub-device improves UX and narrows the available models.
-#
-# ============================================================
 
 sub_device = ""
 
 
-if device_type != "iPhone" and "Sub-device" in device_df.columns:
+if (
+    device_type != "iPhone"
+    and "Sub-device" in device_df.columns
+):
 
     sub_device_options = clean_options(
         device_df["Sub-device"]
@@ -740,21 +655,14 @@ if device_type != "iPhone" and "Sub-device" in device_df.columns:
 # ============================================================
 # MODEL
 # ============================================================
-#
-# IMPORTANT:
-# The finalized master dataset uses:
-#
-#     Standardized Model
-#
-# rather than the old "Model" column.
-#
-# ============================================================
 
 if "Standardized Model" not in device_df.columns:
+
     st.error(
         "The master dataset does not contain "
         "'Standardized Model'."
     )
+
     st.stop()
 
 
@@ -786,9 +694,11 @@ model_df = device_df[
 
 
 if model_df.empty:
+
     st.error(
         "No records were found for the selected model."
     )
+
     st.stop()
 
 
@@ -868,7 +778,6 @@ elif device_type == "iPad":
 
         matching_df = model_df.copy()
 
-
     # --------------------------------------------------------
     # CONNECTIVITY
     # --------------------------------------------------------
@@ -927,7 +836,6 @@ elif device_type == "Mac":
 
         matching_df = model_df.copy()
 
-
     # --------------------------------------------------------
     # STORAGE TYPE
     # --------------------------------------------------------
@@ -969,8 +877,6 @@ elif device_type == "Apple Watch":
     # CASE SIZE
     # --------------------------------------------------------
 
-    case_size = ""
-
     case_size_options = clean_options(
         matching_df["Specification"]
         if "Specification" in matching_df.columns
@@ -989,7 +895,6 @@ elif device_type == "Apple Watch":
             matching_df["Specification"].astype(str).str.strip()
             == case_size
         ].copy()
-
 
     # --------------------------------------------------------
     # MATERIAL
@@ -1019,28 +924,23 @@ elif device_type == "Apple Watch":
                 == material
             ].copy()
 
-    else:
-
-        material = ""
-
-
     # --------------------------------------------------------
     # STORAGE
     # --------------------------------------------------------
 
-    storage_options = numeric_options(
+    watch_storage_options = numeric_options(
         matching_df["Storage (GB)"]
         if "Storage (GB)" in matching_df.columns
         else pd.Series(dtype=float)
     )
 
-    if storage_options:
+    if watch_storage_options:
 
         storage = show_selectable_numeric(
             "Storage",
             "Storage (GB)",
             matching_df,
-            storage_options[0],
+            watch_storage_options[0],
             "watch_storage",
             format_storage
         )
@@ -1052,7 +952,6 @@ elif device_type == "Apple Watch":
     else:
 
         storage = np.nan
-
 
     # --------------------------------------------------------
     # CONNECTIVITY
@@ -1091,15 +990,6 @@ elif device_type == "AirPods":
 
     matching_df = model_df.copy()
 
-
-    # --------------------------------------------------------
-    # CHARGING METHOD
-    # --------------------------------------------------------
-    #
-    # AirPods use Specification for charging information.
-    #
-    # --------------------------------------------------------
-
     charging_options = clean_options(
         matching_df["Specification"]
         if "Specification" in matching_df.columns
@@ -1124,8 +1014,6 @@ elif device_type == "AirPods":
                 == charging_method
             ].copy()
 
-
-    # AirPods do not use storage as a customer-facing selection.
     storage = np.nan
 
 
@@ -1137,6 +1025,7 @@ else:
 
     matching_df = model_df.copy()
 
+
 # ============================================================
 # FINAL SELECTED RECORD
 # ============================================================
@@ -1145,8 +1034,8 @@ if matching_df.empty:
 
     st.warning(
         "No exact market configuration was found for "
-        "the selected specifications. The ML model will "
-        "be used for estimation."
+        "the selected specifications. The Smart Estimate "
+        "will use the model features from the base model."
     )
 
     selected_df = model_df.copy()
@@ -1165,12 +1054,11 @@ if selected_df.empty:
     st.stop()
 
 
-# Use the first matching record for ML backend features.
 selected = selected_df.iloc[0]
 
 
 # ============================================================
-# BACKEND VALUES FOR MODEL_V2
+# BACKEND VALUES
 # ============================================================
 
 standardized_model = str(
@@ -1180,6 +1068,7 @@ standardized_model = str(
     )
 ).strip()
 
+
 provider = str(
     selected.get(
         "Provider",
@@ -1187,12 +1076,14 @@ provider = str(
     )
 ).strip()
 
-sub_device_ml = str(
+
+pricing_category = str(
     selected.get(
-        "Sub-device",
+        "Pricing Category",
         ""
     )
 ).strip()
+
 
 model_year = pd.to_numeric(
     selected.get(
@@ -1202,25 +1093,33 @@ model_year = pd.to_numeric(
     errors="coerce"
 )
 
-ram_min = pd.to_numeric(
+
+generation = pd.to_numeric(
     selected.get(
-        "RAM Min (GB)",
+        "Generation",
         np.nan
     ),
     errors="coerce"
 )
 
-mac_generation = selected.get(
-    "Mac Generation",
-    ""
+
+screen_size = pd.to_numeric(
+    selected.get(
+        "Screen Size (inch)",
+        np.nan
+    ),
+    errors="coerce"
 )
 
-if pd.isna(mac_generation):
-    mac_generation = np.nan
-else:
-    mac_generation = str(
-        mac_generation
-    ).strip()
+
+ram = pd.to_numeric(
+    selected.get(
+        "RAM (GB)",
+        np.nan
+    ),
+    errors="coerce"
+)
+
 
 chipset = selected.get(
     "Chipset",
@@ -1233,18 +1132,25 @@ if pd.isna(chipset):
 chipset = str(chipset).strip()
 
 
+clock_speed_raw = selected.get(
+    "Clock Speed",
+    ""
+)
+
+clock_speed_ghz = extract_clock_speed(
+    clock_speed_raw
+)
+
+
 # ============================================================
-# SELECTED CONFIGURATION
+# CUSTOMER SELECTED CONFIGURATION
 # ============================================================
 
-selected_storage = (
-    pd.to_numeric(
-        storage,
-        errors="coerce"
-    )
-    if pd.notna(storage)
-    else np.nan
-)
+selected_storage = pd.to_numeric(
+    pd.Series([storage]),
+    errors="coerce"
+).iloc[0]
+
 
 selected_storage_type = (
     str(storage_type).strip()
@@ -1256,6 +1162,7 @@ selected_storage_type = (
         )
     ).strip()
 )
+
 
 selected_connectivity = (
     str(connectivity).strip()
@@ -1286,20 +1193,6 @@ else:
 
 
 # ============================================================
-# CLOCK SPEED
-# ============================================================
-
-clock_speed_raw = selected.get(
-    "Clock Speed",
-    ""
-)
-
-clock_speed_ghz = extract_clock_speed(
-    clock_speed_raw
-)
-
-
-# ============================================================
 # MARKET EVIDENCE
 # ============================================================
 
@@ -1314,10 +1207,6 @@ market_prices = pd.to_numeric(
 ).dropna()
 
 
-# ============================================================
-# MARKET MEDIAN
-# ============================================================
-
 if not market_prices.empty:
 
     market_median = float(
@@ -1330,282 +1219,151 @@ else:
 
 
 # ============================================================
-# ML INPUT — MODEL_V2.PKL FEATURE SCHEMA
+# SMART ESTIMATE — MODEL_V2
 # ============================================================
-#
+
 # IMPORTANT:
-# model_v2.pkl was trained using these exact column names:
 #
+# model_v2.pkl expects EXACTLY these 15 features:
+#
+# device_type
+# model
+# standardized_model
+# provider
+# pricing_category
+# model_year
+# device_age
+# generation
+# screen_size
+# clock_speed_ghz
+# chipset
+# ram
+# storage
+# storage_type
+# connectivity
+#
+# DO NOT add the old:
 # Model_Year
 # Storage (GB)
 # RAM Min (GB)
 # Mac Generation
 # Device
 # Sub-device
-# Standardized Model
-# Provider
-# Storage Type
-# Connectivity
-# Chipset
+# etc.
 #
-# Do NOT use the lowercase app-internal names here.
-# ============================================================
-
-# ------------------------------------------------------------
-# RAM MIN
-# ------------------------------------------------------------
-
-ram_min = selected.get(
-    "RAM Min (GB)",
-    np.nan
-)
-
-ram_min = pd.to_numeric(
-    pd.Series([ram_min]),
-    errors="coerce"
-).iloc[0]
-
-
-# ------------------------------------------------------------
-# MAC GENERATION
-# ------------------------------------------------------------
-
-mac_generation = selected.get(
-    "Mac Generation",
-    ""
-)
-
-if pd.isna(mac_generation):
-    mac_generation = ""
-
-mac_generation = str(mac_generation).strip()
-
-
-# ------------------------------------------------------------
-# SUB-DEVICE
-# ------------------------------------------------------------
-
-selected_sub_device = selected.get(
-    "Sub-device",
-    ""
-)
-
-if pd.isna(selected_sub_device):
-    selected_sub_device = ""
-
-selected_sub_device = str(
-    selected_sub_device
-).strip()
-
-
-# ------------------------------------------------------------
-# STORAGE TYPE
-# ------------------------------------------------------------
-
-selected_storage_type = (
-    storage_type
-    if storage_type
-    else str(
-        selected.get(
-            "Storage Type",
-            ""
-        )
-    ).strip()
-)
-
-
-# ------------------------------------------------------------
-# CONNECTIVITY
-# ------------------------------------------------------------
-
-selected_connectivity = (
-    connectivity
-    if connectivity
-    else str(
-        selected.get(
-            "Connectivity",
-            ""
-        )
-    ).strip()
-)
-
-
-# ------------------------------------------------------------
-# BUILD EXACT MODEL INPUT
-# ------------------------------------------------------------
 
 input_data = pd.DataFrame([{
 
-    "Model_Year":
-        pd.to_numeric(
-            model_year,
-            errors="coerce"
-        ),
-
-    "Storage (GB)":
-        pd.to_numeric(
-            selected_storage,
-            errors="coerce"
-        ),
-
-    "RAM Min (GB)":
-        ram_min,
-
-    "Mac Generation":
-        mac_generation,
-
-    "Device":
+    "device_type":
         str(device_type).strip(),
 
-    "Sub-device":
-        selected_sub_device,
+    "model":
+        str(model_name).strip(),
 
-    "Standardized Model":
+    "standardized_model":
         standardized_model,
 
-    "Provider":
+    "provider":
         provider,
 
-    "Storage Type":
+    "pricing_category":
+        pricing_category,
+
+    "model_year":
+        model_year,
+
+    "device_age":
+        device_age,
+
+    "generation":
+        generation,
+
+    "screen_size":
+        screen_size,
+
+    "clock_speed_ghz":
+        clock_speed_ghz,
+
+    "chipset":
+        chipset,
+
+    "ram":
+        ram,
+
+    "storage":
+        selected_storage,
+
+    "storage_type":
         selected_storage_type,
 
-    "Connectivity":
-        selected_connectivity,
-
-    "Chipset":
-        str(chipset).strip()
-        if chipset
-        else ""
+    "connectivity":
+        selected_connectivity
 
 }])
 
+
 # ============================================================
-# MODEL INPUT VALIDATION
+# VERIFY AGAINST model_v2.pkl
 # ============================================================
 
-EXPECTED_MODEL_FEATURES = [
-    "Model_Year",
-    "Storage (GB)",
-    "RAM Min (GB)",
-    "Mac Generation",
-    "Device",
-    "Sub-device",
-    "Standardized Model",
-    "Provider",
-    "Storage Type",
-    "Connectivity",
-    "Chipset"
-]
+try:
+
+    expected_features = list(
+        model.named_steps[
+            "preprocessor"
+        ].feature_names_in_
+    )
+
+except Exception as e:
+
+    st.error(
+        "Unable to determine the input schema "
+        "from model_v2.pkl."
+    )
+
+    st.exception(e)
+    st.stop()
+
 
 missing_features = [
-    col
-    for col in EXPECTED_MODEL_FEATURES
-    if col not in input_data.columns
+    feature
+    for feature in expected_features
+    if feature not in input_data.columns
 ]
+
+
+extra_features = [
+    feature
+    for feature in input_data.columns
+    if feature not in expected_features
+]
+
 
 if missing_features:
 
     st.error(
-        f"ML input is missing features: {missing_features}"
+        "model_v2.pkl expects features that are missing "
+        f"from the app input: {missing_features}"
     )
 
     st.stop()
 
 
-# Force exact feature order
+if extra_features:
+
+    st.error(
+        "The app is sending unexpected features to "
+        f"model_v2.pkl: {extra_features}"
+    )
+
+    st.stop()
+
+
+# Force exact order expected by the model
 input_data = input_data[
-    EXPECTED_MODEL_FEATURES
+    expected_features
 ]
 
-
-# ============================================================
-# DEBUG — REMOVE AFTER VERIFICATION
-# ============================================================
-
-st.write("### ML INPUT DEBUG")
-st.dataframe(input_data)
-
-st.write(
-    "Model Year:",
-    input_data["Model_Year"].iloc[0]
-)
-
-st.write(
-    "Storage:",
-    input_data["Storage (GB)"].iloc[0]
-)
-
-st.write(
-    "Model:",
-    input_data["Standardized Model"].iloc[0]
-)
-
-st.write(
-    "RAM Min:",
-    input_data["RAM Min (GB)"].iloc[0]
-)
-
-st.write(
-    "Mac Generation:",
-    input_data["Mac Generation"].iloc[0]
-)
-
-# ============================================================
-# TEMPORARY DEBUG
-# ============================================================
-
-with st.expander("ML Input Debug"):
-
-    st.dataframe(
-        input_data,
-        use_container_width=True
-    )
-
-    st.write(
-        "Model file:",
-        MODEL_PATH
-    )
-
-    st.write(
-        "Dataset:",
-        CSV_PATH
-    )
-
-    st.write(
-        "Expected features:",
-        EXPECTED_MODEL_FEATURES
-    )
-
-# ============================================================
-# VERIFY MODEL INPUT
-# ============================================================
-
-expected_features = [
-    "Model_Year",
-    "Storage (GB)",
-    "RAM Min (GB)",
-    "Mac Generation",
-    "Device",
-    "Sub-device",
-    "Standardized Model",
-    "Provider",
-    "Storage Type",
-    "Connectivity",
-    "Chipset"
-]
-
-missing_features = set(expected_features) - set(input_data.columns)
-
-if missing_features:
-    st.error(
-        f"Model input is missing features: {missing_features}"
-    )
-    st.stop()
-
-input_data = input_data[expected_features]
-
-st.write("### ML Input Debug")
-st.dataframe(input_data)
 
 # ============================================================
 # ML PREDICTION
@@ -1625,11 +1383,10 @@ try:
 except Exception as e:
 
     st.error(
-        "Unable to generate ML prediction."
+        "Unable to generate Smart Estimate."
     )
 
     st.exception(e)
-
     st.stop()
 
 
@@ -1640,6 +1397,7 @@ except Exception as e:
 st.divider()
 
 st.subheader("Estimate Method")
+
 
 estimate_method = st.radio(
     "Choose how the estimate is calculated",
@@ -1652,13 +1410,31 @@ estimate_method = st.radio(
 )
 
 
+if estimate_method == "Market Estimate":
+
+    st.caption(
+        "Uses observed market trade-in prices. "
+        "The ML depreciation model is not used for this estimate."
+    )
+
+else:
+
+    st.caption(
+        "Uses model_v2.pkl, including device age and "
+        "historical trade-in patterns."
+    )
+
+
 # ============================================================
 # DEFAULT VALUES
 # ============================================================
 
 recommended_offer = np.nan
+
 confidence_text = ""
+
 estimate_note = ""
+
 estimate_method_display = estimate_method
 
 
@@ -1706,9 +1482,6 @@ if estimate_method == "Market Estimate":
 
     else:
 
-        # No direct market evidence.
-        # Automatically fall back to Smart Estimate.
-
         recommended_offer = ml_prediction
 
         confidence_text = (
@@ -1723,11 +1496,12 @@ if estimate_method == "Market Estimate":
 
         estimate_method_display = "Smart Estimate"
 
-else:
 
-    # ========================================================
-    # SMART ESTIMATE
-    # ========================================================
+# ============================================================
+# SMART ESTIMATE
+# ============================================================
+
+else:
 
     recommended_offer = ml_prediction
 
@@ -1736,17 +1510,11 @@ else:
         "and device specifications."
     )
 
-    estimate_note = ""
+    estimate_note = (
+        "Uses model_v2.pkl to estimate the device value."
+    )
 
     estimate_method_display = "Smart Estimate"
-
-
-# ============================================================
-# MARKET METHOD DISPLAY
-# ============================================================
-
-if estimate_method == "Market Estimate" and not market_prices.empty:
-    estimate_method_display = "Market Estimate"
 
 
 # ============================================================
@@ -1755,9 +1523,11 @@ if estimate_method == "Market Estimate" and not market_prices.empty:
 
 st.subheader("Estimated Trade-In Value")
 
+
 st.html(
     f"""
     <div class="recommendation-card">
+
         <div class="recommendation-title">
             {estimate_method_display}
         </div>
@@ -1765,9 +1535,25 @@ st.html(
         <div class="recommendation-value">
             RM {recommended_offer:,.0f}
         </div>
+
     </div>
     """
 )
+
+
+# ============================================================
+# ESTIMATE EXPLANATION
+# ============================================================
+
+if confidence_text:
+
+    st.caption(confidence_text)
+
+
+if estimate_note:
+
+    st.caption(estimate_note)
+
 
 # ============================================================
 # SMART ESTIMATE DISCLAIMER
