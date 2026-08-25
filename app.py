@@ -1155,14 +1155,6 @@ if market_records is matching_df:
         "for the selected configuration."
     )
 
-else:
-
-    estimate_note = (
-        "No price was available for the exact selected "
-        "configuration, so the median of available trade-in "
-        "values for the selected model is shown."
-    )
-
 
 # ============================================================
 # CUSTOMER-FACING VALUATION
@@ -1195,5 +1187,3 @@ st.html(
 # ============================================================
 
 st.caption(confidence_text)
-
-st.caption(estimate_note)
