@@ -1520,7 +1520,7 @@ if estimate_method == "Market Estimate" and not market_prices.empty:
 
 st.subheader("Estimated Trade-In Value")
 
-st.markdown(
+st.html(
     f"""
     <div class="recommendation-card">
         <div class="recommendation-title">
@@ -1531,17 +1531,12 @@ st.markdown(
             RM {recommended_offer:,.0f}
         </div>
     </div>
-    """,
-    unsafe_allow_html=True
+    """
 )
 
-st.caption(
-    confidence_text
-)
+st.caption(confidence_text)
 
-st.caption(
-    estimate_note
-)
+st.caption(estimate_note)
 
 
 # ============================================================
