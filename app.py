@@ -30,7 +30,7 @@ st.set_page_config(
 # iMALAYSIAN RED THEME
 # ============================================================
 
-st.html(
+st.markdown(
     textwrap.dedent("""
     <style>
 
@@ -637,6 +637,7 @@ st.html(
 
     </style>
     """),
+    unsafe_allow_html=True
 )
 
 
@@ -1621,7 +1622,7 @@ with condition_col:
         start=1
     ):
 
-        st.markdown(
+        st.html(
             textwrap.dedent(f"""
             <div class="question-placeholder">
 
@@ -1635,7 +1636,6 @@ with condition_col:
 
             </div>
             """),
-            unsafe_allow_html=True
         )
 
 
