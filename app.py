@@ -1,6 +1,6 @@
 from pathlib import Path
 import re
-
+import textwrap
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -1020,22 +1020,17 @@ selection_col, condition_col = st.columns(
 # ============================================================
 
 with selection_col:
-
     st.markdown(
-        """
+        textwrap.dedent("""
         <div class="selection-panel">
-
             <div class="panel-title">
                 Device Selection
             </div>
-
             <div class="panel-subtitle">
-                Select the device and configuration you want
-                to evaluate.
+                Select the device and configuration you want to evaluate.
             </div>
-
         </div>
-        """,
+        """),
         unsafe_allow_html=True
     )
 
