@@ -331,7 +331,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "model_v2.pkl")
 CSV_PATH = os.path.join(
     BASE_DIR,
-    "master_apple_final.csv"
+    "master_apple_final_ml.csv"
 )
 
 
@@ -355,6 +355,10 @@ def load_data():
 
     data.columns = data.columns.str.strip()
 
+    # ========================================================
+    # TEXT COLUMNS
+    # ========================================================
+
     text_columns = [
         "Pricing Category",
         "Provider",
@@ -367,7 +371,9 @@ def load_data():
         "Connectivity",
         "Material",
         "Model Number",
-        "Clock Speed"
+        "Clock Speed",
+        "Sub-device",
+        "Mac Generation"
     ]
 
     for col in text_columns:
@@ -381,12 +387,17 @@ def load_data():
                 .str.strip()
             )
 
+    # ========================================================
+    # NUMERIC COLUMNS
+    # ========================================================
+
     numeric_columns = [
         "Model_Year",
         "Generation",
         "Year",
         "Screen Size (inch)",
         "RAM (GB)",
+        "RAM Min (GB)",
         "Max. Trade-In Value (RM)"
     ]
 
@@ -421,9 +432,8 @@ def load_data():
                 return np.nan
 
             number = float(match.group(1))
-            unit = match.group(2)
 
-            if unit == "TB":
+            if match.group(2) == "TB":
                 number *= 1024
 
             return number
@@ -1160,7 +1170,7 @@ selected = selected_df.iloc[0]
 
 
 # ============================================================
-# BACKEND VALUES
+# BACKEND VALUES FOR MODEL_V2
 # ============================================================
 
 standardized_model = str(
@@ -1168,70 +1178,76 @@ standardized_model = str(
         "Standardized Model",
         model_name
     )
-)
+).strip()
 
 provider = str(
     selected.get(
         "Provider",
-        "Unknown"
+        ""
     )
-)
+).strip()
 
-pricing_category = str(
+sub_device_ml = str(
     selected.get(
-        "Pricing Category",
-        "Unknown"
+        "Sub-device",
+        ""
     )
+).strip()
 
+model_year = pd.to_numeric(
+    selected.get(
+        "Model_Year",
+        np.nan
+    ),
+    errors="coerce"
 )
 
-
-model_year = selected.get(
-    "Model_Year",
-    np.nan
+ram_min = pd.to_numeric(
+    selected.get(
+        "RAM Min (GB)",
+        np.nan
+    ),
+    errors="coerce"
 )
 
-generation = selected.get(
-    "Generation",
-    np.nan
+mac_generation = selected.get(
+    "Mac Generation",
+    ""
 )
 
-screen_size = selected.get(
-    "Screen Size (inch)",
-    np.nan
-)
+if pd.isna(mac_generation):
+    mac_generation = np.nan
+else:
+    mac_generation = str(
+        mac_generation
+    ).strip()
 
 chipset = selected.get(
     "Chipset",
     ""
 )
 
-ram = selected.get(
-    "RAM (GB)",
-    np.nan
-)
+if pd.isna(chipset):
+    chipset = ""
 
-clock_speed_raw = selected.get(
-    "Clock Speed",
-    ""
-)
+chipset = str(chipset).strip()
 
 
 # ============================================================
-# SELECTED CONFIGURATION VALUES
+# SELECTED CONFIGURATION
 # ============================================================
 
-# The customer-facing selections override the values
-# detected from the selected dataset record.
-
-if pd.notna(storage):
-    selected_storage = storage
-else:
-    selected_storage = np.nan
-
+selected_storage = (
+    pd.to_numeric(
+        storage,
+        errors="coerce"
+    )
+    if pd.notna(storage)
+    else np.nan
+)
 
 selected_storage_type = (
-    storage_type
+    str(storage_type).strip()
     if storage_type
     else str(
         selected.get(
@@ -1241,9 +1257,8 @@ selected_storage_type = (
     ).strip()
 )
 
-
 selected_connectivity = (
-    connectivity
+    str(connectivity).strip()
     if connectivity
     else str(
         selected.get(
@@ -1273,6 +1288,11 @@ else:
 # ============================================================
 # CLOCK SPEED
 # ============================================================
+
+clock_speed_raw = selected.get(
+    "Clock Speed",
+    ""
+)
 
 clock_speed_ghz = extract_clock_speed(
     clock_speed_raw
@@ -1310,63 +1330,220 @@ else:
 
 
 # ============================================================
-# ML INPUT
+# ML INPUT — MODEL_V2.PKL
 # ============================================================
+
+# Get ML-specific fields directly from the selected record.
+
+ram_min = selected.get(
+    "RAM Min (GB)",
+    np.nan
+)
+
+mac_generation = selected.get(
+    "Mac Generation",
+    np.nan
+)
+
+# Make sure numeric fields are actually numeric.
+
+model_year = pd.to_numeric(
+    model_year,
+    errors="coerce"
+)
+
+selected_storage = pd.to_numeric(
+    selected_storage,
+    errors="coerce"
+)
+
+ram_min = pd.to_numeric(
+    ram_min,
+    errors="coerce"
+)
+
+# Mac Generation must remain categorical.
+if pd.isna(mac_generation):
+    mac_generation = np.nan
+else:
+    mac_generation = str(mac_generation).strip()
+
+# Make sure categorical values are strings.
+device_type_ml = str(device_type).strip()
+sub_device_ml = str(
+    selected.get("Sub-device", "")
+).strip()
+
+standardized_model_ml = str(
+    selected.get(
+        "Standardized Model",
+        model_name
+    )
+).strip()
+
+provider_ml = str(
+    selected.get(
+        "Provider",
+        ""
+    )
+).strip()
+
+storage_type_ml = str(
+    selected_storage_type
+).strip()
+
+connectivity_ml = str(
+    selected_connectivity
+).strip()
+
+chipset_ml = str(
+    chipset
+).strip()
+
+
+# ------------------------------------------------------------
+# EXACT FEATURES EXPECTED BY MODEL_V2.PKL
+# ------------------------------------------------------------
 
 input_data = pd.DataFrame([{
 
-    "device_type":
-        device_type,
-
-    "model":
-        model_name,
-
-    "standardized_model":
-        standardized_model,
-
-    "provider":
-        provider,
-
-    "pricing_category":
-        pricing_category,
-
-    "model_year":
+    "Model_Year":
         model_year,
 
-    "device_age":
-        device_age,
-
-    "generation":
-        generation,
-
-    "screen_size":
-        screen_size,
-
-    "clock_speed_ghz":
-        clock_speed_ghz,
-
-    "chipset":
-        chipset
-        if chipset
-        else "Unknown",
-
-    "ram":
-        ram,
-
-    "storage":
+    "Storage (GB)":
         selected_storage,
 
-    "storage_type":
-        selected_storage_type
-        if selected_storage_type
-        else "Unknown",
+    "RAM Min (GB)":
+        ram_min,
 
-    "connectivity":
-        selected_connectivity
-        if selected_connectivity
+    "Mac Generation":
+        mac_generation,
+
+    "Device":
+        device_type_ml,
+
+    "Sub-device":
+        sub_device_ml,
+
+    "Standardized Model":
+        standardized_model_ml,
+
+    "Provider":
+        provider_ml,
+
+    "Storage Type":
+        storage_type_ml
+        if storage_type_ml
+        else np.nan,
+
+    "Connectivity":
+        connectivity_ml
+        if connectivity_ml
+        else np.nan,
+
+    "Chipset":
+        chipset_ml
+        if chipset_ml
         else np.nan
 
 }])
+
+# ============================================================
+# MODEL INPUT VALIDATION
+# ============================================================
+
+EXPECTED_MODEL_FEATURES = [
+    "Model_Year",
+    "Storage (GB)",
+    "RAM Min (GB)",
+    "Mac Generation",
+    "Device",
+    "Sub-device",
+    "Standardized Model",
+    "Provider",
+    "Storage Type",
+    "Connectivity",
+    "Chipset"
+]
+
+missing_features = [
+    col
+    for col in EXPECTED_MODEL_FEATURES
+    if col not in input_data.columns
+]
+
+if missing_features:
+
+    st.error(
+        f"ML input is missing features: {missing_features}"
+    )
+
+    st.stop()
+
+
+# Force exact feature order
+input_data = input_data[
+    EXPECTED_MODEL_FEATURES
+]
+
+
+# ============================================================
+# DEBUG — REMOVE AFTER VERIFICATION
+# ============================================================
+
+st.write("### ML INPUT DEBUG")
+st.dataframe(input_data)
+
+st.write(
+    "Model Year:",
+    input_data["Model_Year"].iloc[0]
+)
+
+st.write(
+    "Storage:",
+    input_data["Storage (GB)"].iloc[0]
+)
+
+st.write(
+    "Model:",
+    input_data["Standardized Model"].iloc[0]
+)
+
+st.write(
+    "RAM Min:",
+    input_data["RAM Min (GB)"].iloc[0]
+)
+
+st.write(
+    "Mac Generation:",
+    input_data["Mac Generation"].iloc[0]
+)
+
+# ============================================================
+# TEMPORARY DEBUG
+# ============================================================
+
+with st.expander("ML Input Debug"):
+
+    st.dataframe(
+        input_data,
+        use_container_width=True
+    )
+
+    st.write(
+        "Model file:",
+        MODEL_PATH
+    )
+
+    st.write(
+        "Dataset:",
+        CSV_PATH
+    )
+
+    st.write(
+        "Expected features:",
+        EXPECTED_MODEL_FEATURES
+    )
 
 
 # ============================================================
