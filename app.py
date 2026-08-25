@@ -30,7 +30,7 @@ st.set_page_config(
 # iMALAYSIAN RED THEME
 # ============================================================
 
-st.markdown(
+st.html(
     textwrap.dedent("""
     <style>
 
@@ -637,7 +637,6 @@ st.markdown(
 
     </style>
     """),
-    unsafe_allow_html=True
 )
 
 
@@ -989,7 +988,7 @@ with col1:
 
 with col2:
 
-    st.markdown(
+    st.html(
         textwrap.dedent("""
         <div class="imalaysian-title">
             Apple Trade-In Competitive Pricing
@@ -999,7 +998,6 @@ with col2:
             Market-based trade-in valuation and competitive pricing
         </div>
         """),
-        unsafe_allow_html=True
     )
 
 
@@ -1557,7 +1555,7 @@ with selection_col:
 
 with condition_col:
 
-    st.markdown(
+    st.html(
         textwrap.dedent("""
         <div class="condition-panel">
 
@@ -1572,7 +1570,6 @@ with condition_col:
 
         </div>
         """),
-        unsafe_allow_html=True
     )
 
 
@@ -1580,7 +1577,7 @@ with condition_col:
     # PLACEHOLDER INTRODUCTION
     # --------------------------------------------------------
 
-    st.markdown(
+    st.html(
         textwrap.dedent("""
         <div class="condition-placeholder">
 
@@ -1595,7 +1592,6 @@ with condition_col:
 
         </div>
         """),
-        unsafe_allow_html=True
     )
 
 
@@ -1658,7 +1654,7 @@ with condition_col:
 
     st.divider()
 
-    st.markdown(
+    st.html(
         textwrap.dedent("""
         <div class="panel-title">
             Market Estimate
@@ -1668,7 +1664,6 @@ with condition_col:
             Current market value before condition adjustment.
         </div>
         """),
-        unsafe_allow_html=True
     )
 
 
@@ -1780,7 +1775,7 @@ with condition_col:
     # CUSTOMER-FACING VALUATION
     # ========================================================
 
-    st.markdown(
+    st.html(
         textwrap.dedent(f"""
         <div class="recommendation-card">
 
@@ -1794,7 +1789,6 @@ with condition_col:
 
         </div>
         """),
-        unsafe_allow_html=True
     )
 
 
