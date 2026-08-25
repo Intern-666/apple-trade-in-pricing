@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import re
 
 import numpy as np
@@ -22,12 +21,12 @@ CSV_PATH = BASE_DIR / "master_apple_final.csv"
 st.set_page_config(
     page_title="Apple Trade-In Competitive Pricing",
     page_icon=str(ICON_PATH),
-    layout="centered"
+    layout="wide"
 )
 
 
 # ============================================================
-# iMALAYSIAN RED THEME
+# iMALAYSIAN RED THEME + UI
 # ============================================================
 
 st.markdown(
@@ -60,23 +59,36 @@ st.markdown(
         font-family: "Inter", Arial, sans-serif !important;
     }
 
+
+    /* ========================================================
+       PAGE BACKGROUND
+       ======================================================== */
+
     .stApp {
-        background-color: var(--red);
+        background:
+            linear-gradient(
+                135deg,
+                #A80009 0%,
+                #E30613 42%,
+                #F13A44 72%,
+                #8E0008 100%
+            );
+        background-attachment: fixed;
         color: var(--dark);
     }
 
     .main {
-        background-color: var(--red);
+        background: transparent !important;
     }
 
+
+    /* ========================================================
+       MAIN CONTAINER
+       ======================================================== */
+
     .block-container {
-        background-color: var(--white);
-        border-radius: 14px;
-        padding: 1.5rem 2.2rem 3rem 2.2rem;
-        margin-top: 1rem;
-        margin-bottom: 2rem;
-        max-width: 1100px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+        max-width: 1250px;
+        padding: 1.5rem 2rem 3rem 2rem;
     }
 
 
@@ -84,62 +96,225 @@ st.markdown(
        HEADER
        ======================================================== */
 
+    .header-card {
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 16px;
+        padding: 1.2rem 1.5rem;
+        margin-bottom: 1.2rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+    }
+
     .imalaysian-title {
         color: var(--dark) !important;
-        font-size: 2.5rem !important;
+        font-size: 2.25rem !important;
         font-weight: 800 !important;
-        letter-spacing: -0.5px;
-        line-height: 1.2;
-        margin-top: 2.5rem !important;
-        margin-bottom: 0.5rem !important;
+        letter-spacing: -0.6px;
+        line-height: 1.15;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.4rem !important;
     }
 
     .imalaysian-subtitle {
-        color: var(--dark) !important;
-        font-size: 1.15rem !important;
+        color: var(--grey) !important;
+        font-size: 1rem !important;
         font-weight: 400 !important;
         line-height: 1.4;
-        margin-top: 0 !important;
-        opacity: 0.92;
+        margin: 0 !important;
     }
 
 
     /* ========================================================
-       HEADINGS
+       PANEL SYSTEM
        ======================================================== */
 
-    h1 {
-        color: var(--white) !important;
-        font-weight: 800 !important;
+    .panel {
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
     }
 
-    h2,
-    h3 {
-        color: var(--dark) !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.3px;
+    .panel-title {
+        color: var(--dark);
+        font-size: 1.35rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
     }
 
-    h2::after,
-    h3::after {
-        content: "";
-        display: block;
-        width: 45px;
-        height: 3px;
-        background-color: var(--red);
-        margin-top: 7px;
-        border-radius: 1px;
+    .panel-subtitle {
+        color: var(--grey);
+        font-size: 0.9rem;
+        margin-bottom: 1.2rem;
     }
 
 
     /* ========================================================
-       DIVIDERS
+       CONDITION PANEL
        ======================================================== */
 
-    hr {
-        border: none !important;
-        border-top: 1px solid var(--border) !important;
-        margin: 1.4rem 0 !important;
+    .condition-panel {
+        animation: conditionFadeIn 0.65s ease-out;
+    }
+
+    @keyframes conditionFadeIn {
+
+        0% {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    }
+
+
+    /* ========================================================
+       CONDITION SCROLL AREA
+       ======================================================== */
+
+    .condition-scroll-wrapper {
+        max-height: 650px;
+        overflow-y: auto;
+        padding-right: 8px;
+    }
+
+    .condition-scroll-wrapper::-webkit-scrollbar {
+        width: 7px;
+    }
+
+    .condition-scroll-wrapper::-webkit-scrollbar-track {
+        background: #F1F1F1;
+        border-radius: 10px;
+    }
+
+    .condition-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: #D0D0D0;
+        border-radius: 10px;
+    }
+
+    .condition-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #AAAAAA;
+    }
+
+
+    /* ========================================================
+       CONDITION QUESTION CARD
+       ======================================================== */
+
+    .condition-question {
+        background: #FAFAFA;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .condition-question-number {
+        color: var(--red);
+        font-size: 0.75rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 0.25rem;
+    }
+
+    .condition-question-title {
+        color: var(--dark);
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.15rem;
+    }
+
+    .condition-question-description {
+        color: var(--grey);
+        font-size: 0.82rem;
+        line-height: 1.4;
+        margin-bottom: 0.7rem;
+    }
+
+
+    /* ========================================================
+       PROGRESS
+       ======================================================== */
+
+    .progress-container {
+        background: #F1F1F1;
+        border-radius: 999px;
+        height: 8px;
+        overflow: hidden;
+        margin: 0.7rem 0 1.1rem 0;
+    }
+
+    .progress-bar {
+        background: linear-gradient(
+            90deg,
+            var(--deep-red),
+            var(--red),
+            #F13A44
+        );
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.3s ease;
+    }
+
+
+    /* ========================================================
+       ESTIMATE CARD
+       ======================================================== */
+
+    .recommendation-card {
+        background:
+            linear-gradient(
+                135deg,
+                #A80009,
+                #E30613,
+                #F13A44
+            );
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.2rem;
+        text-align: center;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+        animation: estimateFadeIn 0.5s ease-out;
+    }
+
+    @keyframes estimateFadeIn {
+
+        0% {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    }
+
+    .recommendation-title {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .recommendation-value {
+        color: var(--white);
+        font-size: 2.7rem;
+        font-weight: 800;
+        letter-spacing: -1px;
+        margin-top: 0.25rem;
+    }
+
+    .recommendation-note {
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 0.78rem;
+        margin-top: 0.3rem;
     }
 
 
@@ -148,14 +323,14 @@ st.markdown(
        ======================================================== */
 
     div[data-baseweb="select"] > div {
-        background-color: var(--secondary-background-color) !important;
+        background-color: var(--white) !important;
         border: 1px solid #CCCCCC !important;
-        border-radius: 6px !important;
+        border-radius: 7px !important;
         min-height: 42px;
     }
 
     div[data-baseweb="select"] span {
-        color: var(--text-color) !important;
+        color: var(--dark) !important;
     }
 
     div[data-baseweb="select"] > div:hover {
@@ -176,91 +351,36 @@ st.markdown(
         background-color: var(--red) !important;
         color: var(--white) !important;
         border: 1px solid var(--red) !important;
-        border-radius: 6px !important;
-        min-height: 46px;
+        border-radius: 7px !important;
+        min-height: 44px;
         font-family: "Inter", Arial, sans-serif !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
     }
 
     .stButton > button:hover {
         background-color: var(--dark-red) !important;
         border-color: var(--dark-red) !important;
-        color: var(--white) !important;
     }
 
 
     /* ========================================================
-       METRIC CARDS
+       RADIO / CHECKBOX
        ======================================================== */
 
-    div[data-testid="stMetric"] {
-        background-color: var(--white);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 1rem;
-        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
-    }
-
-    div[data-testid="stMetricLabel"] {
-        color: var(--grey) !important;
-        font-weight: 600 !important;
-    }
-
-    div[data-testid="stMetricValue"] {
+    div[data-testid="stRadio"] label,
+    div[data-testid="stCheckbox"] label {
         color: var(--dark) !important;
-        font-weight: 800 !important;
     }
 
 
     /* ========================================================
-       RECOMMENDATION
+       DIVIDERS
        ======================================================== */
 
-    .recommendation-card {
-        background-color: var(--red);
-        border-radius: 10px;
-        padding: 1.6rem;
-        margin: 1rem 0;
-        text-align: center;
-        box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
-    }
-
-    .recommendation-title {
-        color: var(--white);
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .recommendation-value {
-        color: var(--white);
-        font-family: "Inter", Arial, sans-serif;
-        font-size: 2.8rem;
-        font-weight: 800;
-        letter-spacing: -1px;
-        margin-top: 0.3rem;
-    }
-
-
-    /* ========================================================
-       ALERTS
-       ======================================================== */
-
-    div[data-testid="stAlert"] {
-        border-radius: 7px !important;
-    }
-
-
-    /* ========================================================
-       TABLE
-       ======================================================== */
-
-    div[data-testid="stDataFrame"] {
-        border: 1px solid var(--border);
-        border-radius: 7px;
-        overflow: hidden;
+    hr {
+        border: none !important;
+        border-top: 1px solid var(--border) !important;
+        margin: 1.2rem 0 !important;
     }
 
 
@@ -275,6 +395,28 @@ st.markdown(
 
     .stCaption {
         color: var(--grey) !important;
+    }
+
+
+    /* ========================================================
+       MOBILE
+       ======================================================== */
+
+    @media (max-width: 900px) {
+
+        .block-container {
+            padding: 1rem;
+        }
+
+        .imalaysian-title {
+            font-size: 1.7rem !important;
+        }
+
+        .condition-scroll-wrapper {
+            max-height: none;
+            overflow-y: visible;
+        }
+
     }
 
     </style>
@@ -292,7 +434,6 @@ def load_data():
 
     data = pd.read_csv(CSV_PATH)
 
-    # Clean column names
     data.columns = data.columns.str.strip()
 
     # --------------------------------------------------------
@@ -363,10 +504,9 @@ def load_data():
 
             value = str(value).strip().upper()
 
-            # Already numeric
             try:
-                numeric_value = float(value)
-                return numeric_value
+                return float(value)
+
             except ValueError:
                 pass
 
@@ -412,7 +552,7 @@ except Exception as e:
 
 
 # ============================================================
-# BASIC DATASET VALIDATION
+# DATASET VALIDATION
 # ============================================================
 
 required_columns = [
@@ -507,7 +647,6 @@ def show_selectable_numeric(
 ):
 
     if column not in source_df.columns:
-
         return np.nan
 
     options = numeric_options(
@@ -519,14 +658,9 @@ def show_selectable_numeric(
         current_value = float(current_value)
 
         if current_value not in options:
-
-            options.insert(
-                0,
-                current_value
-            )
+            options.insert(0, current_value)
 
     if not options:
-
         return np.nan
 
     formatted_options = [
@@ -561,21 +695,25 @@ def show_selectable_numeric(
 # HEADER
 # ============================================================
 
-col1, col2 = st.columns([1, 3])
+st.markdown(
+    """
+    <div class="header-card">
+    """,
+    unsafe_allow_html=True
+)
 
-with col1:
+header_col1, header_col2 = st.columns([1, 4])
 
-    st.write("")
-    st.write("")
+with header_col1:
 
     if ICON_PATH.exists():
 
         st.image(
             str(ICON_PATH),
-            width=220
+            width=180
         )
 
-with col2:
+with header_col2:
 
     st.markdown(
         """
@@ -590,470 +728,456 @@ with col2:
         unsafe_allow_html=True
     )
 
-
-# ============================================================
-# DEVICE SELECTION
-# ============================================================
-
-st.subheader("Device Selection")
-
-
-# ============================================================
-# DEVICE TYPE
-# ============================================================
-
-device_types = clean_options(
-    df["Device"]
-)
-
-if not device_types:
-
-    st.error(
-        "No device types are available in the master dataset."
-    )
-
-    st.stop()
-
-
-device_type = st.selectbox(
-    "Device Type",
-    device_types,
-    key="device_type_selection"
+st.markdown(
+    "</div>",
+    unsafe_allow_html=True
 )
 
 
 # ============================================================
-# DEVICE DATA
+# MAIN APPLICATION LAYOUT
+# ============================================================
+#
+# LEFT:
+#   Condition Evaluation
+#
+# RIGHT:
+#   Device Selection
+#
 # ============================================================
 
-device_df = df[
-    df["Device"].astype(str).str.strip()
-    == device_type
-].copy()
-
-
-if device_df.empty:
-
-    st.warning(
-        "No records are available for the selected device type."
-    )
-
-    st.stop()
-
-
-# ============================================================
-# SUB-DEVICE
-# ============================================================
-
-sub_device = ""
-
-
-if (
-    device_type != "iPhone"
-    and "Sub-device" in device_df.columns
-):
-
-    sub_device_options = clean_options(
-        device_df["Sub-device"]
-    )
-
-    if sub_device_options:
-
-        sub_device = st.selectbox(
-            "Sub-device",
-            sub_device_options,
-            key="sub_device_selection"
-        )
-
-        device_df = device_df[
-            device_df["Sub-device"].astype(str).str.strip()
-            == sub_device
-        ].copy()
-
-
-# ============================================================
-# MODEL
-# ============================================================
-
-models = clean_options(
-    device_df["Standardized Model"]
-)
-
-
-if not models:
-
-    st.warning(
-        "No models are available for the selected configuration."
-    )
-
-    st.stop()
-
-
-model_name = st.selectbox(
-    "Model",
-    models,
-    key="model_selection"
-)
-
-
-model_df = device_df[
-    device_df["Standardized Model"].astype(str).str.strip()
-    == str(model_name).strip()
-].copy()
-
-
-if model_df.empty:
-
-    st.error(
-        "No records were found for the selected model."
-    )
-
-    st.stop()
-
-
-# ============================================================
-# INITIAL VALUES
-# ============================================================
-
-connectivity = ""
-charging_method = ""
-storage = np.nan
-storage_type = ""
-
-
-# ============================================================
-# STORAGE OPTIONS
-# ============================================================
-
-storage_options = numeric_options(
-    model_df["Storage (GB)"]
-    if "Storage (GB)" in model_df.columns
-    else pd.Series(dtype=float)
+condition_col, selection_col = st.columns(
+    [1.45, 1],
+    gap="large"
 )
 
 
 # ============================================================
-# IPHONE
+# DEVICE SELECTION — RIGHT PANEL
 # ============================================================
 
-if device_type == "iPhone":
+with selection_col:
 
-    if storage_options:
+    st.markdown(
+        """
+        <div class="panel">
+            <div class="panel-title">
+                Device Selection
+            </div>
 
-        storage = show_selectable_numeric(
-            "Storage",
-            "Storage (GB)",
-            model_df,
-            storage_options[0],
-            "iphone_storage",
-            format_storage
-        )
-
-        matching_df = model_df[
-            model_df["Storage (GB)"] == storage
-        ].copy()
-
-    else:
-
-        matching_df = model_df.copy()
-
-
-# ============================================================
-# IPAD
-# ============================================================
-
-elif device_type == "iPad":
-
-    # --------------------------------------------------------
-    # STORAGE
-    # --------------------------------------------------------
-
-    if storage_options:
-
-        storage = show_selectable_numeric(
-            "Storage",
-            "Storage (GB)",
-            model_df,
-            storage_options[0],
-            "ipad_storage",
-            format_storage
-        )
-
-        matching_df = model_df[
-            model_df["Storage (GB)"] == storage
-        ].copy()
-
-    else:
-
-        matching_df = model_df.copy()
-
-    # --------------------------------------------------------
-    # CONNECTIVITY
-    # --------------------------------------------------------
-
-    connectivity_options = clean_options(
-        matching_df["Connectivity"]
-        if "Connectivity" in matching_df.columns
-        else pd.Series(dtype=str)
+            <div class="panel-subtitle">
+                Select the device and configuration.
+            </div>
+        """,
+        unsafe_allow_html=True
     )
 
-    if connectivity_options:
-
-        connectivity = st.selectbox(
-            "Connectivity",
-            ["Not specified"] + connectivity_options,
-            key="ipad_connectivity"
-        )
-
-        if connectivity == "Not specified":
-
-            connectivity = ""
-
-        if connectivity:
-
-            matching_df = matching_df[
-                matching_df["Connectivity"].astype(str).str.strip()
-                == connectivity
-            ].copy()
-
-
-# ============================================================
-# MAC
-# ============================================================
-
-elif device_type == "Mac":
-
     # --------------------------------------------------------
-    # STORAGE
+    # DEVICE TYPE
     # --------------------------------------------------------
 
-    if storage_options:
-
-        storage = show_selectable_numeric(
-            "Storage",
-            "Storage (GB)",
-            model_df,
-            storage_options[0],
-            "mac_storage",
-            format_storage
-        )
-
-        matching_df = model_df[
-            model_df["Storage (GB)"] == storage
-        ].copy()
-
-    else:
-
-        matching_df = model_df.copy()
-
-    # --------------------------------------------------------
-    # STORAGE TYPE
-    # --------------------------------------------------------
-
-    storage_type_options = clean_options(
-        matching_df["Storage Type"]
-        if "Storage Type" in matching_df.columns
-        else pd.Series(dtype=str)
+    device_types = clean_options(
+        df["Device"]
     )
 
-    if storage_type_options:
+    if not device_types:
 
-        storage_type = st.selectbox(
-            "Storage Type",
-            ["Not specified"] + storage_type_options,
-            key="mac_storage_type"
+        st.error(
+            "No device types are available."
         )
 
-        if storage_type == "Not specified":
+        st.stop()
 
-            storage_type = ""
-
-        if storage_type:
-
-            matching_df = matching_df[
-                matching_df["Storage Type"].astype(str).str.strip()
-                == storage_type
-            ].copy()
-
-
-# ============================================================
-# APPLE WATCH
-# ============================================================
-
-elif device_type == "Apple Watch":
-
-    matching_df = model_df.copy()
-
-    # --------------------------------------------------------
-    # CASE SIZE
-    # --------------------------------------------------------
-
-    case_size_options = clean_options(
-        matching_df["Specification"]
-        if "Specification" in matching_df.columns
-        else pd.Series(dtype=str)
+    device_type = st.selectbox(
+        "Device Type",
+        device_types,
+        key="device_type_selection"
     )
 
-    if case_size_options:
-
-        case_size = st.selectbox(
-            "Case Size",
-            case_size_options,
-            key="watch_case_size"
-        )
-
-        matching_df = matching_df[
-            matching_df["Specification"].astype(str).str.strip()
-            == case_size
-        ].copy()
-
     # --------------------------------------------------------
-    # MATERIAL
+    # DEVICE DATA
     # --------------------------------------------------------
 
-    material_options = clean_options(
-        matching_df["Material"]
-        if "Material" in matching_df.columns
-        else pd.Series(dtype=str)
-    )
+    device_df = df[
+        df["Device"].astype(str).str.strip()
+        == device_type
+    ].copy()
 
-    if material_options:
+    if device_df.empty:
 
-        material = st.selectbox(
-            "Material",
-            ["Not specified"] + material_options,
-            key="watch_material"
+        st.warning(
+            "No records are available for this device type."
         )
 
-        if material == "Not specified":
+        st.stop()
 
-            material = ""
+    # --------------------------------------------------------
+    # SUB-DEVICE
+    # --------------------------------------------------------
 
-        if material:
+    sub_device = ""
 
-            matching_df = matching_df[
-                matching_df["Material"].astype(str).str.strip()
-                == material
+    if (
+        device_type != "iPhone"
+        and "Sub-device" in device_df.columns
+    ):
+
+        sub_device_options = clean_options(
+            device_df["Sub-device"]
+        )
+
+        if sub_device_options:
+
+            sub_device = st.selectbox(
+                "Sub-device",
+                sub_device_options,
+                key="sub_device_selection"
+            )
+
+            device_df = device_df[
+                device_df["Sub-device"].astype(str).str.strip()
+                == sub_device
             ].copy()
 
     # --------------------------------------------------------
-    # STORAGE
+    # MODEL
     # --------------------------------------------------------
 
-    watch_storage_options = numeric_options(
-        matching_df["Storage (GB)"]
-        if "Storage (GB)" in matching_df.columns
+    models = clean_options(
+        device_df["Standardized Model"]
+    )
+
+    if not models:
+
+        st.warning(
+            "No models are available for this configuration."
+        )
+
+        st.stop()
+
+    model_name = st.selectbox(
+        "Model",
+        models,
+        key="model_selection"
+    )
+
+    model_df = device_df[
+        device_df["Standardized Model"].astype(str).str.strip()
+        == str(model_name).strip()
+    ].copy()
+
+    if model_df.empty:
+
+        st.error(
+            "No records were found for the selected model."
+        )
+
+        st.stop()
+
+    # --------------------------------------------------------
+    # INITIAL VALUES
+    # --------------------------------------------------------
+
+    connectivity = ""
+    charging_method = ""
+    storage = np.nan
+    storage_type = ""
+
+    # --------------------------------------------------------
+    # STORAGE OPTIONS
+    # --------------------------------------------------------
+
+    storage_options = numeric_options(
+        model_df["Storage (GB)"]
+        if "Storage (GB)" in model_df.columns
         else pd.Series(dtype=float)
     )
 
-    if watch_storage_options:
+    # ========================================================
+    # IPHONE
+    # ========================================================
 
-        storage = show_selectable_numeric(
-            "Storage",
-            "Storage (GB)",
-            matching_df,
-            watch_storage_options[0],
-            "watch_storage",
-            format_storage
-        )
+    if device_type == "iPhone":
 
-        matching_df = matching_df[
-            matching_df["Storage (GB)"] == storage
-        ].copy()
+        if storage_options:
 
-    # --------------------------------------------------------
-    # CONNECTIVITY
-    # --------------------------------------------------------
+            storage = show_selectable_numeric(
+                "Storage",
+                "Storage (GB)",
+                model_df,
+                storage_options[0],
+                "iphone_storage",
+                format_storage
+            )
 
-    connectivity_options = clean_options(
-        matching_df["Connectivity"]
-        if "Connectivity" in matching_df.columns
-        else pd.Series(dtype=str)
-    )
-
-    if connectivity_options:
-
-        connectivity = st.selectbox(
-            "Connectivity",
-            ["Not specified"] + connectivity_options,
-            key="watch_connectivity"
-        )
-
-        if connectivity == "Not specified":
-
-            connectivity = ""
-
-        if connectivity:
-
-            matching_df = matching_df[
-                matching_df["Connectivity"].astype(str).str.strip()
-                == connectivity
+            matching_df = model_df[
+                model_df["Storage (GB)"] == storage
             ].copy()
 
+        else:
 
-# ============================================================
-# AIRPODS
-# ============================================================
+            matching_df = model_df.copy()
 
-elif device_type == "AirPods":
+    # ========================================================
+    # IPAD
+    # ========================================================
 
-    matching_df = model_df.copy()
+    elif device_type == "iPad":
 
-    charging_options = clean_options(
-        matching_df["Specification"]
-        if "Specification" in matching_df.columns
-        else pd.Series(dtype=str)
-    )
+        if storage_options:
 
-    if charging_options:
+            storage = show_selectable_numeric(
+                "Storage",
+                "Storage (GB)",
+                model_df,
+                storage_options[0],
+                "ipad_storage",
+                format_storage
+            )
 
-        charging_method = st.selectbox(
-            "Charging Method",
-            ["Not specified"] + charging_options,
-            key="airpods_charging_method"
+            matching_df = model_df[
+                model_df["Storage (GB)"] == storage
+            ].copy()
+
+        else:
+
+            matching_df = model_df.copy()
+
+        connectivity_options = clean_options(
+            matching_df["Connectivity"]
+            if "Connectivity" in matching_df.columns
+            else pd.Series(dtype=str)
         )
 
-        if charging_method == "Not specified":
+        if connectivity_options:
 
-            charging_method = ""
+            connectivity = st.selectbox(
+                "Connectivity",
+                ["Not specified"] + connectivity_options,
+                key="ipad_connectivity"
+            )
 
-        if charging_method:
+            if connectivity == "Not specified":
+                connectivity = ""
+
+            if connectivity:
+
+                matching_df = matching_df[
+                    matching_df["Connectivity"].astype(str).str.strip()
+                    == connectivity
+                ].copy()
+
+    # ========================================================
+    # MAC
+    # ========================================================
+
+    elif device_type == "Mac":
+
+        if storage_options:
+
+            storage = show_selectable_numeric(
+                "Storage",
+                "Storage (GB)",
+                model_df,
+                storage_options[0],
+                "mac_storage",
+                format_storage
+            )
+
+            matching_df = model_df[
+                model_df["Storage (GB)"] == storage
+            ].copy()
+
+        else:
+
+            matching_df = model_df.copy()
+
+        storage_type_options = clean_options(
+            matching_df["Storage Type"]
+            if "Storage Type" in matching_df.columns
+            else pd.Series(dtype=str)
+        )
+
+        if storage_type_options:
+
+            storage_type = st.selectbox(
+                "Storage Type",
+                ["Not specified"] + storage_type_options,
+                key="mac_storage_type"
+            )
+
+            if storage_type == "Not specified":
+                storage_type = ""
+
+            if storage_type:
+
+                matching_df = matching_df[
+                    matching_df["Storage Type"].astype(str).str.strip()
+                    == storage_type
+                ].copy()
+
+    # ========================================================
+    # APPLE WATCH
+    # ========================================================
+
+    elif device_type == "Apple Watch":
+
+        matching_df = model_df.copy()
+
+        # ----------------------------------------------------
+        # CASE SIZE
+        # ----------------------------------------------------
+
+        case_size_options = clean_options(
+            matching_df["Specification"]
+            if "Specification" in matching_df.columns
+            else pd.Series(dtype=str)
+        )
+
+        if case_size_options:
+
+            case_size = st.selectbox(
+                "Case Size",
+                case_size_options,
+                key="watch_case_size"
+            )
 
             matching_df = matching_df[
                 matching_df["Specification"].astype(str).str.strip()
-                == charging_method
+                == case_size
             ].copy()
 
-    storage = np.nan
+        # ----------------------------------------------------
+        # MATERIAL
+        # ----------------------------------------------------
 
+        material_options = clean_options(
+            matching_df["Material"]
+            if "Material" in matching_df.columns
+            else pd.Series(dtype=str)
+        )
 
-# ============================================================
-# FALLBACK
-# ============================================================
+        if material_options:
 
-else:
+            material = st.selectbox(
+                "Material",
+                ["Not specified"] + material_options,
+                key="watch_material"
+            )
 
-    matching_df = model_df.copy()
+            if material == "Not specified":
+                material = ""
+
+            if material:
+
+                matching_df = matching_df[
+                    matching_df["Material"].astype(str).str.strip()
+                    == material
+                ].copy()
+
+        # ----------------------------------------------------
+        # STORAGE
+        # ----------------------------------------------------
+
+        watch_storage_options = numeric_options(
+            matching_df["Storage (GB)"]
+            if "Storage (GB)" in matching_df.columns
+            else pd.Series(dtype=float)
+        )
+
+        if watch_storage_options:
+
+            storage = show_selectable_numeric(
+                "Storage",
+                "Storage (GB)",
+                matching_df,
+                watch_storage_options[0],
+                "watch_storage",
+                format_storage
+            )
+
+            matching_df = matching_df[
+                matching_df["Storage (GB)"] == storage
+            ].copy()
+
+        # ----------------------------------------------------
+        # CONNECTIVITY
+        # ----------------------------------------------------
+
+        connectivity_options = clean_options(
+            matching_df["Connectivity"]
+            if "Connectivity" in matching_df.columns
+            else pd.Series(dtype=str)
+        )
+
+        if connectivity_options:
+
+            connectivity = st.selectbox(
+                "Connectivity",
+                ["Not specified"] + connectivity_options,
+                key="watch_connectivity"
+            )
+
+            if connectivity == "Not specified":
+                connectivity = ""
+
+            if connectivity:
+
+                matching_df = matching_df[
+                    matching_df["Connectivity"].astype(str).str.strip()
+                    == connectivity
+                ].copy()
+
+    # ========================================================
+    # AIRPODS
+    # ========================================================
+
+    elif device_type == "AirPods":
+
+        matching_df = model_df.copy()
+
+        charging_options = clean_options(
+            matching_df["Specification"]
+            if "Specification" in matching_df.columns
+            else pd.Series(dtype=str)
+        )
+
+        if charging_options:
+
+            charging_method = st.selectbox(
+                "Charging Method",
+                ["Not specified"] + charging_options,
+                key="airpods_charging_method"
+            )
+
+            if charging_method == "Not specified":
+                charging_method = ""
+
+            if charging_method:
+
+                matching_df = matching_df[
+                    matching_df["Specification"].astype(str).str.strip()
+                    == charging_method
+                ].copy()
+
+        storage = np.nan
+
+    else:
+
+        matching_df = model_df.copy()
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
 # MARKET PRICE CALCULATION
 # ============================================================
-#
-# IMPORTANT:
-#
-# There is NO ML MODEL anymore.
-#
-# The app uses the median of the available trade-in prices
-# for the selected configuration.
-#
-# If the exact configuration has no price, the app falls
-# back to all available priced records for the selected model.
-#
-# ============================================================
 
-# First choice:
-# exact selected configuration
+# Exact selected configuration first.
+
 market_records = matching_df.copy()
 
 market_prices = pd.to_numeric(
@@ -1066,6 +1190,8 @@ market_prices = pd.to_numeric(
 # FALLBACK TO MODEL
 # ------------------------------------------------------------
 
+used_model_fallback = False
+
 if market_prices.empty:
 
     market_records = model_df.copy()
@@ -1074,6 +1200,8 @@ if market_prices.empty:
         market_records["Max. Trade-In Value (RM)"],
         errors="coerce"
     ).dropna()
+
+    used_model_fallback = True
 
 
 # ------------------------------------------------------------
@@ -1090,18 +1218,18 @@ if market_prices.empty:
     st.stop()
 
 
-# ============================================================
-# MEDIAN ESTIMATE
-# ============================================================
+# ------------------------------------------------------------
+# MEDIAN
+# ------------------------------------------------------------
 
 recommended_offer = float(
     market_prices.median()
 )
 
 
-# ============================================================
-# PROVIDER INFORMATION
-# ============================================================
+# ------------------------------------------------------------
+# PROVIDER COUNT
+# ------------------------------------------------------------
 
 provider_count = 0
 
@@ -1115,9 +1243,9 @@ if "Provider" in market_records.columns:
     )
 
 
-# ============================================================
+# ------------------------------------------------------------
 # CONFIDENCE TEXT
-# ============================================================
+# ------------------------------------------------------------
 
 if provider_count >= 3:
 
@@ -1145,45 +1273,300 @@ else:
 
 
 # ============================================================
-# ESTIMATE NOTE
+# CONDITION EVALUATION — LEFT PANEL
 # ============================================================
 
-if market_records is matching_df:
+with condition_col:
 
-    estimate_note = (
-        "Uses the median of available trade-in values "
-        "for the selected configuration."
+    st.markdown(
+        """
+        <div class="panel condition-panel">
+
+            <div class="panel-title">
+                Condition Evaluation
+            </div>
+
+            <div class="panel-subtitle">
+                Tell us about the physical condition of your device.
+            </div>
+        """,
+        unsafe_allow_html=True
     )
 
+    # --------------------------------------------------------
+    # SELECTED DEVICE SUMMARY
+    # --------------------------------------------------------
 
-# ============================================================
-# CUSTOMER-FACING VALUATION
-# ============================================================
+    storage_display = (
+        format_storage(storage)
+        if pd.notna(storage)
+        else "N/A"
+    )
 
-st.divider()
+    st.info(
+        f"Selected device: **{device_type} — {model_name}**"
+        + (
+            f" · **{storage_display}**"
+            if storage_display != "N/A"
+            else ""
+        )
+    )
 
-st.subheader("Estimated Trade-In Value")
+    # --------------------------------------------------------
+    # PLACEHOLDER CONDITION QUESTIONS
+    # --------------------------------------------------------
+    #
+    # IMPORTANT:
+    # These are intentionally placeholders.
+    #
+    # We will later replace these with DEVICE-SPECIFIC
+    # questions based on Sub-device.
+    #
+    # --------------------------------------------------------
 
+    condition_questions = [
+        {
+            "number": "01",
+            "title": "Overall physical condition",
+            "description": (
+                "Placeholder question. We will later determine "
+                "the appropriate condition criteria for this device."
+            ),
+            "options": [
+                "Excellent",
+                "Good",
+                "Fair",
+                "Poor"
+            ],
+            "key": "condition_overall"
+        },
+        {
+            "number": "02",
+            "title": "Screen / display condition",
+            "description": (
+                "Placeholder question. This will only appear for "
+                "devices that actually have a display."
+            ),
+            "options": [
+                "No visible issues",
+                "Minor marks",
+                "Visible damage",
+                "Severe damage"
+            ],
+            "key": "condition_display"
+        },
+        {
+            "number": "03",
+            "title": "Body / exterior condition",
+            "description": (
+                "Placeholder question. The final version will "
+                "use device-specific exterior components."
+            ),
+            "options": [
+                "Excellent",
+                "Minor wear",
+                "Noticeable wear",
+                "Major damage"
+            ],
+            "key": "condition_body"
+        },
+        {
+            "number": "04",
+            "title": "Functional condition",
+            "description": (
+                "Placeholder question. The final version will "
+                "contain the appropriate functional checks."
+            ),
+            "options": [
+                "Everything works",
+                "Minor issue",
+                "Some functions affected",
+                "Major functional issue"
+            ],
+            "key": "condition_function"
+        }
+    ]
 
-st.html(
-    f"""
-    <div class="recommendation-card">
+    total_questions = len(condition_questions)
 
-        <div class="recommendation-title">
-            Market Estimate
+    answered_questions = 0
+
+    # --------------------------------------------------------
+    # SCROLLABLE QUESTION AREA
+    # --------------------------------------------------------
+
+    st.markdown(
+        '<div class="condition-scroll-wrapper">',
+        unsafe_allow_html=True
+    )
+
+    for question in condition_questions:
+
+        st.markdown(
+            f"""
+            <div class="condition-question">
+
+                <div class="condition-question-number">
+                    Question {question["number"]}
+                </div>
+
+                <div class="condition-question-title">
+                    {question["title"]}
+                </div>
+
+                <div class="condition-question-description">
+                    {question["description"]}
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        answer = st.radio(
+            question["title"],
+            question["options"],
+            index=None,
+            key=question["key"],
+            label_visibility="collapsed"
+        )
+
+        if answer is not None:
+            answered_questions += 1
+
+        st.markdown(
+            "<div style='height: 4px;'></div>",
+            unsafe_allow_html=True
+        )
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+    # --------------------------------------------------------
+    # PROGRESS
+    # --------------------------------------------------------
+
+    progress = (
+        answered_questions / total_questions
+        if total_questions > 0
+        else 0
+    )
+
+    progress_percent = int(
+        progress * 100
+    )
+
+    st.markdown(
+        f"""
+        <div style="
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #666666;
+            font-weight: 600;
+        ">
+            Condition evaluation progress:
+            {answered_questions}/{total_questions}
         </div>
 
-        <div class="recommendation-value">
-            RM {recommended_offer:,.0f}
+        <div class="progress-container">
+            <div
+                class="progress-bar"
+                style="width: {progress_percent}%"
+            ></div>
         </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    </div>
-    """
-)
+    # ========================================================
+    # ESTIMATE AT BOTTOM OF CONDITION PANEL
+    # ========================================================
 
+    if answered_questions == total_questions:
 
-# ============================================================
-# ESTIMATE EXPLANATION
-# ============================================================
+        st.markdown(
+            """
+            <div style="
+                margin-top: 1rem;
+                color: #666666;
+                font-size: 0.82rem;
+                text-align: center;
+            ">
+                Condition evaluation complete.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-st.caption(confidence_text)
+        st.markdown(
+            f"""
+            <div class="recommendation-card">
+
+                <div class="recommendation-title">
+                    Market Estimate
+                </div>
+
+                <div class="recommendation-value">
+                    RM {recommended_offer:,.0f}
+                </div>
+
+                <div class="recommendation-note">
+                    Median of available market trade-in values
+                </div>
+
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.caption(
+            confidence_text
+        )
+
+        if used_model_fallback:
+
+            st.caption(
+                "No priced record was available for the exact "
+                "configuration, so the estimate uses available "
+                "priced records for the selected model."
+            )
+
+        else:
+
+            st.caption(
+                "The estimate is based on the selected device "
+                "configuration. Condition valuation will be "
+                "applied in the next stage."
+            )
+
+    else:
+
+        st.markdown(
+            """
+            <div style="
+                background: #F8F8F8;
+                border: 1px solid #E2E2E2;
+                border-radius: 10px;
+                padding: 1rem;
+                margin-top: 1rem;
+                text-align: center;
+            ">
+                <div style="
+                    color: #666666;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                ">
+                    Complete all condition questions to view
+                    the market estimate.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown(
+        "</div>",
+        unsafe_allow_html=True
+    )
