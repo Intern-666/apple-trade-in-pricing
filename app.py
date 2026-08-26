@@ -30,614 +30,180 @@ st.set_page_config(
 # iMALAYSIAN RED THEME
 # ============================================================
 
-st.html(
-    textwrap.dedent("""
+st.html("""
     <style>
 
     /* ========================================================
-       GLOBAL
+       GLOBAL & BACKGROUND
        ======================================================== */
-
-    @import url(
-        'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap'
-    );
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     :root {
         --red: #E30613;
         --dark-red: #C4000B;
-        --deep-red: #A80009;
-        --light-red: #FFF1F2;
-
         --white: #FFFFFF;
-        --off-white: #F8F8F8;
-
         --dark: #1F1F1F;
         --grey: #666666;
-        --light-grey: #888888;
-
-        --border: #E2E2E2;
+        --border: #EAEAEA;
     }
 
-
-    html,
-    body,
-    [class*="css"],
-    .stApp {
+    html, body, [class*="css"], .stApp {
         font-family: "Inter", Arial, sans-serif !important;
     }
 
-
-    /* ========================================================
-       APP BACKGROUND
-       ======================================================== */
-
+    /* Soften the main background so the white container pops */
     .stApp {
-        background:
-            radial-gradient(
-                circle at top left,
-                rgba(255,255,255,0.12),
-                transparent 35%
-            ),
-            linear-gradient(
-                135deg,
-                #E30613 0%,
-                #C4000B 45%,
-                #A80009 100%
-            );
-
+        background-color: #F8F9FA;
         color: var(--dark);
     }
-
-
-    .main {
-        background: transparent;
-    }
-
 
     /* ========================================================
        MAIN CONTAINER
        ======================================================== */
-
     .block-container {
         background-color: var(--white);
-
-        border-radius: 16px;
-
-        padding:
-            1.5rem
-            2.2rem
-            3rem
-            2.2rem;
-
-        margin-top: 1rem;
+        border-radius: 12px;
+        padding: 2rem 2.5rem 3rem 2.5rem;
+        margin-top: 1.5rem;
         margin-bottom: 2rem;
-
-        max-width: 1100px;
-
-        box-shadow:
-            0 8px 30px rgba(0, 0, 0, 0.18);
+        max-width: 1000px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+        border: 1px solid rgba(0,0,0,0.05);
     }
 
-
     /* ========================================================
-       HEADER
+       HEADER TYPOGRAPHY
        ======================================================== */
-
     .imalaysian-title {
         color: var(--dark) !important;
-
-        font-size: 2.5rem !important;
+        font-size: 2.2rem !important;
         font-weight: 800 !important;
-
         letter-spacing: -0.5px;
         line-height: 1.2;
-
-        margin-top: 2.5rem !important;
-        margin-bottom: 0.5rem !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 0.2rem !important;
     }
-
 
     .imalaysian-subtitle {
-        color: var(--dark) !important;
-
-        font-size: 1.15rem !important;
+        color: var(--grey) !important;
+        font-size: 1.1rem !important;
         font-weight: 400 !important;
-
         line-height: 1.4;
-
         margin-top: 0 !important;
-
-        opacity: 0.92;
     }
-
-
-    /* ========================================================
-       HEADINGS
-       ======================================================== */
-
-    h1 {
-        color: var(--white) !important;
-        font-weight: 800 !important;
-    }
-
-
-    h2,
-    h3 {
-        color: var(--dark) !important;
-
-        font-weight: 700 !important;
-
-        letter-spacing: -0.3px;
-    }
-
-
-    h2::after,
-    h3::after {
-        content: "";
-
-        display: block;
-
-        width: 45px;
-        height: 3px;
-
-        background-color: var(--red);
-
-        margin-top: 7px;
-
-        border-radius: 1px;
-    }
-
 
     /* ========================================================
        PANELS
        ======================================================== */
-
     .selection-panel,
     .condition-panel {
-
         background-color: var(--white);
-
         border: 1px solid var(--border);
-
-        border-radius: 12px;
-
-        padding: 1.4rem;
-
-        box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.06);
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
     }
-
-
-    .condition-panel {
-
-        animation:
-            conditionFadeIn
-            0.55s
-            ease-out
-            forwards;
-    }
-
-
-    @keyframes conditionFadeIn {
-
-        from {
-            opacity: 0;
-            transform: translateY(18px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-    }
-
 
     .panel-title {
-
         color: var(--dark);
-
-        font-size: 1.35rem;
-
-        font-weight: 800;
-
-        letter-spacing: -0.3px;
-
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.2px;
         margin-bottom: 0.25rem;
     }
 
-
     .panel-subtitle {
-
         color: var(--grey);
-
-        font-size: 0.92rem;
-
+        font-size: 0.9rem;
         line-height: 1.5;
-
-        margin-bottom: 1.25rem;
+        margin-bottom: 0.5rem;
     }
-
 
     /* ========================================================
-       PANEL HEADER RED ACCENT
+       CONDITION PLACEHOLDERS (UNCRAMPED)
        ======================================================== */
-
-    .panel-title::after {
-
-        content: "";
-
-        display: block;
-
-        width: 38px;
-        height: 3px;
-
-        background-color: var(--red);
-
-        margin-top: 7px;
-
-        border-radius: 2px;
-    }
-
-
-    /* ========================================================
-       SELECT BOXES
-       ======================================================== */
-
-    div[data-baseweb="select"] > div {
-
-        background-color:
-            var(--secondary-background-color)
-            !important;
-
-        border: 1px solid #CCCCCC !important;
-
-        border-radius: 6px !important;
-
-        min-height: 42px;
-    }
-
-
-    div[data-baseweb="select"] span {
-
-        color:
-            var(--text-color)
-            !important;
-    }
-
-
-    div[data-baseweb="select"] > div:hover {
-
-        border-color:
-            var(--red)
-            !important;
-    }
-
-
-    div[data-baseweb="select"] > div:focus-within {
-
-        border-color:
-            var(--red)
-            !important;
-
-        box-shadow:
-            0 0 0 1px var(--red)
-            !important;
-    }
-
-
-    /* ========================================================
-       BUTTONS
-       ======================================================== */
-
-    .stButton > button {
-
-        background-color:
-            var(--red)
-            !important;
-
-        color:
-            var(--white)
-            !important;
-
-        border:
-            1px solid var(--red)
-            !important;
-
-        border-radius: 6px !important;
-
-        min-height: 46px;
-
-        font-family:
-            "Inter",
-            Arial,
-            sans-serif
-            !important;
-
-        font-weight: 700 !important;
-
-        font-size: 0.95rem !important;
-    }
-
-
-    .stButton > button:hover {
-
-        background-color:
-            var(--dark-red)
-            !important;
-
-        border-color:
-            var(--dark-red)
-            !important;
-
-        color:
-            var(--white)
-            !important;
-    }
-
-
-    /* ========================================================
-       CONDITION PLACEHOLDER
-       ======================================================== */
-
     .condition-placeholder {
-
-        background-color: var(--off-white);
-
-        border: 1px dashed #D5D5D5;
-
-        border-radius: 10px;
-
+        background-color: #F8F9FA;
+        border: 1px solid #EAEAEA;
+        border-radius: 8px;
         padding: 1.25rem;
-
         margin-top: 0.5rem;
-
         margin-bottom: 1.5rem;
     }
 
-
     .condition-placeholder-title {
-
         color: var(--dark);
-
-        font-weight: 700;
-
+        font-weight: 600;
         font-size: 0.95rem;
-
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.2rem;
     }
-
 
     .condition-placeholder-text {
-
         color: var(--grey);
-
-        font-size: 0.88rem;
-
-        line-height: 1.5;
+        font-size: 0.85rem;
+        line-height: 1.4;
     }
-
-
-    /* ========================================================
-       CONDITION QUESTIONS PLACEHOLDER
-       ======================================================== */
 
     .question-placeholder {
-
         border: 1px solid var(--border);
-
-        border-radius: 9px;
-
-        padding: 1rem;
-
-        margin-bottom: 0.8rem;
-
+        border-radius: 8px;
+        padding: 1.2rem; /* Increased padding for breathing room */
+        margin-bottom: 1.5rem; /* Increased margin to separate questions */
         background-color: var(--white);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.02);
     }
-
 
     .question-placeholder-number {
-
         color: var(--red);
-
-        font-size: 0.78rem;
-
-        font-weight: 800;
-
+        font-size: 0.75rem;
+        font-weight: 700;
         text-transform: uppercase;
-
-        letter-spacing: 0.7px;
-
-        margin-bottom: 0.25rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.4rem;
     }
 
-
     .question-placeholder-text {
-
         color: var(--dark);
-
-        font-size: 0.93rem;
-
+        font-size: 0.95rem;
         font-weight: 600;
     }
 
-
     /* ========================================================
-       RECOMMENDATION
+       RECOMMENDATION CARD
        ======================================================== */
-
     .recommendation-card {
-
-        background:
-            linear-gradient(
-                135deg,
-                var(--red),
-                var(--dark-red)
-            );
-
+        background: linear-gradient(135deg, var(--red), var(--dark-red));
         border-radius: 10px;
-
-        padding: 1.6rem;
-
-        margin: 1rem 0;
-
+        padding: 2rem;
+        margin: 1.5rem 0;
         text-align: center;
-
-        box-shadow:
-            0 5px 14px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 8px 20px rgba(227, 6, 19, 0.2);
     }
 
-
     .recommendation-title {
-
-        color: var(--white);
-
+        color: rgba(255, 255, 255, 0.9);
         font-size: 0.85rem;
-
-        font-weight: 700;
-
+        font-weight: 600;
         text-transform: uppercase;
-
         letter-spacing: 1px;
     }
 
-
     .recommendation-value {
-
         color: var(--white);
-
-        font-family:
-            "Inter",
-            Arial,
-            sans-serif;
-
-        font-size: 2.8rem;
-
+        font-size: 3rem;
         font-weight: 800;
-
         letter-spacing: -1px;
-
-        margin-top: 0.3rem;
+        margin-top: 0.2rem;
     }
 
-
-    /* ========================================================
-       METRIC CARDS
-       ======================================================== */
-
-    div[data-testid="stMetric"] {
-
-        background-color:
-            var(--white);
-
-        border:
-            1px solid var(--border);
-
-        border-radius: 8px;
-
-        padding: 1rem;
-
-        box-shadow:
-            0 2px 7px rgba(0, 0, 0, 0.05);
-    }
-
-
-    div[data-testid="stMetricLabel"] {
-
-        color:
-            var(--grey)
-            !important;
-
-        font-weight:
-            600
-            !important;
-    }
-
-
-    div[data-testid="stMetricValue"] {
-
-        color:
-            var(--dark)
-            !important;
-
-        font-weight:
-            800
-            !important;
-    }
-
-
-    /* ========================================================
-       DIVIDERS
-       ======================================================== */
-
+    /* Clean up default Streamlit dividers */
     hr {
-
-        border:
-            none
-            !important;
-
-        border-top:
-            1px solid var(--border)
-            !important;
-
-        margin:
-            1.4rem 0
-            !important;
+        border-top: 1px solid var(--border) !important;
+        margin: 2rem 0 !important;
     }
-
-
-    /* ========================================================
-       ALERTS
-       ======================================================== */
-
-    div[data-testid="stAlert"] {
-
-        border-radius:
-            7px
-            !important;
-    }
-
-
-    /* ========================================================
-       TABLE
-       ======================================================== */
-
-    div[data-testid="stDataFrame"] {
-
-        border:
-            1px solid var(--border);
-
-        border-radius:
-            7px;
-
-        overflow:
-            hidden;
-    }
-
-
-    /* ========================================================
-       TEXT
-       ======================================================== */
-
-    p,
-    label {
-
-        color:
-            var(--dark);
-    }
-
-
-    .stCaption {
-
-        color:
-            var(--grey)
-            !important;
-    }
-
 
     </style>
-    """),
-)
+""")
 
 
 # ============================================================
