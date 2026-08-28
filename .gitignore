@@ -2,4 +2,7 @@
 venv/
 __pycache__/
 *.pyc
-apple_tradein_v1_ram_min_mac_generation.pkl
+.gitignore
+internal/service_account.json
+catboost_info/
+.env

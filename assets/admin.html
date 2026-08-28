@@ -1,0 +1,4097 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Apple Trade-In — Admin Tool</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background: #f5f5f7;
+
+            color: #1d1d1f;
+
+        }
+
+
+        .header {
+
+            background: #000;
+
+            color: white;
+
+            padding: 24px 32px;
+
+        }
+
+
+        .header h1 {
+
+            margin: 0;
+
+            font-size: 24px;
+
+            font-weight: 600;
+
+        }
+
+
+        .header p {
+
+            margin: 6px 0 0;
+
+            color: #aaa;
+
+            font-size: 14px;
+
+        }
+
+
+        .container {
+
+            max-width: 900px;
+
+            margin: 40px auto;
+
+            padding: 0 20px;
+
+        }
+
+
+        .admin-nav {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-bottom: 24px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .admin-nav button {
+
+            border: none;
+
+            background: white;
+
+            padding: 12px 22px;
+
+            border-radius: 8px;
+
+            font-size: 14px;
+
+            cursor: pointer;
+
+            border: 1px solid #ddd;
+
+        }
+
+
+        .admin-nav button.active {
+
+            background: #1d1d1f;
+
+            color: white;
+
+            border-color: #1d1d1f;
+
+        }
+
+
+        .card {
+
+            background: white;
+
+            border-radius: 14px;
+
+            padding: 30px;
+
+            box-shadow:
+                0 2px 10px
+                rgba(0, 0, 0, 0.06);
+
+        }
+
+
+        .card h2 {
+
+            margin-top: 0;
+
+            margin-bottom: 8px;
+
+            font-size: 22px;
+
+        }
+
+
+        .description {
+
+            margin-top: 0;
+
+            margin-bottom: 28px;
+
+            color: #666;
+
+            font-size: 14px;
+
+        }
+
+
+        .form-group {
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .form-group label {
+
+            display: block;
+
+            margin-bottom: 7px;
+
+            font-size: 14px;
+
+            font-weight: 500;
+
+        }
+
+
+        input,
+        select {
+
+            width: 100%;
+
+            padding: 12px 14px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 8px;
+
+            font-size: 15px;
+
+            background: white;
+
+            color: #1d1d1f;
+
+        }
+
+        /* ============================================================
+            RADIO BUTTONS
+            ============================================================ */
+
+        input[type="radio"] {
+
+            width: auto;
+
+            padding: 0;
+
+            margin: 0 8px 0 0;
+
+            accent-color: #0071e3;
+
+        }
+
+
+        .form-group label:has(input[type="radio"]) {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 6px;
+
+            margin-bottom: 8px;
+
+            font-weight: 400;
+
+        }
+
+        input:focus,
+        select:focus {
+
+            outline: none;
+
+            border-color: #0071e3;
+
+            box-shadow:
+                0 0 0 2px
+                rgba(0, 113, 227, 0.12);
+
+        }
+
+
+        .buttons {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 30px;
+
+        }
+
+
+        .buttons button {
+
+            flex: 1;
+
+            padding: 13px;
+
+            border-radius: 8px;
+
+            font-size: 15px;
+
+            font-weight: 500;
+
+            cursor: pointer;
+
+        }
+
+
+        .primary {
+
+            background: #0071e3;
+
+            color: white;
+
+            border: none;
+
+        }
+
+
+        .primary:hover {
+
+            background: #0077ed;
+
+        }
+
+
+        .secondary {
+
+            background: white;
+
+            color: #1d1d1f;
+
+            border: 1px solid #ccc;
+
+        }
+
+
+        .secondary:hover {
+
+            background: #f5f5f7;
+
+        }
+
+
+        .danger {
+
+            background: #d32f2f;
+
+            color: white;
+
+            border: none;
+
+        }
+
+
+        .danger:hover {
+
+            background: #b71c1c;
+
+        }
+
+
+        .notice {
+
+            padding: 15px 18px;
+
+            background: #f5f5f7;
+
+            border-radius: 8px;
+
+            margin-bottom: 20px;
+
+            font-size: 14px;
+
+        }
+
+
+        .notice strong {
+
+            display: block;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .notice p {
+
+            margin: 0;
+
+            color: #666;
+
+        }
+
+
+        .result {
+
+            margin-top: 20px;
+
+            padding: 14px 16px;
+
+            border-radius: 8px;
+
+            display: none;
+
+            font-size: 14px;
+
+        }
+
+
+        .success {
+
+            display: block;
+
+            background: #e8f5e9;
+
+            color: #216e39;
+
+        }
+
+
+        .error {
+
+            display: block;
+
+            background: #ffebee;
+
+            color: #b42318;
+
+        }
+
+
+        .hidden {
+
+            display: none !important;
+
+        }
+
+
+        .record-list {
+
+            margin-top: 20px;
+
+        }
+
+
+        .record {
+
+            border: 1px solid #ddd;
+
+            border-radius: 8px;
+
+            padding: 15px;
+
+            margin-bottom: 10px;
+
+            cursor: pointer;
+
+            background: white;
+
+        }
+
+
+        .record:hover {
+
+            background: #f5f5f7;
+
+        }
+
+
+        .record-title {
+
+            font-weight: 600;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        .record-details {
+
+            color: #666;
+
+            font-size: 13px;
+
+        }
+
+
+        .price-na {
+
+            color: #b42318;
+
+            font-weight: 500;
+
+        }
+
+
+        .price-confirmed {
+
+            color: #216e39;
+
+            font-weight: 500;
+
+        }
+
+
+        @media (max-width: 600px) {
+
+            .card {
+
+                padding: 20px;
+
+            }
+
+            .header {
+
+                padding: 20px;
+
+            }
+
+            .container {
+
+                margin-top: 25px;
+
+            }
+
+        }
+
+    /* ============================================================
+        DELETE CONFIRMATION MODAL
+        ============================================================ */
+
+        #delete-confirm {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 9999;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 24px;
+
+            background: rgba(0, 0, 0, 0.40);
+
+            backdrop-filter: blur(2px);
+
+        }
+
+        #delete-confirm.hidden {
+            display: none;
+        }
+
+
+        /* ============================================================
+        MODAL BOX
+        ============================================================ */
+
+        .delete-modal {
+            width: 100%;
+            max-width: 460px;
+
+            box-sizing: border-box;
+
+            padding: 26px;
+
+            background: var(--white, #ffffff);
+
+            border: 1px solid #dddddd;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 15px 40px rgba(0, 0, 0, 0.20);
+        }
+
+
+        /* ============================================================
+        TITLE
+        ============================================================ */
+
+        .delete-modal-title {
+            margin-bottom: 14px;
+
+            font-size: 19px;
+
+            font-weight: 600;
+        }
+
+
+        /* ============================================================
+        RECORD INFORMATION
+        ============================================================ */
+
+        .delete-modal-info {
+            margin: 0 0 24px 0;
+
+            font-size: 14px;
+
+            line-height: 1.7;
+        }
+
+
+        /* ============================================================
+        BUTTONS
+        ============================================================ */
+
+        .delete-modal .buttons {
+            display: flex;
+
+            justify-content: flex-end;
+
+            gap: 10px;
+        }
+
+        .forecast-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            margin: 24px 0;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="header">
+
+        <h1>
+            Apple Trade-In Admin
+        </h1>
+
+        <p>
+            Internal administration tool
+        </p>
+
+    </header>
+
+
+    <main class="container">
+
+
+        <!-- =================================================
+             NAVIGATION
+             ================================================= -->
+
+        <nav class="admin-nav">
+
+            <button
+                type="button"
+                id="nav-add"
+                class="active"
+            >
+                ADD
+            </button>
+
+
+            <button
+                type="button"
+                id="nav-modify"
+            >
+                MODIFY
+            </button>
+
+
+            <button
+                type="button"
+                id="nav-delete"
+            >
+                DELETE
+            </button>
+
+
+            <button
+                type="button"
+                id="nav-forecast"
+            >
+                FORECAST
+            </button>
+
+        </nav>
+
+
+        <!-- =================================================
+             ADD
+             ================================================= -->
+
+        <section
+            id="add-section"
+            class="card"
+        >
+
+            <h2>
+                Add New Device
+            </h2>
+
+
+            <p class="description">
+
+                Add a new Apple device or configuration
+                to the trade-in database.
+
+            </p>
+
+
+            <div class="form-group">
+
+                <label for="add-device">
+                    Device
+                </label>
+
+
+                <select id="add-device">
+
+                    <option value="">
+                        Select device
+                    </option>
+
+                    <option value="iPhone">
+                        iPhone
+                    </option>
+
+                    <option value="iPad">
+                        iPad
+                    </option>
+
+                    <option value="Mac">
+                        Mac
+                    </option>
+
+                    <option value="Apple Watch">
+                        Apple Watch
+                    </option>
+
+                    <option value="AirPods">
+                        AirPods
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="add-sub-device">
+                    Sub-device
+                </label>
+
+
+                <select id="add-sub-device">
+
+                    <option value="">
+                        Select sub-device
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="add-model">
+                    Standardized Model
+                </label>
+
+
+                <input
+                    id="add-model"
+                    type="text"
+                    placeholder="e.g. iPhone 18 Pro Max"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="add-year">
+                    Model Year
+                </label>
+
+
+                <input
+                    id="add-year"
+                    type="number"
+                    placeholder="e.g. 2027"
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="add-msrp">
+                    MSRP (RM)
+                </label>
+
+                <input
+                    id="add-msrp"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 4999"
+                    required
+                >
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="add-storage-group"
+            >
+
+                <label for="add-storage">
+                    Storage (GB)
+                </label>
+
+
+                <input
+                    id="add-storage"
+                    type="number"
+                    placeholder="e.g. 256"
+                >
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="add-storage-type-group"
+            >
+
+                <label for="add-storage-type">
+                    Storage Type
+                </label>
+
+
+                <input
+                    id="add-storage-type"
+                    type="text"
+                    placeholder="e.g. SSD"
+                >
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="add-chipset-group"
+            >
+
+                <label for="add-chipset">
+                    Chipset / Processor
+                </label>
+
+
+                <input
+                    id="add-chipset"
+                    type="text"
+                    placeholder="e.g. A20 Pro"
+                >
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="add-connectivity-group"
+            >
+
+                <label for="add-connectivity">
+                    Connectivity
+                </label>
+
+
+                <select id="add-connectivity">
+
+                    <option value="">
+                        Select connectivity
+                    </option>
+
+                    <option value="Wi-Fi">
+                        Wi-Fi
+                    </option>
+
+                    <option value="Wi-Fi + Cellular">
+                        Wi-Fi + Cellular
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="add-provider">
+                    Provider
+                </label>
+
+
+                <input
+                    id="add-provider"
+                    type="text"
+                    placeholder="Optional"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label>
+                    Confirmed trade-in value available?
+                </label>
+
+
+                <label>
+                    <input
+                        type="radio"
+                        name="add-price-status"
+                        value="yes"
+                    >
+                    Yes
+                </label>
+
+
+                <label>
+                    <input
+                        type="radio"
+                        name="add-price-status"
+                        value="no"
+                    >
+                    No
+                </label>
+
+            </div>
+
+
+            <div
+                class="form-group hidden"
+                id="add-price-group"
+            >
+
+                <label for="add-price">
+                    Max. Trade-In Value (RM)
+                </label>
+
+
+                <input
+                    id="add-price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 2500"
+                >
+
+            </div>
+
+
+            <div
+                id="add-na-message"
+                class="notice hidden"
+            >
+
+                <strong>
+                    Trade-In Value: N/A
+                </strong>
+
+
+                <p>
+                    No confirmed trade-in information
+                    is currently available.
+                </p>
+
+            </div>
+
+
+            <div
+                id="add-result"
+                class="result"
+            ></div>
+
+
+            <div class="buttons">
+
+                <button
+                    type="button"
+                    id="add-submit"
+                    class="primary"
+                >
+                    Submit
+                </button>
+
+
+                <button
+                    type="button"
+                    id="add-cancel"
+                    class="secondary"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             MODIFY
+             ================================================= -->
+
+        <section
+            id="modify-section"
+            class="card hidden"
+        >
+
+            <h2>
+                Modify Existing Device
+            </h2>
+
+
+            <p class="description">
+
+                Select an existing record to view and
+                modify its information.
+
+            </p>
+
+
+            <div class="form-group">
+
+                <label for="modify-device">
+                    Device
+                </label>
+
+
+                <select id="modify-device">
+
+                    <option value="">
+                        Select device
+                    </option>
+
+                    <option value="iPhone">
+                        iPhone
+                    </option>
+
+                    <option value="iPad">
+                        iPad
+                    </option>
+
+                    <option value="Mac">
+                        Mac
+                    </option>
+
+                    <option value="Apple Watch">
+                        Apple Watch
+                    </option>
+
+                    <option value="AirPods">
+                        AirPods
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="modify-model">
+                    Model
+                </label>
+
+
+                <select id="modify-model">
+
+                    <option value="">
+                        Select model
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div
+                id="modify-records"
+                class="record-list"
+            ></div>
+
+
+            <div
+                id="modify-form"
+                class="hidden"
+            >
+
+                <div class="notice">
+
+                    <strong>
+                        Current Record
+                    </strong>
+
+
+                    <p id="modify-current-info">
+                    </p>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="modify-price">
+                        Trade-In Value (RM)
+                    </label>
+
+
+                    <input
+                        id="modify-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Leave blank if N/A"
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="modify-provider">
+                        Provider
+                    </label>
+
+                    <input
+                        id="modify-provider"
+                        type="text"
+                        placeholder="Leave blank if N/A"
+                    >
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="modify-msrp">
+                        MSRP (RM)
+                    </label>
+
+                    <input
+                        id="modify-msrp"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Leave blank if N/A"
+                    >
+
+                </div>
+
+
+                <div class="buttons">
+
+                    <button
+                        type="button"
+                        id="modify-save"
+                        class="primary"
+                    >
+                        Save Changes
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="modify-cancel"
+                        class="secondary"
+                    >
+                        Cancel
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="modify-result"
+                    class="result"
+                ></div>
+
+            </div>
+
+        </section>
+
+        <!-- =================================================
+            DELETE
+            ================================================= -->
+
+        <section
+            id="delete-section"
+            class="card hidden"
+        >
+
+            <h2>
+                Delete Device
+            </h2>
+
+            <p class="description">
+                Select a specific device configuration to remove
+                from the database.
+            </p>
+
+
+            <div class="form-group">
+
+                <label for="delete-device">
+                    Device
+                </label>
+
+                <select id="delete-device">
+
+                    <option value="">
+                        Select device
+                    </option>
+
+                    <option value="iPhone">
+                        iPhone
+                    </option>
+
+                    <option value="iPad">
+                        iPad
+                    </option>
+
+                    <option value="Mac">
+                        Mac
+                    </option>
+
+                    <option value="Apple Watch">
+                        Apple Watch
+                    </option>
+
+                    <option value="AirPods">
+                        AirPods
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="delete-model">
+                    Model
+                </label>
+
+                <select id="delete-model">
+
+                    <option value="">
+                        Select model
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div
+                id="delete-records"
+                class="record-list"
+            ></div>
+
+
+            <div
+                id="delete-confirm"
+                class="hidden"
+            >
+
+                <div class="delete-modal">
+
+                    <div class="delete-modal-title">
+                        Confirm deletion
+                    </div>
+
+                    <p
+                        id="delete-confirm-info"
+                        class="delete-modal-info"
+                    ></p>
+
+                    <div class="buttons">
+
+                        <button
+                            type="button"
+                            id="delete-confirm-button"
+                            class="danger"
+                        >
+                            Delete Permanently
+                        </button>
+
+                        <button
+                            type="button"
+                            id="delete-cancel-button"
+                            class="secondary"
+                        >
+                            Cancel
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="delete-result"
+                class="result"
+            ></div>
+
+        </section>
+
+        <!-- ============================================================
+            FORECAST
+            ============================================================ -->
+
+        <section
+            id="forecast-section"
+            class="card hidden"
+        >
+
+            <h2>
+                Forecast
+            </h2>
+
+            <p class="description">
+                Estimate the trade-in value of a model across
+                different years using the current ML model.
+                This does not modify the database.
+            </p>
+
+
+            <!-- Device -->
+
+            <div class="form-group">
+
+                <label for="forecast-device">
+                    Device
+                </label>
+
+                <select id="forecast-device">
+
+                    <option value="">
+                        Select device
+                    </option>
+
+                    <option value="iPhone">
+                        iPhone
+                    </option>
+
+                    <option value="iPad">
+                        iPad
+                    </option>
+
+                    <option value="Mac">
+                        Mac
+                    </option>
+
+                    <option value="Apple Watch">
+                        Apple Watch
+                    </option>
+
+                    <option value="AirPods">
+                        AirPods
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Model -->
+
+            <div class="form-group">
+
+                <label for="forecast-model">
+                    Model
+                </label>
+
+                <select id="forecast-model">
+
+                    <option value="">
+                        Select model
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="forecast-record">
+                    Configuration
+                </label>
+
+                <select id="forecast-record">
+
+                    <option value="">
+                        Select configuration
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="forecast-until">
+                    Forecast until
+                </label>
+
+                <select id="forecast-until"></select>
+
+            </div>
+
+
+            <button
+                type="button"
+                id="generate-forecast"
+                class="primary"
+            >
+                Generate Forecast
+            </button>
+
+
+            <!-- Results -->
+
+            <div
+                id="forecast-results"
+                class="hidden"
+            >
+            </div>
+
+
+            <div
+                id="forecast-table-container"
+                class="hidden"
+            >
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Year
+                            </th>
+
+                            <th>
+                                Estimated Trade-In Value
+                            </th>
+
+                            <th>
+                                Change
+                            </th>
+
+                            <th>
+                                Change %
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody
+                        id="forecast-table-body"
+                    ></tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+
+        // ====================================================
+        // SUB-DEVICE DATA
+        // ====================================================
+
+        const SUB_DEVICES = {
+
+            "iPhone": [
+                "Standard",
+                "Mini",
+                "Plus",
+                "Pro",
+                "Pro Max",
+                "SE",
+                "Air"
+            ],
+
+            "iPad": [
+                "Standard",
+                "Air",
+                "Mini",
+                "Pro"
+            ],
+
+            "Mac": [
+                "MacBook",
+                "MacBook Air",
+                "MacBook Pro",
+                "Mac Mini",
+                "Mac Pro",
+                "Mac Studio",
+                "iMac"
+            ],
+
+            "Apple Watch": [
+                "SE",
+                "Series",
+                "Ultra"
+            ],
+
+            "AirPods": [
+                "AirPods",
+                "AirPods Pro",
+                "AirPods Max"
+            ]
+
+        };
+
+
+        // ============================================================
+        // NAVIGATION
+        // ============================================================
+
+        const sections = {
+
+            add:
+                document.getElementById("add-section"),
+
+            modify:
+                document.getElementById("modify-section"),
+
+            delete:
+                document.getElementById("delete-section"),
+
+            forecast:
+                document.getElementById("forecast-section")
+
+        };
+
+
+        const navButtons = {
+
+            add:
+                document.getElementById("nav-add"),
+
+            modify:
+                document.getElementById("nav-modify"),
+
+            delete:
+                document.getElementById("nav-delete"),
+
+            forecast:
+                document.getElementById("nav-forecast")
+
+        };
+
+
+        function showSection(sectionName) {
+
+            // ============================================================
+            // HIDE ALL SECTIONS
+            // ============================================================
+
+            Object.values(sections).forEach(
+                section => {
+                    section.classList.add("hidden");
+                }
+            );
+
+
+            // ============================================================
+            // REMOVE ACTIVE FROM ALL NAV BUTTONS
+            // ============================================================
+
+            Object.values(navButtons).forEach(
+                button => {
+                    button.classList.remove("active");
+                }
+            );
+
+
+            // ============================================================
+            // SHOW SELECTED SECTION
+            // ============================================================
+
+            sections[sectionName].classList.remove("hidden");
+
+            navButtons[sectionName].classList.add("active");
+
+
+            // ============================================================
+            // RESET MODIFY
+            // ============================================================
+
+            if (sectionName === "modify") {
+
+                document.getElementById("modify-device").value = "";
+
+                document.getElementById("modify-model").innerHTML = `
+                    <option value="">
+                        Select model
+                    </option>
+                `;
+
+                document.getElementById("modify-records").innerHTML = "";
+
+                document
+                    .getElementById("modify-form")
+                    .classList.add("hidden");
+
+                document
+                    .getElementById("modify-result")
+                    .className = "result";
+
+                document
+                    .getElementById("modify-result")
+                    .textContent = "";
+
+                selectedRecordId = null;
+            }
+
+
+            // ============================================================
+            // RESET DELETE
+            // ============================================================
+
+            if (sectionName === "delete") {
+
+                document.getElementById("delete-device").value = "";
+
+                document.getElementById("delete-model").innerHTML = `
+                    <option value="">
+                        Select model
+                    </option>
+                `;
+
+                document.getElementById("delete-records").innerHTML = "";
+
+                document
+                    .getElementById("delete-confirm")
+                    .classList.add("hidden");
+
+                document
+                    .getElementById("delete-result")
+                    .className = "result";
+
+                document
+                    .getElementById("delete-result")
+                    .textContent = "";
+
+                selectedDeleteRecordId = null;
+            }
+
+
+            // ============================================================
+            // RESET FORECAST
+            // ============================================================
+
+            if (sectionName === "forecast") {
+
+                document.getElementById("forecast-device").value = "";
+
+                document.getElementById("forecast-model").innerHTML = `
+                    <option value="">
+                        Select model
+                    </option>
+                `;
+
+                document.getElementById("forecast-record").innerHTML = `
+                    <option value="">
+                        Select configuration
+                    </option>
+                `;
+
+                const forecastResults =
+                    document.getElementById("forecast-results");
+
+                forecastResults.classList.add("hidden");
+                forecastResults.innerHTML = "";
+
+                if (forecastChart) {
+                    forecastChart.destroy();
+                    forecastChart = null;
+                }
+            }
+
+
+            // ============================================================
+            // RESET ADD
+            // ============================================================
+
+            if (sectionName === "add") {
+
+                document.getElementById("add-device").value = "";
+
+                document.getElementById("add-sub-device").innerHTML = `
+                    <option value="">
+                        Select sub-device
+                    </option>
+                `;
+
+                document.getElementById("add-model").value = "";
+                document.getElementById("add-year").value = "";
+                document.getElementById("add-msrp").value = "";
+                document.getElementById("add-storage").value = "";
+                document.getElementById("add-storage-type").value = "";
+                document.getElementById("add-chipset").value = "";
+                document.getElementById("add-connectivity").value = "";
+                document.getElementById("add-provider").value = "";
+
+                document
+                    .querySelectorAll(
+                        'input[name="add-price-status"]'
+                    )
+                    .forEach(
+                        radio => {
+                            radio.checked = false;
+                        }
+                    );
+
+                document.getElementById("add-price").value = "";
+
+                document
+                    .getElementById("add-price-group")
+                    .classList.add("hidden");
+
+                document
+                    .getElementById("add-na-message")
+                    .classList.add("hidden");
+
+                document
+                    .getElementById("add-result")
+                    .className = "result";
+
+                document
+                    .getElementById("add-result")
+                    .textContent = "";
+
+                updateAddFields();
+            }
+
+        }
+
+
+        // ------------------------------------------------------------
+        // NAV BUTTONS
+        // ------------------------------------------------------------
+
+        navButtons.add.addEventListener(
+            "click",
+            () => {
+
+                showSection("add");
+
+            }
+        );
+
+
+        navButtons.modify.addEventListener(
+            "click",
+            async () => {
+
+                showSection("modify");
+
+                await loadModifyModels();
+
+            }
+        );
+
+
+        navButtons.delete.addEventListener(
+            "click",
+            () => {
+
+                showSection("delete");
+
+            }
+        );
+
+
+        navButtons.forecast.addEventListener(
+            "click",
+            async () => {
+
+                showSection("forecast");
+
+                await loadForecastModels();
+
+            }
+        );
+
+        // ============================================================
+        // FORECAST — LOAD CONFIGURATIONS
+        // ============================================================
+
+        document
+            .getElementById("forecast-model")
+            .addEventListener(
+                "change",
+                async () => {
+
+                    const device =
+                        document
+                            .getElementById(
+                                "forecast-device"
+                            )
+                            .value;
+
+
+                    const model =
+                        document
+                            .getElementById(
+                                "forecast-model"
+                            )
+                            .value;
+
+
+                    const recordSelect =
+                        document
+                            .getElementById(
+                                "forecast-record"
+                            );
+
+
+                    // Reset
+
+                    recordSelect.innerHTML = `
+                        <option value="">
+                            Select configuration
+                        </option>
+                    `;
+
+
+                    if (!device || !model) {
+                        return;
+                    }
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/records"
+                                + `?device=${encodeURIComponent(device)}`
+                                + `&model=${encodeURIComponent(model)}`
+                            );
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                "Failed to load configurations."
+                            );
+
+                        }
+
+
+                        const records =
+                            await response.json();
+
+
+                        records.forEach(
+                            record => {
+
+                                const option =
+                                    document
+                                        .createElement(
+                                            "option"
+                                        );
+
+
+                                option.value =
+                                    record.id;
+
+
+                                // ------------------------------------------------
+                                // BUILD CONFIGURATION LABEL
+                                // ------------------------------------------------
+
+                                const parts = [];
+
+
+                                // Storage
+
+                                if (
+                                    record.storage !== null &&
+                                    record.storage !== undefined
+                                ) {
+
+                                    parts.push(
+                                        `${record.storage} GB`
+                                    );
+
+                                }
+                                else {
+
+                                    parts.push(
+                                        "N/A"
+                                    );
+
+                                }
+
+
+                                // Connectivity
+
+                                if (
+                                    record.connectivity
+                                ) {
+
+                                    parts.push(
+                                        record.connectivity
+                                    );
+
+                                }
+
+
+                                // RAM
+
+                                if (
+                                    record.ram
+                                ) {
+
+                                    parts.push(
+                                        `${record.ram} GB RAM`
+                                    );
+
+                                }
+
+
+                                // Chipset
+
+                                if (
+                                    record.chipset
+                                ) {
+
+                                    parts.push(
+                                        record.chipset
+                                    );
+
+                                }
+
+
+                                // Provider
+
+                                if (
+                                    record.provider
+                                ) {
+
+                                    parts.push(
+                                        record.provider
+                                    );
+
+                                }
+
+
+                                // Trade-in value
+
+                                let price =
+                                    "N/A";
+
+
+                                if (
+                                    record.trade_in_value !== null &&
+                                    record.trade_in_value !== undefined &&
+                                    record.trade_in_value !== ""
+                                ) {
+
+                                    price =
+                                        `RM ${
+                                            Number(
+                                                record.trade_in_value
+                                            ).toLocaleString()
+                                        }`;
+
+                                }
+
+
+                                option.textContent =
+                                    `${parts.join(" — ")} — ${price}`;
+
+
+                                recordSelect
+                                    .appendChild(
+                                        option
+                                    );
+
+                            }
+                        );
+
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "FORECAST CONFIGURATION ERROR:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+        // ============================================================
+        // DELETE — LOAD MODELS
+        // ============================================================
+
+        async function loadDeleteModels() {
+
+            const device =
+                document.getElementById("delete-device").value;
+
+            const modelSelect =
+                document.getElementById("delete-model");
+
+            // Reset model dropdown
+            modelSelect.innerHTML = `
+                <option value="">
+                    Select model
+                </option>
+            `;
+
+            // Clear existing records
+            document.getElementById("delete-records").innerHTML = "";
+
+            document
+                .getElementById("delete-confirm")
+                .classList.add("hidden");
+
+            if (!device) {
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    "http://127.0.0.1:8000/admin/models"
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to load models.");
+                }
+
+                const data = await response.json();
+
+                const models = data[device] || [];
+
+                models.forEach(model => {
+
+                    const option =
+                        document.createElement("option");
+
+                    option.value = model;
+                    option.textContent = model;
+
+                    modelSelect.appendChild(option);
+
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to load DELETE models:",
+                    error
+                );
+
+            }
+        }
+
+
+        // When Device changes
+        document
+            .getElementById("delete-device")
+            .addEventListener(
+                "change",
+                loadDeleteModels
+            );
+
+        // ============================================================
+        // FORECAST — LOAD MODELS
+        // ============================================================
+
+        async function loadForecastModels() {
+
+            const device =
+                document
+                    .getElementById("forecast-device")
+                    .value;
+
+            const modelSelect =
+                document
+                    .getElementById("forecast-model");
+
+
+            // Reset
+
+            modelSelect.innerHTML = `
+                <option value="">
+                    Select model
+                </option>
+            `;
+
+
+            document
+                .getElementById("forecast-record")
+                .innerHTML = `
+                    <option value="">
+                        Select configuration
+                    </option>
+                `;
+
+
+            if (!device) {
+                return;
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "http://127.0.0.1:8000/admin/models"
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Failed to load models."
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                const models =
+                    data[device] || [];
+
+
+                models.forEach(
+                    model => {
+
+                        const option =
+                            document.createElement(
+                                "option"
+                            );
+
+
+                        option.value = model;
+                        option.textContent = model;
+
+
+                        modelSelect.appendChild(
+                            option
+                        );
+
+                    }
+                );
+
+
+            }
+            catch (error) {
+
+                console.error(
+                    "FORECAST MODEL ERROR:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // Device → Models
+
+        document
+            .getElementById("forecast-device")
+            .addEventListener(
+                "change",
+                loadForecastModels
+            );
+
+        let forecastChart = null;
+
+        // ============================================================
+        // FORECAST — YEAR OPTIONS
+        // ============================================================
+
+        function populateForecastYears() {
+
+            const select =
+                document.getElementById(
+                    "forecast-until"
+                );
+
+
+            const currentYear =
+                new Date().getFullYear();
+
+
+            select.innerHTML = "";
+
+
+            for (
+                let year = currentYear;
+                year <= currentYear + 10;
+                year++
+            ) {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+
+                option.value = year;
+
+                option.textContent = year;
+
+
+                select.appendChild(
+                    option
+                );
+
+            }
+
+
+            // Default: 5 years ahead
+
+            select.value =
+                currentYear + 5;
+
+        }
+
+
+        populateForecastYears();
+
+        // ============================================================
+        // FORECAST — GENERATE
+        // ============================================================
+
+        document
+            .getElementById("generate-forecast")
+            .addEventListener(
+                "click",
+                async () => {
+
+                    const recordId =
+                        document
+                            .getElementById(
+                                "forecast-record"
+                            )
+                            .value;
+
+
+                    const forecastUntil =
+                        document
+                            .getElementById(
+                                "forecast-until"
+                            )
+                            .value;
+
+
+                    // ------------------------------------------------
+                    // VALIDATION
+                    // ------------------------------------------------
+
+                    if (!recordId) {
+
+                        alert(
+                            "Please select a configuration."
+                        );
+
+                        return;
+
+                    }
+
+
+                    if (!forecastUntil) {
+
+                        alert(
+                            "Please select a forecast year."
+                        );
+
+                        return;
+
+                    }
+
+
+                    const button =
+                        document
+                            .getElementById(
+                                "generate-forecast"
+                            );
+
+
+                    button.disabled = true;
+
+                    button.textContent =
+                        "Generating...";
+
+
+                    try {
+
+                        // --------------------------------------------
+                        // SEND REQUEST
+                        // --------------------------------------------
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/forecast",
+                                {
+
+                                    method: "POST",
+
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json"
+                                    },
+
+                                    body:
+                                        JSON.stringify({
+
+                                            record_id:
+                                                Number(
+                                                    recordId
+                                                ),
+
+                                            forecast_until:
+                                                Number(
+                                                    forecastUntil
+                                                )
+
+                                        })
+
+                                }
+                            );
+
+
+                        const data =
+                            await response.json();
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                "Forecast request failed."
+                            );
+
+                        }
+
+
+                        if (
+                            data.status !==
+                            "success"
+                        ) {
+
+                            throw new Error(
+                                data.message ||
+                                "Forecast failed."
+                            );
+
+                        }
+
+
+                        // --------------------------------------------
+                        // SHOW RESULTS
+                        // --------------------------------------------
+
+                        displayForecastResults(
+                            data
+                        );
+
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "FORECAST ERROR:",
+                            error
+                        );
+
+
+                        alert(
+                            error.message ||
+                            "Unable to generate forecast."
+                        );
+
+                    }
+                    finally {
+
+                        button.disabled = false;
+
+                        button.textContent =
+                            "Generate Forecast";
+
+                    }
+
+                }
+            );
+
+        // ============================================================
+        // FORECAST — DISPLAY RESULTS
+        // ============================================================
+
+        function displayForecastResults(data) {
+
+            const container =
+                document.getElementById(
+                    "forecast-results"
+                );
+
+
+            container.classList.remove(
+                "hidden"
+            );
+
+
+            let html = `
+                <div class="forecast-summary">
+
+                    <h3>
+                        ${data.model}
+                    </h3>
+
+                    <p>
+                        Forecast through
+                        <strong>
+                            ${data.forecast_until}
+                        </strong>
+                    </p>
+
+                </div>
+
+                <div class="forecast-chart-wrapper">
+
+                    <canvas id="forecast-chart"></canvas>
+
+                </div>
+
+                <div class="forecast-table-wrapper">
+
+                    <table class="forecast-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>Year</th>
+
+                                <th>Device Age</th>
+
+                                <th>
+                                    Estimated Trade-In
+                                </th>
+
+                                <th>Change</th>
+
+                                <th>Change %</th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+            `;
+
+
+            data.results.forEach(
+                result => {
+
+                    const estimated =
+                        `RM ${
+                            Number(
+                                result.estimated_trade_in
+                            ).toLocaleString(
+                                undefined,
+                                {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }
+                            )
+                        }`;
+
+
+                    const change =
+                        result.change === null
+                            ? "—"
+                            : `RM ${
+                                Number(
+                                    result.change
+                                ).toLocaleString(
+                                    undefined,
+                                    {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }
+                                )
+                            }`;
+
+
+                    const changePercent =
+                        result.change_percent === null
+                            ? "—"
+                            : `${
+                                Number(
+                                    result.change_percent
+                                ).toFixed(1)
+                            }%`;
+
+
+                    html += `
+
+                        <tr>
+
+                            <td>
+                                ${result.year}
+                            </td>
+
+                            <td>
+                                ${
+                                    result.device_age === null
+                                        ? "N/A"
+                                        : result.device_age +
+                                        " years"
+                                }
+                            </td>
+
+                            <td>
+                                <strong>
+                                    ${estimated}
+                                </strong>
+                            </td>
+
+                            <td>
+                                ${change}
+                            </td>
+
+                            <td>
+                                ${changePercent}
+                            </td>
+
+                        </tr>
+
+                    `;
+
+                }
+            );
+
+
+            html += `
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            `;
+
+
+            container.innerHTML =
+                html;
+
+
+            // ============================================================
+            // CREATE FORECAST CHART
+            // ============================================================
+
+            if (forecastChart) {
+
+                forecastChart.destroy();
+
+                forecastChart = null;
+
+            }
+
+
+            const ctx =
+                document
+                    .getElementById(
+                        "forecast-chart"
+                    )
+                    .getContext("2d");
+
+
+            forecastChart =
+                new Chart(
+                    ctx,
+                    {
+
+                        type: "line",
+
+                        data: {
+
+                            labels:
+                                data.results.map(
+                                    result => result.year
+                                ),
+
+                            datasets: [
+                                {
+
+                                    label:
+                                        "Estimated Trade-In Value",
+
+                                    data:
+                                        data.results.map(
+                                            result =>
+                                                result.estimated_trade_in
+                                        ),
+
+                                    tension: 0.3,
+
+                                    pointRadius: 4,
+
+                                    pointHoverRadius: 6,
+
+                                    fill: false
+
+                                }
+                            ]
+
+                        },
+
+                        options: {
+
+                            responsive: true,
+
+                            maintainAspectRatio: false,
+
+                            plugins: {
+
+                                legend: {
+                                    display: false
+                                },
+
+                                tooltip: {
+
+                                    enabled: true,
+
+                                    mode: "nearest",
+
+                                    intersect: false,
+
+                                    callbacks: {
+
+                                        title: function(context) {
+
+                                            return `Year: ${context[0].label}`;
+
+                                        },
+
+                                        label: function(context) {
+
+                                            const value =
+                                                Number(context.raw).toLocaleString(
+                                                    undefined,
+                                                    {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    }
+                                                );
+
+                                            return `Estimated Trade-In Value: RM ${value}`;
+
+                                        }
+
+                                    }
+
+                                }
+
+                            },
+
+                            interaction: {
+
+                                mode: "nearest",
+
+                                intersect: false
+
+                            },
+
+                            scales: {
+
+                                x: {
+
+                                    title: {
+                                        display: true,
+                                        text: "Year"
+                                    }
+
+                                },
+
+                                y: {
+
+                                    beginAtZero: true,
+
+                                    title: {
+                                        display: true,
+                                        text: "Estimated Trade-In Value (RM)"
+                                    },
+
+                                    ticks: {
+
+                                        callback:
+                                            function(value) {
+
+                                                return "RM " +
+                                                    Number(value)
+                                                        .toLocaleString();
+
+                                            }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+                );
+
+
+            container.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+        }
+
+        // ============================================================
+        // DELETE — LOAD RECORDS
+        // ============================================================
+
+        document
+            .getElementById("delete-model")
+            .addEventListener(
+                "change",
+                async () => {
+
+                    const device =
+                        document
+                            .getElementById("delete-device")
+                            .value;
+
+                    const model =
+                        document
+                            .getElementById("delete-model")
+                            .value;
+
+                    const container =
+                        document
+                            .getElementById("delete-records");
+
+                    // Clear previous records
+                    container.innerHTML = "";
+
+                    document
+                        .getElementById("delete-confirm")
+                        .classList.add("hidden");
+
+                    if (!device || !model) {
+                        return;
+                    }
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/records"
+                                + `?device=${encodeURIComponent(device)}`
+                                + `&model=${encodeURIComponent(model)}`
+                            );
+
+                        if (!response.ok) {
+                            throw new Error(
+                                "Failed to load records."
+                            );
+                        }
+
+                        const records =
+                            await response.json();
+
+                        if (records.length === 0) {
+
+                            container.innerHTML = `
+                                <p>
+                                    No records found for this model.
+                                </p>
+                            `;
+
+                            return;
+                        }
+
+
+                        // Display each configuration
+                        records.forEach(record => {
+
+                            const div =
+                                document.createElement("div");
+
+                            div.className = "record";
+
+
+                            const price =
+                                record.trade_in_value === null
+                                    ? "N/A"
+                                    : `RM ${Number(
+                                        record.trade_in_value
+                                    ).toLocaleString()}`;
+
+
+                            div.innerHTML = `
+
+                                <div class="record-title">
+                                    ${record.model}
+                                </div>
+
+                                <div class="record-details">
+
+                                    Storage:
+                                    ${record.storage ?? "N/A"} GB
+
+                                    <br>
+
+                                    Provider:
+                                    ${record.provider ?? "Unknown"}
+
+                                    <br>
+
+                                    Trade-In Value:
+                                    ${price}
+
+                                </div>
+
+                            `;
+
+
+                            // Select this record
+                            div.addEventListener(
+                                "click",
+                                () => {
+
+                                    selectDeleteRecord(
+                                        record
+                                    );
+
+                                }
+                            );
+
+
+                            container.appendChild(div);
+
+                        });
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "Unable to load DELETE records:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+        // ============================================================
+        // DELETE — SELECT RECORD
+        // ============================================================
+
+        let selectedDeleteRecordId = null;
+
+
+        function selectDeleteRecord(record) {
+
+            selectedDeleteRecordId = record.id;
+
+
+            const price =
+                record.trade_in_value === null
+                    ? "N/A"
+                    : `RM ${Number(
+                        record.trade_in_value
+                    ).toLocaleString()}`;
+
+
+            document
+                .getElementById("delete-confirm-info")
+                .textContent =
+                    `Model: ${record.model} | `
+                    + `Storage: ${record.storage ?? "N/A"} GB | `
+                    + `Provider: ${record.provider ?? "Unknown"} | `
+                    + `Trade-In Value: ${price}`;
+
+
+            document
+                .getElementById("delete-confirm")
+                .classList.remove("hidden");
+
+        }
+
+
+        // ====================================================
+        // ADD — SUB DEVICE
+        // ====================================================
+
+        document
+            .getElementById("add-device")
+            .addEventListener(
+                "change",
+                () => {
+
+                    const selected =
+                        document
+                            .getElementById(
+                                "add-device"
+                            )
+                            .value;
+
+
+                    const subDevice =
+                        document
+                            .getElementById(
+                                "add-sub-device"
+                            );
+
+
+                    subDevice.innerHTML = `
+
+                        <option value="">
+                            Select sub-device
+                        </option>
+
+                    `;
+
+
+                    (
+                        SUB_DEVICES[selected]
+                        || []
+                    ).forEach(
+                        value => {
+
+                            const option =
+                                document
+                                    .createElement(
+                                        "option"
+                                    );
+
+                            option.value =
+                                value;
+
+                            option.textContent =
+                                value;
+
+                            subDevice.appendChild(
+                                option
+                            );
+
+                        }
+                    );
+
+
+                    updateAddFields();
+
+                }
+            );
+
+        // ============================================================
+        // DELETE — CONFIRM DELETE
+        // ============================================================
+
+        document
+            .getElementById("delete-confirm-button")
+            .addEventListener(
+                "click",
+                async () => {
+
+                    console.log(
+                        "DELETE BUTTON CLICKED"
+                    );
+
+                    if (
+                        selectedDeleteRecordId === null
+                    ) {
+
+                        console.error(
+                            "No record selected."
+                        );
+
+                        return;
+                    }
+
+
+                    console.log(
+                        "Deleting record:",
+                        selectedDeleteRecordId
+                    );
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/delete",
+                                {
+                                    method: "POST",
+
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json"
+                                    },
+
+                                    body: JSON.stringify({
+                                        id:
+                                            selectedDeleteRecordId
+                                    })
+                                }
+                            );
+
+
+                        const data =
+                            await response.json();
+
+
+                        console.log(
+                            "DELETE RESPONSE:",
+                            data
+                        );
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                "Delete failed."
+                            );
+
+                        }
+
+
+                        // Hide confirmation popup
+
+                        document
+                            .getElementById(
+                                "delete-confirm"
+                            )
+                            .classList.add(
+                                "hidden"
+                            );
+
+
+                        // Show success
+
+                        const result =
+                            document.getElementById(
+                                "delete-result"
+                            );
+
+
+                        result.className =
+                            "result success";
+
+
+                        result.textContent =
+                            "Record deleted successfully.";
+
+
+                        result.style.display =
+                            "block";
+
+
+                        selectedDeleteRecordId =
+                            null;
+
+
+                        // Refresh model list
+
+                        await loadDeleteModels();
+
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "DELETE ERROR:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+
+        // ====================================================
+        // ADD — DEVICE FIELDS
+        // ====================================================
+
+        function updateAddFields() {
+
+            const device =
+                document
+                    .getElementById(
+                        "add-device"
+                    )
+                    .value;
+
+
+            document
+                .getElementById(
+                    "add-storage-group"
+                )
+                .classList.toggle(
+                    "hidden",
+                    device === "AirPods"
+                );
+
+
+            document
+                .getElementById(
+                    "add-storage-type-group"
+                )
+                .classList.toggle(
+                    "hidden",
+                    device === "AirPods"
+                );
+
+
+            document
+                .getElementById(
+                    "add-chipset-group"
+                )
+                .classList.toggle(
+                    "hidden",
+                    ![
+                        "iPhone",
+                        "iPad",
+                        "Mac"
+                    ].includes(device)
+                );
+
+
+            document
+                .getElementById(
+                    "add-connectivity-group"
+                )
+                .classList.toggle(
+                    "hidden",
+                    device !== "iPad"
+                );
+
+        }
+
+
+        // ====================================================
+        // ADD — PRICE STATUS
+        // ====================================================
+
+        document
+            .querySelectorAll(
+                'input[name="add-price-status"]'
+            )
+            .forEach(
+                radio => {
+
+                    radio.addEventListener(
+                        "change",
+                        () => {
+
+                            const yes =
+                                document
+                                    .querySelector(
+                                        'input[name="add-price-status"]:checked'
+                                    )
+                                    ?.value ===
+                                "yes";
+
+
+                            document
+                                .getElementById(
+                                    "add-price-group"
+                                )
+                                .classList.toggle(
+                                    "hidden",
+                                    !yes
+                                );
+
+
+                            document
+                                .getElementById(
+                                    "add-na-message"
+                                )
+                                .classList.toggle(
+                                    "hidden",
+                                    yes
+                                );
+
+                        }
+                    );
+
+                }
+            );
+
+
+        // ====================================================
+        // ADD — SUBMIT
+        // ====================================================
+
+        document
+            .getElementById(
+                "add-submit"
+            )
+            .addEventListener(
+                "click",
+                async () => {
+
+                    const device =
+                        document
+                            .getElementById(
+                                "add-device"
+                            )
+                            .value;
+
+
+                    const subDevice =
+                        document
+                            .getElementById(
+                                "add-sub-device"
+                            )
+                            .value;
+
+
+                    const model =
+                        document
+                            .getElementById(
+                                "add-model"
+                            )
+                            .value
+                            .trim();
+
+
+                    const year =
+                        document
+                            .getElementById(
+                                "add-year"
+                            )
+                            .value;
+
+                    const msrp =
+                        document
+                            .getElementById(
+                                "add-msrp"
+                            )
+                            .value;
+
+
+                    const provider =
+                        document
+                            .getElementById(
+                                "add-provider"
+                            )
+                            .value
+                            .trim();
+
+
+                    const storage =
+                        document
+                            .getElementById(
+                                "add-storage"
+                            )
+                            .value;
+
+
+                    const storageType =
+                        document
+                            .getElementById(
+                                "add-storage-type"
+                            )
+                            .value
+                            .trim();
+
+
+                    const chipset =
+                        document
+                            .getElementById(
+                                "add-chipset"
+                            )
+                            .value
+                            .trim();
+
+
+                    const connectivity =
+                        document
+                            .getElementById(
+                                "add-connectivity"
+                            )
+                            .value;
+
+
+                    const priceStatus =
+                        document
+                            .querySelector(
+                                'input[name="add-price-status"]:checked'
+                            );
+
+
+                    if (
+                        !device ||
+                        !subDevice ||
+                        !model
+                    ) {
+
+                        alert(
+                            "Please complete the device, sub-device and model."
+                        );
+
+                        return;
+
+                    }
+
+                    if (!msrp) {
+
+                        alert(
+                            "Please enter the MSRP."
+                        );
+
+                        return;
+
+                    }
+
+
+                    if (!priceStatus) {
+
+                        alert(
+                            "Please select Yes or No for the trade-in value."
+                        );
+
+                        return;
+
+                    }
+
+
+                    let tradeInValue =
+                        null;
+
+
+                    if (
+                        priceStatus.value ===
+                        "yes"
+                    ) {
+
+                        const price =
+                            document
+                                .getElementById(
+                                    "add-price"
+                                )
+                                .value;
+
+
+                        if (!price) {
+
+                            alert(
+                                "Please enter the confirmed trade-in value."
+                            );
+
+                            return;
+
+                        }
+
+
+                        tradeInValue =
+                            parseFloat(price);
+
+                    }
+
+
+                    const payload = {
+
+                        Device:
+                            device,
+
+                        SubDevice:
+                            subDevice,
+
+                        Model:
+                            model,
+
+                        Provider:
+                            provider || null,
+
+                        MSRP:
+                            parseFloat(msrp),
+
+                        TradeInValue:
+                            tradeInValue,
+
+                        Storage:
+                            device === "AirPods"
+                                ? null
+                                : (
+                                    storage
+                                        ? parseFloat(storage)
+                                        : null
+                                ),
+
+                        StorageType:
+                            device === "AirPods"
+                                ? null
+                                : (
+                                    storageType ||
+                                    null
+                                ),
+
+                        ModelYear:
+                            year
+                                ? parseInt(
+                                    year,
+                                    10
+                                )
+                                : null,
+
+                        Chipset:
+                            chipset || null,
+
+                        Connectivity:
+                            device === "iPad"
+                                ? (
+                                    connectivity ||
+                                    null
+                                )
+                                : null
+
+                    };
+
+
+                    console.log(
+                        "Submitting ADD request:",
+                        payload
+                    );
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/add",
+                                {
+
+                                    method:
+                                        "POST",
+
+                                    headers: {
+
+                                        "Content-Type":
+                                            "application/json"
+
+                                    },
+
+                                    body:
+                                        JSON.stringify(
+                                            payload
+                                        )
+
+                                }
+                            );
+
+
+                        const data =
+                            await response.json();
+
+
+                        console.log(
+                            "ADD response:",
+                            data
+                        );
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                "Failed to add device."
+                            );
+
+                        }
+
+
+                        const result =
+                            document
+                                .getElementById(
+                                    "add-result"
+                                );
+
+
+                        result.className =
+                            "result success";
+
+                        result.textContent =
+                            "Device added successfully.";
+
+                        result.style.display =
+                            "block";
+
+                        alert(
+                            "Device added successfully."
+                        );
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+                        const result =
+                            document
+                                .getElementById(
+                                    "add-result"
+                                );
+
+
+                        result.className =
+                            "result error";
+
+
+                        result.textContent =
+                            error.message;
+
+
+                        result.style.display =
+                            "block";
+
+                    }
+
+                }
+            );
+
+
+        // ====================================================
+        // ADD — CANCEL
+        // ====================================================
+
+        document
+            .getElementById(
+                "add-cancel"
+            )
+            .addEventListener(
+                "click",
+                () => {
+
+                    location.reload();
+
+                }
+            );
+
+
+        // ====================================================
+        // MODIFY — LOAD MODELS
+        // ====================================================
+
+        async function loadModifyModels() {
+
+            const device =
+                document
+                    .getElementById(
+                        "modify-device"
+                    )
+                    .value;
+
+
+            const modelSelect =
+                document
+                    .getElementById(
+                        "modify-model"
+                    );
+
+
+            modelSelect.innerHTML = `
+
+                <option value="">
+                    Select model
+                </option>
+
+            `;
+
+
+            if (!device) {
+
+                return;
+
+            }
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "http://127.0.0.1:8000/admin/models"
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                const models =
+                    data[device] || [];
+
+
+                models.forEach(
+                    model => {
+
+                        const option =
+                            document
+                                .createElement(
+                                    "option"
+                                );
+
+                        option.value =
+                            model;
+
+                        option.textContent =
+                            model;
+
+                        modelSelect.appendChild(
+                            option
+                        );
+
+                    }
+                );
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Unable to load models:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        document
+            .getElementById(
+                "modify-device"
+            )
+            .addEventListener(
+                "change",
+                loadModifyModels
+            );
+
+
+        // ====================================================
+        // MODIFY — LOAD RECORDS
+        // ====================================================
+
+        document
+            .getElementById(
+                "modify-model"
+            )
+            .addEventListener(
+                "change",
+                async () => {
+
+                    const device =
+                        document
+                            .getElementById(
+                                "modify-device"
+                            )
+                            .value;
+
+
+                    const model =
+                        document
+                            .getElementById(
+                                "modify-model"
+                            )
+                            .value;
+
+
+                    const container =
+                        document
+                            .getElementById(
+                                "modify-records"
+                            );
+
+
+                    container.innerHTML =
+                        "";
+
+
+                    if (!device || !model) {
+
+                        return;
+
+                    }
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/records"
+                                +
+                                `?device=${encodeURIComponent(device)}`
+                                +
+                                `&model=${encodeURIComponent(model)}`
+                            );
+
+
+                        const records =
+                            await response.json();
+
+
+                        records.forEach(
+                            record => {
+
+                                const div =
+                                    document
+                                        .createElement(
+                                            "div"
+                                        );
+
+
+                                div.className =
+                                    "record";
+
+
+                                const price =
+                                    record
+                                        .trade_in_value;
+
+
+                                const priceText =
+                                    price === null
+                                        ? "N/A"
+                                        : `RM ${Number(price).toLocaleString()}`;
+
+
+                                const priceClass =
+                                    price === null
+                                        ? "price-na"
+                                        : "price-confirmed";
+
+
+                                div.innerHTML = `
+
+                                    <div class="record-title">
+
+                                        ${record.model}
+
+                                    </div>
+
+                                    <div class="record-details">
+
+                                        Storage:
+                                        ${record.storage ?? "N/A"}
+                                        GB
+
+                                        <br>
+
+                                        Provider:
+                                        ${record.provider ?? "Unknown"}
+
+                                        <br>
+
+                                        Trade-In Value:
+                                        <span class="${priceClass}">
+
+                                            ${priceText}
+
+                                        </span>
+
+                                    </div>
+
+                                `;
+
+
+                                div.addEventListener(
+                                    "click",
+                                    () => {
+
+                                        openModifyRecord(
+                                            record
+                                        );
+
+                                    }
+                                );
+
+
+                                container.appendChild(
+                                    div
+                                );
+
+                            }
+                        );
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            "Unable to load records:",
+                            error
+                        );
+
+                    }
+
+                }
+            );
+
+
+        // ====================================================
+        // MODIFY — OPEN RECORD
+        // ====================================================
+
+        let selectedRecordId =
+            null;
+
+
+        function openModifyRecord(
+            record
+        ) {
+
+            selectedRecordId =
+                record.id;
+
+
+            document
+                .getElementById(
+                    "modify-current-info"
+                )
+                .textContent =
+
+                    `Storage: ${
+                        record.storage ?? "N/A"
+                    } GB | `
+
+                    +
+
+                    `Provider: ${
+                        record.provider ?? "Unknown"
+                    } | `
+
+                    +
+
+                    `Current Trade-In Value: ${
+                        record.trade_in_value === null
+                            ? "N/A"
+                            : `RM ${Number(
+                                record.trade_in_value
+                            ).toLocaleString()}`
+                    }`;
+
+
+            document
+                .getElementById(
+                    "modify-price"
+                )
+                .value =
+
+                    record.trade_in_value === null
+                        ? ""
+                        : record.trade_in_value;
+
+            document
+                .getElementById("modify-provider")
+                .value = record.provider ?? "";
+
+            document
+                .getElementById("modify-msrp")
+                .value =
+                    record.msrp ?? "";
+
+
+            document
+                .getElementById(
+                    "modify-form"
+                )
+                .classList.remove(
+                    "hidden"
+                );
+
+        }
+
+
+        // ====================================================
+        // MODIFY — SAVE
+        // ====================================================
+
+        document
+            .getElementById(
+                "modify-save"
+            )
+            .addEventListener(
+                "click",
+                async () => {
+
+                    if (
+                        selectedRecordId ===
+                        null
+                    ) {
+
+                        return;
+
+                    }
+
+                    const provider =
+                        document
+                            .getElementById(
+                                "modify-provider"
+                            )
+                            .value
+                            .trim();
+
+
+                    const msrp =
+                        document
+                            .getElementById(
+                                "modify-msrp"
+                            )
+                            .value;
+
+
+                    const tradeInValue =
+                        document
+                            .getElementById(
+                                "modify-price"
+                            )
+                            .value;
+
+
+                    const payload = {
+
+                        id:
+                            selectedRecordId,
+
+                        Provider:
+                            provider === ""
+                                ? null
+                                : provider,
+
+                        MSRP:
+                            msrp === ""
+                                ? null
+                                : parseFloat(msrp),
+
+                        TradeInValue:
+                            tradeInValue === ""
+                                ? null
+                                : parseFloat(tradeInValue)
+
+                    };
+
+
+                    console.log(
+                        "Submitting MODIFY request:",
+                        payload
+                    );
+
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                "http://127.0.0.1:8000/admin/modify",
+                                {
+
+                                    method:
+                                        "POST",
+
+                                    headers: {
+
+                                        "Content-Type":
+                                            "application/json"
+
+                                    },
+
+                                    body:
+                                        JSON.stringify(
+                                            payload
+                                        )
+
+                                }
+                            );
+
+
+                        const data =
+                            await response.json();
+
+
+                        console.log(
+                            "MODIFY response:",
+                            data
+                        );
+
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                data.message ||
+                                "Failed to modify record."
+                            );
+
+                        }
+
+
+                        const result =
+                            document
+                                .getElementById(
+                                    "modify-result"
+                                );
+
+
+                        result.className =
+                            "result success";
+
+
+                        result.textContent =
+                            "Record updated successfully.";
+
+
+                        result.style.display =
+                            "block";
+
+
+                    }
+                    catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+
+                        const result =
+                            document
+                                .getElementById(
+                                    "modify-result"
+                                );
+
+
+                        result.className =
+                            "result error";
+
+
+                        result.textContent =
+                            error.message;
+
+
+                        result.style.display =
+                            "block";
+
+                    }
+
+                }
+            );
+
+
+        // ====================================================
+        // MODIFY — CANCEL
+        // ====================================================
+
+        document
+            .getElementById(
+                "modify-cancel"
+            )
+            .addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById(
+                            "modify-form"
+                        )
+                        .classList.add(
+                            "hidden"
+                        );
+
+                    selectedRecordId =
+                        null;
+
+                }
+            );
+
+    </script>
+
+</body>
+
+</html>
