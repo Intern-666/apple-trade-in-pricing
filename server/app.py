@@ -11,6 +11,8 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Optional, cast
 from pydantic import BaseModel
@@ -29,6 +31,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # account credentials file) lives alongside app.py, one level
 # below BASE_DIR.
 APP_DIR = Path(__file__).resolve().parent
+
+ASSETS_DIR = BASE_DIR / "assets"
 
 DATA_FILE = BASE_DIR / "data" / "master_msrp.csv"
 
@@ -69,6 +73,12 @@ SHEETS_WORKSHEET_NAME = "Cleaned Master"
 
 app = FastAPI(
     title="Apple Trade-In Valuation API"
+)
+
+app.mount(
+    "/assets",
+    StaticFiles(directory=ASSETS_DIR),
+    name="assets",
 )
 
 
@@ -1942,13 +1952,36 @@ def admin_forecast(item: dict):
         }
 
 # ============================================================
-# HEALTH CHECK
+# CUSTOMER FRONTEND
 # ============================================================
 
 @app.get("/")
+def customer_frontend():
+
+    return FileResponse(
+        ASSETS_DIR / "index.html"
+    )
+
+
+# ============================================================
+# ADMIN FRONTEND
+# ============================================================
+
+@app.get("/admin")
+def admin_frontend():
+
+    return FileResponse(
+        ASSETS_DIR / "admin.html"
+    )
+
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.get("/health")
 def health_check():
 
     return {
         "status": "online",
-        "service": "Apple Trade-In Valuation API"
     }
