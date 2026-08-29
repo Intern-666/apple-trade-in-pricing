@@ -102,12 +102,13 @@ class SheetsSync:
 
             if service_account_json:
 
-                credentials_info = json.loads(
+
+                service_account_info = json.loads(
                     service_account_json
                 )
 
                 credentials = Credentials.from_service_account_info(
-                    credentials_info,
+                    service_account_info,
                     scopes=scopes,
                 )
 
@@ -125,11 +126,6 @@ class SheetsSync:
                     service_account_file,
                     scopes=scopes,
                 )
-
-            credentials = Credentials.from_service_account_file(
-                service_account_file,
-                scopes=scopes,
-            )
 
             self._client = gspread.authorize(credentials)
 
