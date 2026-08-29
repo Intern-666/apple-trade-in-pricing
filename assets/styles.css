@@ -10,7 +10,7 @@
   --border-hover: #c7c7cc;
 
   /* iMyCom red theme */
-  --accent: #e30613;
+  --accent: #d71920;
   --accent-dark: #c4000b;
   --accent-soft: #fff1f2;
   --accent-focus: rgba(227, 6, 19, 0.14);
@@ -411,8 +411,8 @@ select:disabled {
 .result-card {
   padding: 48px 32px 42px;
   text-align: center;
-  background: #fff8f8;
-  border-top: 1px solid var(--border);
+  background: #fff7f7;
+  border-top: 1px solid #f3dede;
   animation: resultIn 0.4s ease both;
 }
 
@@ -436,8 +436,8 @@ select:disabled {
   height: 44px;
   margin: 0 auto 18px;
   border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: #fde8e8;
+  color: #c62828;
   font-weight: 800;
 }
 
