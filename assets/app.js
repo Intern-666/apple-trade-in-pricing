@@ -1,119 +1,317 @@
-let deviceData = {}; // This will hold the data from the backend
+let deviceData = {};
 
-// 1. Fetch data on load
-window.addEventListener("DOMContentLoaded", async function() {
+/* =========================================================
+   ELEMENTS
+========================================================= */
+
+const deviceSelect = document.getElementById("deviceSelect");
+const subDeviceSelect = document.getElementById("subDeviceSelect");
+const modelSelect = document.getElementById("modelSelect");
+const storageSelect = document.getElementById("storageSelect");
+
+const tradeInForm = document.getElementById("tradeInForm");
+const conditionSection = document.getElementById("conditionSection");
+
+const resultCard = document.getElementById("resultCard");
+const resultValue = document.getElementById("resultValue");
+const submitBtn = document.getElementById("submitBtn");
+const startOverBtn = document.getElementById("startOverBtn");
+
+const progressBar = document.getElementById("progressBar");
+const progressText = document.getElementById("progressText");
+
+const productLineSection = document.getElementById("productLineSection");
+const modelSection = document.getElementById("modelSection");
+const storageSection = document.getElementById("storageSection");
+
+
+/* =========================================================
+   INITIAL LOAD
+========================================================= */
+
+window.addEventListener("DOMContentLoaded", async function () {
+
     try {
-        const response = await fetch("http://127.0.0.1:8000/available-models");
+
+        const response = await fetch(
+            "http://127.0.0.1:8000/available-models"
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Failed to load models: ${response.status}`
+            );
+        }
+
         deviceData = await response.json();
-        
-        const deviceSelect = document.getElementById("deviceSelect");
-        deviceSelect.innerHTML = '<option value="" disabled selected>Select a device...</option>';
-        
+
+        deviceSelect.innerHTML =
+            '<option value="" disabled selected>Select a device...</option>';
+
         for (const device in deviceData) {
+
             const option = document.createElement("option");
+
             option.value = device;
             option.textContent = device;
+
             deviceSelect.appendChild(option);
         }
+
+        updateProgress();
+
     } catch (error) {
-        console.error("Failed to load dynamic models:", error);
+
+        console.error(
+            "Failed to load dynamic models:",
+            error
+        );
+
+        deviceSelect.innerHTML =
+            '<option value="" disabled selected>Unable to load devices</option>';
     }
 });
 
-// 2. When Device changes -> Unlock & populate Product Line
-// 2. When Device changes -> Unlock & populate Product Line
-document.getElementById("deviceSelect").addEventListener("change", function(event) {
-    const selectedDevice = event.target.value;
-    const subDevices = deviceData[selectedDevice] || {};
-    
-    const subDeviceSelect = document.getElementById("subDeviceSelect");
-    const modelSelect = document.getElementById("modelSelect");
-    const storageSelect = document.getElementById("storageSelect");
-    
-    // Hide condition section until a product line is chosen
-    document.getElementById("conditionSection").classList.add("hidden");
 
-    // Populate Product Line
-    subDeviceSelect.innerHTML = '<option value="" disabled selected>Select a product line...</option>';
+/* =========================================================
+   DEVICE CHANGE
+========================================================= */
+
+deviceSelect.addEventListener("change", function (event) {
+
+    const selectedDevice = event.target.value;
+
+    const subDevices =
+        deviceData[selectedDevice] || {};
+
+    subDeviceSelect.innerHTML =
+        '<option value="" disabled selected>Select a product line...</option>';
+
     for (const sub in subDevices) {
+
         const option = document.createElement("option");
+
         option.value = sub;
         option.textContent = sub;
+
         subDeviceSelect.appendChild(option);
     }
-    
-    // Unlock Product Line, reset Model & Storage
+
     subDeviceSelect.disabled = false;
-    modelSelect.innerHTML = '<option value="" disabled selected>Select a model...</option>';
+
+    modelSelect.innerHTML =
+        '<option value="" disabled selected>Select a model...</option>';
+
     modelSelect.disabled = true;
-    storageSelect.innerHTML = '<option value="" disabled selected>Select storage...</option>';
+
+    storageSelect.innerHTML =
+        '<option value="" disabled selected>Select storage...</option>';
+
     storageSelect.disabled = true;
 
-    // AirPods do not have storage
+    storageSelect.required =
+        selectedDevice !== "AirPods";
+
+    hideConditionProfiles();
+
+    conditionSection.classList.add("hidden");
+
+    resultCard.classList.add("hidden");
+
+    updateProgress();
+
+    scrollToElement(productLineSection);
+});
+
+
+/* =========================================================
+   PRODUCT LINE CHANGE
+========================================================= */
+
+subDeviceSelect.addEventListener("change", function (event) {
+
+    const selectedDevice =
+        deviceSelect.value;
+
+    const selectedSub =
+        event.target.value;
+
+    const modelsObj =
+        deviceData[selectedDevice][selectedSub] || {};
+
+    modelSelect.innerHTML =
+        '<option value="" disabled selected>Select a model...</option>';
+
+    Object.keys(modelsObj)
+        .sort()
+        .forEach(model => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = model;
+            option.textContent = model;
+
+            modelSelect.appendChild(option);
+        });
+
+    modelSelect.disabled = false;
+
+    storageSelect.innerHTML =
+        '<option value="" disabled selected>Select storage...</option>';
+
+    storageSelect.disabled = true;
+
+    hideConditionProfiles();
+
+    conditionSection.classList.add("hidden");
+
+    resultCard.classList.add("hidden");
+
+    updateProgress();
+
+    scrollToElement(modelSection);
+});
+
+
+/* =========================================================
+   MODEL CHANGE
+========================================================= */
+
+modelSelect.addEventListener("change", function (event) {
+
+    const selectedDevice =
+        deviceSelect.value;
+
+    const selectedSub =
+        subDeviceSelect.value;
+
+    const selectedModel =
+        event.target.value;
+
+    const validStorages =
+        deviceData[selectedDevice][selectedSub][selectedModel] || [];
+
+    storageSelect.innerHTML =
+        '<option value="" disabled selected>Select storage...</option>';
+
+    validStorages.forEach(storage => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = storage;
+
+        let displayStorage;
+
+        if (storage >= 1024) {
+
+            const tbValue =
+                storage / 1024;
+
+            displayStorage =
+                `${tbValue} TB`;
+
+        } else {
+
+            displayStorage =
+                `${storage} GB`;
+        }
+
+        option.textContent =
+            displayStorage;
+
+        storageSelect.appendChild(option);
+    });
+
     if (selectedDevice === "AirPods") {
 
-        storageSelect.required = false;
         storageSelect.disabled = true;
+        storageSelect.required = false;
         storageSelect.value = "";
+
+        showConditionProfile(
+            selectedDevice,
+            selectedSub
+        );
 
     } else {
 
+        storageSelect.disabled = false;
         storageSelect.required = true;
+
+        hideConditionProfiles();
+        conditionSection.classList.add("hidden");
+    }
+
+    resultCard.classList.add("hidden");
+
+    updateProgress();
+
+    if (selectedDevice !== "AirPods") {
+        scrollToElement(storageSection);
     }
 });
 
-// 3. When Product Line changes -> Unlock Model & Show Correct Profile
-document.getElementById("subDeviceSelect").addEventListener("change", function(event) {
-    const selectedDevice = document.getElementById("deviceSelect").value;
-    const selectedSub = event.target.value;
-    
-    const modelsObj = deviceData[selectedDevice][selectedSub] || {}; 
-    
-    const modelSelect = document.getElementById("modelSelect");
-    const storageSelect = document.getElementById("storageSelect");
 
-    // Populate Model using Object.keys() so we can sort them safely
-    modelSelect.innerHTML = '<option value="" disabled selected>Select a model...</option>';
-    Object.keys(modelsObj).sort().forEach(model => {
-        const option = document.createElement("option");
-        option.value = model;
-        option.textContent = model;
-        modelSelect.appendChild(option);
-    });
-    
-    modelSelect.disabled = false;
-    storageSelect.innerHTML = '<option value="" disabled selected>Select storage...</option>';
-    storageSelect.disabled = true;
+/* =========================================================
+   STORAGE CHANGE
+========================================================= */
 
-    // --- CONDITION PROFILES SWITCHING ---
-    const conditionSection = document.getElementById("conditionSection");
+storageSelect.addEventListener("change", function () {
+
+    const selectedDevice =
+        deviceSelect.value;
+
+    const selectedSub =
+        subDeviceSelect.value;
+
+    showConditionProfile(
+        selectedDevice,
+        selectedSub
+    );
+
+    resultCard.classList.add("hidden");
+
+    updateProgress();
+
+    scrollToElement(conditionSection);
+});
+
+
+/* =========================================================
+   CONDITION PROFILE
+========================================================= */
+
+function showConditionProfile(
+    selectedDevice,
+    selectedSub
+) {
+
     conditionSection.classList.remove("hidden");
 
-    // Grab all profile divs
-    const profileIPhone = document.getElementById("profileIPhone");
-    const profileIPad = document.getElementById("profileIPad");
-    const profileAppleWatch = document.getElementById("profileAppleWatch");
-    const profileMacLaptop = document.getElementById("profileMacLaptop");
-    const profileMacDesktop = document.getElementById("profileMacDesktop");
-    const profileAirPods = document.getElementById("profileAirPods");
+    hideConditionProfiles();
 
-    // Hide all profiles first
-    [profileIPhone, profileIPad, profileAppleWatch, profileMacLaptop, profileMacDesktop, profileAirPods].forEach(profile => {
-        if (profile) profile.classList.add("hidden");
-    });
-
-    // Reveal only the correct profile based on Device & Product Line
     if (selectedDevice === "iPhone") {
-        if (profileIPhone) profileIPhone.classList.remove("hidden");
+
+        showProfile("profileIPhone");
+
     } else if (selectedDevice === "iPad") {
-        if (profileIPad) profileIPad.classList.remove("hidden");
+
+        showProfile("profileIPad");
+
     } else if (selectedDevice === "Apple Watch") {
-        if (profileAppleWatch) profileAppleWatch.classList.remove("hidden");
+
+        showProfile("profileAppleWatch");
+
     } else if (selectedDevice === "AirPods") {
-        if (profileAirPods) profileAirPods.classList.remove("hidden");
+
+        showProfile("profileAirPods");
+
     } else if (selectedDevice === "Mac") {
 
-        const subLower = selectedSub.toLowerCase();
+        const subLower =
+            selectedSub.toLowerCase();
 
         if (
             subLower.includes("mini") ||
@@ -121,24 +319,18 @@ document.getElementById("subDeviceSelect").addEventListener("change", function(e
             subLower.includes("pro desktop")
         ) {
 
-            // Mac mini / Mac Studio / Mac Pro
-            // No built-in display
-            if (profileMacDesktop) {
-                profileMacDesktop.classList.remove("hidden");
-            }
+            showProfile("profileMacDesktop");
 
         } else if (
             subLower.includes("imac")
         ) {
 
-            // iMac
-            // Has built-in display
-            if (profileMacDesktop) {
-                profileMacDesktop.classList.remove("hidden");
-            }
+            showProfile("profileMacDesktop");
 
             const screenGroup =
-                document.getElementById("desktopScreenGroup");
+                document.getElementById(
+                    "desktopScreenGroup"
+                );
 
             if (screenGroup) {
                 screenGroup.classList.remove("hidden");
@@ -146,59 +338,110 @@ document.getElementById("subDeviceSelect").addEventListener("change", function(e
 
         } else {
 
-            // MacBook / MacBook Air / MacBook Pro
-            if (profileMacLaptop) {
-                profileMacLaptop.classList.remove("hidden");
-            }
+            showProfile("profileMacLaptop");
         }
     }
-});
 
-// 4. When Model changes -> Unlock & populate exact Storage capacities
-document.getElementById("modelSelect").addEventListener("change", function(event) {
-    const selectedDevice = document.getElementById("deviceSelect").value;
-    const selectedSub = document.getElementById("subDeviceSelect").value;
-    const selectedModel = event.target.value;
-    
-    const validStorages = deviceData[selectedDevice][selectedSub][selectedModel] || [];
-    const storageSelect = document.getElementById("storageSelect");
-    
-    storageSelect.innerHTML = '<option value="" disabled selected>Select storage...</option>';
-    
-    validStorages.forEach(storage => {
-        const option = document.createElement("option");
-        option.value = storage; // Keeps the raw number (e.g., 1024) for the backend API
-        
-        // --- NEW: Convert to TB if 1024 or greater ---
-        let displayStorage = "";
-        if (storage >= 1024) {
-            const tbValue = storage / 1024;
-            displayStorage = `${tbValue} TB`;
-        } else {
-            displayStorage = `${storage} GB`;
+    updateProgress();
+}
+
+
+function showProfile(id) {
+
+    const profile =
+        document.getElementById(id);
+
+    if (profile) {
+        profile.classList.remove("hidden");
+    }
+}
+
+
+function hideConditionProfiles() {
+
+    const profiles = [
+        "profileIPhone",
+        "profileIPad",
+        "profileAppleWatch",
+        "profileMacLaptop",
+        "profileMacDesktop",
+        "profileAirPods"
+    ];
+
+    profiles.forEach(id => {
+
+        const profile =
+            document.getElementById(id);
+
+        if (profile) {
+            profile.classList.add("hidden");
         }
-        
-        option.textContent = displayStorage;
-        storageSelect.appendChild(option);
     });
-    
-    if (selectedDevice === "AirPods") {
 
-        storageSelect.disabled = true;
-        storageSelect.required = false;
-        storageSelect.value = "";
+    const screenGroup =
+        document.getElementById(
+            "desktopScreenGroup"
+        );
 
-    } else {
-
-        storageSelect.disabled = false;
-        storageSelect.required = true;
+    if (screenGroup) {
+        screenGroup.classList.add("hidden");
     }
-});
+}
 
-// 5. The function that talks to your FastAPI server
-// ============================================================
-// 5. TALK TO FASTAPI SERVER
-// ============================================================
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+function updateProgress() {
+
+    const device =
+        deviceSelect.value;
+
+    const subDevice =
+        subDeviceSelect.value;
+
+    const model =
+        modelSelect.value;
+
+    const storage =
+        storageSelect.value;
+
+    let step = 1;
+
+    if (device) {
+        step = 2;
+    }
+
+    if (subDevice) {
+        step = 3;
+    }
+
+    if (model) {
+        step = 4;
+    }
+
+    if (
+        storage ||
+        device === "AirPods"
+    ) {
+        step = 5;
+    }
+
+    const percentage =
+        (step / 5) * 100;
+
+    progressBar.style.width =
+        `${percentage}%`;
+
+    progressText.textContent =
+        `Step ${step} of 5`;
+}
+
+
+/* =========================================================
+   API
+========================================================= */
 
 async function fetchPredictedPrice(
     device,
@@ -207,7 +450,8 @@ async function fetchPredictedPrice(
     storage
 ) {
 
-    const apiUrl = "http://127.0.0.1:8000/predict";
+    const apiUrl =
+        "http://127.0.0.1:8000/predict";
 
     try {
 
@@ -215,29 +459,34 @@ async function fetchPredictedPrice(
             Device: device,
             SubDevice: subDevice,
             Model: model,
-            Storage: storage ? parseFloat(storage) : null
+            Storage: storage
+                ? parseFloat(storage)
+                : null
         };
 
-        console.log("Sending API request:", payload);
-
-        const response = await fetch(
-            apiUrl,
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-
-                body: JSON.stringify(payload)
-            }
+        console.log(
+            "Sending API request:",
+            payload
         );
 
+        const response =
+            await fetch(
+                apiUrl,
+                {
+                    method: "POST",
 
-        // ----------------------------------------------------
-        // API ERROR
-        // ----------------------------------------------------
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(payload)
+                }
+            );
 
         if (!response.ok) {
 
@@ -255,11 +504,6 @@ async function fetchPredictedPrice(
             );
         }
 
-
-        // ----------------------------------------------------
-        // SUCCESS
-        // ----------------------------------------------------
-
         const data =
             await response.json();
 
@@ -269,7 +513,6 @@ async function fetchPredictedPrice(
         );
 
         return data;
-
 
     } catch (error) {
 
@@ -282,51 +525,60 @@ async function fetchPredictedPrice(
     }
 }
 
-// 6. The Event Listener for the Submit Button
-document.getElementById("tradeInForm").addEventListener(
+
+/* =========================================================
+   SUBMIT
+========================================================= */
+
+tradeInForm.addEventListener(
     "submit",
-    async function(event) {
+    async function (event) {
 
         event.preventDefault();
 
-        console.log("SUBMIT HANDLER FIRED");
-
-        // ========================================================
-        // 1. GET DEVICE SELECTIONS
-        // ========================================================
-
         const device =
-            document.getElementById("deviceSelect").value;
+            deviceSelect.value;
 
         const subDevice =
-            document.getElementById("subDeviceSelect").value;
+            subDeviceSelect.value;
 
         const model =
-            document.getElementById("modelSelect").value;
+            modelSelect.value;
 
         const storage =
-            document.getElementById("storageSelect").value;
-
-
-        // ========================================================
-        // 2. RESULT ELEMENTS
-        // ========================================================
-
-        const resultCard =
-            document.getElementById("resultCard");
-
-        const resultValue =
-            document.getElementById("resultValue");
-
+            storageSelect.value;
 
         resultCard.classList.remove("hidden");
 
-        resultValue.innerText = "Calculating...";
+        resultValue.innerText =
+            "Calculating...";
 
+        submitBtn.disabled = true;
 
-        // ========================================================
-        // 3. GET EXACT MARKET MEDIAN
-        // ========================================================
+        const buttonText =
+            submitBtn.querySelector(
+                ".button-text"
+            );
+
+        const buttonArrow =
+            submitBtn.querySelector(
+                ".button-arrow"
+            );
+
+        if (buttonText) {
+            buttonText.textContent =
+                "Calculating...";
+        }
+
+        if (buttonArrow) {
+            buttonArrow.textContent =
+                "…";
+        }
+
+        resultCard.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 
         const valuation =
             await fetchPredictedPrice(
@@ -336,15 +588,25 @@ document.getElementById("tradeInForm").addEventListener(
                 storage
             );
 
+        submitBtn.disabled = false;
+
+        if (buttonText) {
+            buttonText.textContent =
+                "Get my valuation";
+        }
+
+        if (buttonArrow) {
+            buttonArrow.textContent =
+                "→";
+        }
 
         if (valuation === null) {
 
             resultValue.innerText =
-                "Unable to calculate trade-in value.";
+                "Unable to calculate";
 
             return;
         }
-
 
         if (
             valuation.status !== "resolved" ||
@@ -352,7 +614,11 @@ document.getElementById("tradeInForm").addEventListener(
         ) {
 
             resultValue.innerHTML = `
-                <span style="font-size: 0.8em;">
+                <span style="
+                    font-size: 1rem;
+                    letter-spacing: 0;
+                    line-height: 1.5;
+                ">
                     This exact device configuration
                     is currently unavailable.
                 </span>
@@ -361,56 +627,75 @@ document.getElementById("tradeInForm").addEventListener(
             return;
         }
 
-
         const medianPrice =
-            Number(valuation.estimated_value);
+            Number(
+                valuation.estimated_value
+            );
 
-
-        // ========================================================
-        // 4. CONDITION ASSESSMENT
-        // ========================================================
+        /* =====================================================
+           CONDITION SCORE
+        ===================================================== */
 
         let score = 100;
 
-
         const profileIPhone =
-            document.getElementById("profileIPhone");
+            document.getElementById(
+                "profileIPhone"
+            );
 
         const profileIPad =
-            document.getElementById("profileIPad");
+            document.getElementById(
+                "profileIPad"
+            );
 
         const profileAppleWatch =
-            document.getElementById("profileAppleWatch");
+            document.getElementById(
+                "profileAppleWatch"
+            );
 
         const profileMacLaptop =
-            document.getElementById("profileMacLaptop");
+            document.getElementById(
+                "profileMacLaptop"
+            );
 
         const profileMacDesktop =
-            document.getElementById("profileMacDesktop");
+            document.getElementById(
+                "profileMacDesktop"
+            );
 
         const profileAirPods =
-            document.getElementById("profileAirPods");
+            document.getElementById(
+                "profileAirPods"
+            );
 
 
-        // --------------------------------------------------------
-        // iPhone
-        // --------------------------------------------------------
+        /* =========================
+           iPhone
+        ========================= */
 
         if (
             profileIPhone &&
-            !profileIPhone.classList.contains("hidden")
+            !profileIPhone.classList.contains(
+                "hidden"
+            )
         ) {
 
             score += parseInt(
-                document.getElementById("iphoneScreen").value
+                document.getElementById(
+                    "iphoneScreen"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("iphoneBody").value
+                document.getElementById(
+                    "iphoneBody"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("iphoneBattery").value
+                document.getElementById(
+                    "iphoneBattery"
+                ).value
             );
 
             document
@@ -418,30 +703,40 @@ document.getElementById("tradeInForm").addEventListener(
                     'input[name="iphoneDefect"]:checked'
                 )
                 .forEach(cb => {
-                    score += parseInt(cb.value);
+                    score += parseInt(
+                        cb.value
+                    );
                 });
         }
 
 
-        // --------------------------------------------------------
-        // iPad
-        // --------------------------------------------------------
+        /* =========================
+           iPad
+        ========================= */
 
         else if (
             profileIPad &&
-            !profileIPad.classList.contains("hidden")
+            !profileIPad.classList.contains(
+                "hidden"
+            )
         ) {
 
             score += parseInt(
-                document.getElementById("ipadScreen").value
+                document.getElementById(
+                    "ipadScreen"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("ipadBody").value
+                document.getElementById(
+                    "ipadBody"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("ipadBattery").value
+                document.getElementById(
+                    "ipadBattery"
+                ).value
             );
 
             document
@@ -449,30 +744,40 @@ document.getElementById("tradeInForm").addEventListener(
                     'input[name="ipadDefect"]:checked'
                 )
                 .forEach(cb => {
-                    score += parseInt(cb.value);
+                    score += parseInt(
+                        cb.value
+                    );
                 });
         }
 
 
-        // --------------------------------------------------------
-        // Apple Watch
-        // --------------------------------------------------------
+        /* =========================
+           Apple Watch
+        ========================= */
 
         else if (
             profileAppleWatch &&
-            !profileAppleWatch.classList.contains("hidden")
+            !profileAppleWatch.classList.contains(
+                "hidden"
+            )
         ) {
 
             score += parseInt(
-                document.getElementById("watchScreen").value
+                document.getElementById(
+                    "watchScreen"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("watchBody").value
+                document.getElementById(
+                    "watchBody"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("watchBattery").value
+                document.getElementById(
+                    "watchBattery"
+                ).value
             );
 
             document
@@ -480,30 +785,40 @@ document.getElementById("tradeInForm").addEventListener(
                     'input[name="watchDefect"]:checked'
                 )
                 .forEach(cb => {
-                    score += parseInt(cb.value);
+                    score += parseInt(
+                        cb.value
+                    );
                 });
         }
 
 
-        // --------------------------------------------------------
-        // Mac Laptop
-        // --------------------------------------------------------
+        /* =========================
+           Mac Laptop
+        ========================= */
 
         else if (
             profileMacLaptop &&
-            !profileMacLaptop.classList.contains("hidden")
+            !profileMacLaptop.classList.contains(
+                "hidden"
+            )
         ) {
 
             score += parseInt(
-                document.getElementById("laptopScreen").value
+                document.getElementById(
+                    "laptopScreen"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("laptopBody").value
+                document.getElementById(
+                    "laptopBody"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("laptopBattery").value
+                document.getElementById(
+                    "laptopBattery"
+                ).value
             );
 
             document
@@ -511,85 +826,92 @@ document.getElementById("tradeInForm").addEventListener(
                     'input[name="laptopDefect"]:checked'
                 )
                 .forEach(cb => {
-                    score += parseInt(cb.value);
+                    score += parseInt(
+                        cb.value
+                    );
                 });
         }
 
 
-        // --------------------------------------------------------
-        // Mac Desktop
-        // --------------------------------------------------------
+        /* =========================
+           Mac Desktop
+        ========================= */
 
         else if (
             profileMacDesktop &&
-            !profileMacDesktop.classList.contains("hidden")
+            !profileMacDesktop.classList.contains(
+                "hidden"
+            )
         ) {
 
-            // --------------------------------------------------------
-            // iMac Screen
-            // --------------------------------------------------------
-
             const selectedSub =
-                document.getElementById("subDeviceSelect").value;
+                subDeviceSelect.value;
 
             if (
                 selectedSub &&
-                selectedSub.toLowerCase().includes("imac")
+                selectedSub
+                    .toLowerCase()
+                    .includes("imac")
             ) {
 
                 const desktopScreen =
-                    document.getElementById("desktopScreen");
+                    document.getElementById(
+                        "desktopScreen"
+                    );
 
                 if (desktopScreen) {
+
                     score += parseInt(
                         desktopScreen.value
                     );
                 }
             }
 
-
-            // --------------------------------------------------------
-            // Body / Chassis
-            // --------------------------------------------------------
-
             score += parseInt(
-                document.getElementById("desktopBody").value
+                document.getElementById(
+                    "desktopBody"
+                ).value
             );
-
-
-            // --------------------------------------------------------
-            // Functionality Issues
-            // --------------------------------------------------------
 
             document
                 .querySelectorAll(
                     'input[name="desktopDefect"]:checked'
                 )
                 .forEach(cb => {
-                    score += parseInt(cb.value);
+                    score += parseInt(
+                        cb.value
+                    );
                 });
         }
 
 
-        // --------------------------------------------------------
-        // AirPods
-        // --------------------------------------------------------
+        /* =========================
+           AirPods
+        ========================= */
 
         else if (
             profileAirPods &&
-            !profileAirPods.classList.contains("hidden")
+            !profileAirPods.classList.contains(
+                "hidden"
+            )
         ) {
 
             score += parseInt(
-                document.getElementById("airpodsCase").value
+                document.getElementById(
+                    "airpodsCase"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("airpodsBuds").value
+                document.getElementById(
+                    "airpodsBuds"
+                ).value
             );
 
             score += parseInt(
-                document.getElementById("airpodsBattery").value
+                document.getElementById(
+                    "airpodsBattery"
+                ).value
             );
 
             document
@@ -597,28 +919,32 @@ document.getElementById("tradeInForm").addEventListener(
                     'input[name="airpodsDefect"]:checked'
                 )
                 .forEach(cb => {
-                    score += parseInt(cb.value);
+                    score += parseInt(
+                        cb.value
+                    );
                 });
         }
 
 
-        // ========================================================
-        // 5. CLAMP SCORE
-        // ========================================================
+        /* =====================================================
+           CLAMP
+        ===================================================== */
 
         score = Math.max(
             0,
-            Math.min(100, score)
+            Math.min(
+                100,
+                score
+            )
         );
 
 
-        // ========================================================
-        // 6. GRADE + MULTIPLIER
-        // ========================================================
+        /* =====================================================
+           GRADE
+        ===================================================== */
 
         let grade = "F";
         let multiplier = 0.10;
-
 
         if (score >= 90) {
 
@@ -637,27 +963,97 @@ document.getElementById("tradeInForm").addEventListener(
         }
 
 
-        // ========================================================
-        // 7. FINAL TRADE-IN VALUE
-        // ========================================================
+        /* =====================================================
+           FINAL VALUE
+        ===================================================== */
 
-        // ========================================================
-        // 7. FINAL TRADE-IN VALUE
-        // ========================================================
-
-        const finalPrice = Math.floor(
-            medianPrice * multiplier
-        );
+        const finalPrice =
+            Math.floor(
+                medianPrice * multiplier
+            );
 
         const formattedPrice =
-            finalPrice.toLocaleString("en-MY");
+            finalPrice.toLocaleString(
+                "en-MY"
+            );
 
-        // ========================================================
-        // 8. DISPLAY RESULT
-        // ========================================================
 
-        resultValue.innerHTML = `
-            RM ${formattedPrice}
-        `;
-        }
+        /* =====================================================
+           DISPLAY
+        ===================================================== */
+
+        resultValue.innerHTML =
+            `RM ${formattedPrice}`;
+
+        resultCard.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
 );
+
+
+/* =========================================================
+   START OVER
+========================================================= */
+
+startOverBtn.addEventListener(
+    "click",
+    function () {
+
+        tradeInForm.reset();
+
+        subDeviceSelect.innerHTML =
+            '<option value="" disabled selected>Select a product line...</option>';
+
+        modelSelect.innerHTML =
+            '<option value="" disabled selected>Select a model...</option>';
+
+        storageSelect.innerHTML =
+            '<option value="" disabled selected>Select storage...</option>';
+
+        subDeviceSelect.disabled = true;
+        modelSelect.disabled = true;
+        storageSelect.disabled = true;
+
+        storageSelect.required = true;
+
+        conditionSection.classList.add(
+            "hidden"
+        );
+
+        hideConditionProfiles();
+
+        resultCard.classList.add(
+            "hidden"
+        );
+
+        updateProgress();
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+);
+
+
+/* =========================================================
+   UTILITY
+========================================================= */
+
+function scrollToElement(element) {
+
+    if (!element) {
+        return;
+    }
+
+    setTimeout(() => {
+
+        element.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+    }, 120);
+}
