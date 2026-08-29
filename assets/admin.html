@@ -39,168 +39,180 @@
 
 
         .header {
-
             background: #000;
-
             color: white;
-
-            padding: 24px 32px;
-
+            padding: 26px 40px;
+            border-bottom: 1px solid #222;
         }
 
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .admin-logo {
+            display: block;
+            width: auto;
+            height: 48px;
+            max-width: 180px;
+            object-fit: contain;
+        }
+
+        .header-text h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .header-text p {
+            margin: 6px 0 0;
+            color: #aaa;
+            font-size: 14px;
+        }
 
         .header h1 {
-
             margin: 0;
-
-            font-size: 24px;
-
+            font-size: 25px;
             font-weight: 600;
-
+            letter-spacing: -0.4px;
         }
 
-
         .header p {
-
-            margin: 6px 0 0;
-
-            color: #aaa;
-
+            margin: 7px 0 0;
+            color: #a1a1a6;
             font-size: 14px;
-
         }
 
 
         .container {
-
-            max-width: 900px;
-
-            margin: 40px auto;
-
-            padding: 0 20px;
-
+            max-width: 1080px;
+            margin: 36px auto 60px;
+            padding: 0 24px;
         }
 
 
         .admin-nav {
-
             display: flex;
-
-            gap: 10px;
-
+            gap: 6px;
             margin-bottom: 24px;
-
+            padding: 5px;
+            background: #e8e8ed;
+            border-radius: 12px;
+            width: fit-content;
+            max-width: 100%;
             flex-wrap: wrap;
-
         }
-
 
         .admin-nav button {
-
             border: none;
-
-            background: white;
-
-            padding: 12px 22px;
-
-            border-radius: 8px;
-
-            font-size: 14px;
-
+            background: transparent;
+            color: #555;
+            padding: 10px 20px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
             cursor: pointer;
-
-            border: 1px solid #ddd;
-
+            transition:
+                background 0.18s ease,
+                color 0.18s ease,
+                box-shadow 0.18s ease;
         }
 
+        .admin-nav button:hover {
+            color: #1d1d1f;
+            background: rgba(255, 255, 255, 0.65);
+        }
 
         .admin-nav button.active {
-
-            background: #1d1d1f;
-
-            color: white;
-
-            border-color: #1d1d1f;
-
+            background: #d32f2f;
+            color: #fff;
+            border: #d32f2f;
+            box-shadow:
+                0 1px 3px rgba(0, 0, 0, 0.10);
         }
 
 
         .card {
-
-            background: white;
-
-            border-radius: 14px;
-
-            padding: 30px;
-
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #e5e5e7;
+            border-radius: 18px;
+            padding: 34px;
             box-shadow:
-                0 2px 10px
-                rgba(0, 0, 0, 0.06);
-
+                0 4px 20px rgba(0, 0, 0, 0.05);
         }
-
 
         .card h2 {
-
-            margin-top: 0;
-
-            margin-bottom: 8px;
-
-            font-size: 22px;
-
+            margin: 0 0 8px;
+            font-size: 23px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: #1d1d1f;
         }
 
+        .card h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 22px;
+            margin-right: 10px;
+            vertical-align: -3px;
+            background: #d32f2f;
+            border-radius: 3px;
+        }
 
         .description {
-
-            margin-top: 0;
-
-            margin-bottom: 28px;
-
-            color: #666;
-
+            margin: 0 0 30px;
+            color: #6e6e73;
             font-size: 14px;
-
+            line-height: 1.55;
         }
 
 
         .form-group {
-
-            margin-bottom: 20px;
-
+            margin-bottom: 22px;
         }
 
-
         .form-group label {
-
             display: block;
-
-            margin-bottom: 7px;
-
-            font-size: 14px;
-
-            font-weight: 500;
-
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #3a3a3c;
         }
 
 
         input,
         select {
-
             width: 100%;
-
             padding: 12px 14px;
-
-            border: 1px solid #ccc;
-
-            border-radius: 8px;
-
+            border: 1px solid #d2d2d7;
+            border-radius: 10px;
             font-size: 15px;
-
-            background: white;
-
+            background: #fff;
             color: #1d1d1f;
+            transition:
+                border-color 0.18s ease,
+                box-shadow 0.18s ease,
+                background 0.18s ease;
+        }
 
+        input:hover,
+        select:hover {
+            border-color: #b8b8bd;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #0071e3;
+            box-shadow:
+                0 0 0 3px rgba(0, 113, 227, 0.12);
+        }
+
+        input::placeholder {
+            color: #9a9aa0;
         }
 
         /* ============================================================
@@ -208,30 +220,22 @@
             ============================================================ */
 
         input[type="radio"] {
-
-            width: auto;
-
+            width: 16px;
+            height: 16px;
             padding: 0;
-
-            margin: 0 8px 0 0;
-
-            accent-color: #0071e3;
-
+            margin: 0;
+            accent-color: #d32f2f;
         }
 
-
         .form-group label:has(input[type="radio"]) {
-
             display: flex;
-
             align-items: center;
-
-            gap: 6px;
-
-            margin-bottom: 8px;
-
+            gap: 8px;
+            width: fit-content;
+            margin-bottom: 9px;
             font-weight: 400;
-
+            color: #4a4a4f;
+            cursor: pointer;
         }
 
         input:focus,
@@ -239,94 +243,79 @@
 
             outline: none;
 
-            border-color: #0071e3;
+            border-color: #d32f2f;
 
             box-shadow:
                 0 0 0 2px
-                rgba(0, 113, 227, 0.12);
+                rgba(211, 47, 47, 0.12);
 
         }
 
 
         .buttons {
-
             display: flex;
-
             gap: 10px;
-
             margin-top: 30px;
-
         }
-
 
         .buttons button {
-
             flex: 1;
-
-            padding: 13px;
-
-            border-radius: 8px;
-
-            font-size: 15px;
-
-            font-weight: 500;
-
+            min-height: 46px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-
+            transition:
+                transform 0.12s ease,
+                background 0.18s ease,
+                box-shadow 0.18s ease;
         }
 
+        .buttons button:hover {
+            transform: translateY(-1px);
+        }
+
+        .buttons button:active {
+            transform: translateY(0);
+        }
+
+        .buttons button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
+        }
 
         .primary {
-
-            background: #0071e3;
-
+            background: #d32f2f;
             color: white;
-
             border: none;
-
+            box-shadow:
+                0 2px 6px rgba(0, 113, 227, 0.20);
         }
-
 
         .primary:hover {
-
-            background: #0077ed;
-
+            background: #b71c1c;
         }
-
 
         .secondary {
-
-            background: white;
-
+            background: #fff;
             color: #1d1d1f;
-
-            border: 1px solid #ccc;
-
+            border: 1px solid #d2d2d7;
         }
-
 
         .secondary:hover {
-
             background: #f5f5f7;
-
         }
-
 
         .danger {
-
             background: #d32f2f;
-
             color: white;
-
             border: none;
-
         }
 
-
         .danger:hover {
-
-            background: #b71c1c;
-
+            background: #e3001b;
         }
 
 
@@ -364,39 +353,27 @@
 
 
         .result {
-
             margin-top: 20px;
-
             padding: 14px 16px;
-
-            border-radius: 8px;
-
+            border-radius: 10px;
             display: none;
-
             font-size: 14px;
-
+            line-height: 1.5;
+            border: 1px solid transparent;
         }
-
 
         .success {
-
             display: block;
-
-            background: #e8f5e9;
-
+            background: #eef8f0;
             color: #216e39;
-
+            border-color: #c9e8cf;
         }
 
-
         .error {
-
             display: block;
-
-            background: #ffebee;
-
+            background: #fff1f1;
             color: #b42318;
-
+            border-color: #f2cccc;
         }
 
 
@@ -415,83 +392,119 @@
 
 
         .record {
-
             border: 1px solid #ddd;
-
-            border-radius: 8px;
-
-            padding: 15px;
-
+            border-radius: 12px;
+            padding: 17px 18px;
             margin-bottom: 10px;
-
             cursor: pointer;
-
-            background: white;
-
+            background: #fff;
+            transition:
+                border-color 0.18s ease,
+                background 0.18s ease,
+                box-shadow 0.18s ease,
+                transform 0.12s ease;
         }
-
 
         .record:hover {
-
-            background: #f5f5f7;
-
+            background: #fff7f7;
+            border-color: #e0a0a0;
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
         }
 
+        .record:active {
+            transform: translateY(0);
+        }
 
         .record-title {
-
             font-weight: 600;
-
-            margin-bottom: 5px;
-
+            font-size: 15px;
+            margin-bottom: 7px;
+            color: #1d1d1f;
         }
-
 
         .record-details {
-
-            color: #666;
-
+            color: #6e6e73;
             font-size: 13px;
-
+            line-height: 1.65;
         }
-
 
         .price-na {
-
             color: #b42318;
-
-            font-weight: 500;
-
+            font-weight: 600;
         }
 
-
         .price-confirmed {
-
             color: #216e39;
-
-            font-weight: 500;
-
+            font-weight: 600;
         }
 
 
         @media (max-width: 600px) {
 
-            .card {
+            .header-brand {
+                gap: 12px;
+            }
 
-                padding: 20px;
+            .admin-logo {
+                height: 40px;
+                max-width: 140px;
+            }
 
+            .header-text h1 {
+                font-size: 20px;
+            }
+
+            .header-text p {
+                font-size: 12px;
             }
 
             .header {
+                padding: 22px 20px;
+            }
 
-                padding: 20px;
-
+            .header h1 {
+                font-size: 21px;
             }
 
             .container {
+                margin-top: 22px;
+                padding: 0 14px;
+            }
 
-                margin-top: 25px;
+            .admin-nav {
+                width: 100%;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+            }
 
+            .admin-nav button {
+                flex: 1;
+                min-width: 90px;
+                padding: 10px 14px;
+            }
+
+            .card {
+                padding: 22px 18px;
+                border-radius: 14px;
+            }
+
+            .card h2 {
+                font-size: 21px;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .forecast-chart-wrapper {
+                height: 300px;
+                padding: 12px;
+            }
+
+            .delete-modal {
+                padding: 22px;
             }
 
         }
@@ -501,25 +514,15 @@
         ============================================================ */
 
         #delete-confirm {
-
             position: fixed;
-
             inset: 0;
-
             z-index: 9999;
-
             display: flex;
-
             align-items: center;
-
             justify-content: center;
-
             padding: 24px;
-
-            background: rgba(0, 0, 0, 0.40);
-
-            backdrop-filter: blur(2px);
-
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
         }
 
         #delete-confirm.hidden {
@@ -534,45 +537,26 @@
         .delete-modal {
             width: 100%;
             max-width: 460px;
-
-            box-sizing: border-box;
-
-            padding: 26px;
-
-            background: var(--white, #ffffff);
-
-            border: 1px solid #dddddd;
-
-            border-radius: 10px;
-
+            padding: 28px;
+            background: #fff;
+            border: 1px solid #e5e5e7;
+            border-radius: 16px;
             box-shadow:
-                0 15px 40px rgba(0, 0, 0, 0.20);
+                0 24px 70px rgba(0, 0, 0, 0.22);
         }
-
-
-        /* ============================================================
-        TITLE
-        ============================================================ */
 
         .delete-modal-title {
-            margin-bottom: 14px;
-
-            font-size: 19px;
-
+            margin-bottom: 12px;
+            font-size: 20px;
             font-weight: 600;
+            letter-spacing: -0.2px;
         }
 
-
-        /* ============================================================
-        RECORD INFORMATION
-        ============================================================ */
-
         .delete-modal-info {
-            margin: 0 0 24px 0;
-
+            margin: 0 0 24px;
             font-size: 14px;
-
             line-height: 1.7;
+            color: #555;
         }
 
 
@@ -588,11 +572,151 @@
             gap: 10px;
         }
 
+        /* ============================================================
+        MODIFY CONFIRMATION MODAL
+        ============================================================ */
+
+        #modify-form {
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(0, 0, 0, 0.40);
+            backdrop-filter: blur(2px);
+        }
+
+        #modify-form.hidden {
+            display: none !important;
+        }
+
+        .modify-modal {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            box-sizing: border-box;
+            padding: 26px;
+            background: var(--white, #ffffff);
+            border: 1px solid #dddddd;
+            border-radius: 10px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.20);
+        }
+
+        .modify-close-button {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+
+            width: 32px;
+            height: 32px;
+
+            padding: 0;
+
+            border: none;
+            border-radius: 50%;
+
+            background: transparent;
+            color: #666;
+
+            font-size: 25px;
+            line-height: 32px;
+
+            cursor: pointer;
+        }
+
+        .modify-close-button:hover {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .modify-modal-title {
+            margin-bottom: 14px;
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        .modify-modal-info {
+            margin: 0 0 24px 0;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        /* ============================================================
+        FORECAST CHART
+        ============================================================ */
+
         .forecast-chart-wrapper {
             position: relative;
             width: 100%;
             height: 350px;
             margin: 24px 0;
+        }
+
+        .forecast-summary {
+            margin-top: 28px;
+            padding: 20px;
+            background: #f5f5f7;
+            border: 1px solid #e5e5e7;
+            border-radius: 12px;
+        }
+
+        .forecast-summary h3 {
+            margin: 0 0 6px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .forecast-summary p {
+            margin: 0;
+            color: #6e6e73;
+            font-size: 14px;
+        }
+
+        .forecast-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            margin: 24px 0;
+            padding: 20px;
+            background: #fff;
+            border: 1px solid #e5e5e7;
+            border-radius: 14px;
+        }
+
+        .forecast-table-wrapper {
+            overflow-x: auto;
+            border: 1px solid #e5e5e7;
+            border-radius: 12px;
+        }
+
+        .forecast-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: #fff;
+        }
+
+        .forecast-table th {
+            padding: 13px 16px;
+            background: #f5f5f7;
+            color: #555;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .forecast-table td {
+            padding: 14px 16px;
+            border-top: 1px solid #eeeef0;
+            color: #3a3a3c;
+            white-space: nowrap;
+        }
+
+        .forecast-table tbody tr:hover {
+            background: #fafafa;
         }
 
     </style>
@@ -609,13 +733,27 @@
 
     <header class="header">
 
-        <h1>
-            Apple Trade-In Admin
-        </h1>
+        <div class="header-brand">
 
-        <p>
-            Internal administration tool
-        </p>
+            <img
+                src="assets/imycom.png"
+                alt="iMyCom"
+                class="admin-logo"
+            >
+
+            <div class="header-text">
+
+                <h1>
+                    Apple Trade-In Admin
+                </h1>
+
+                <p>
+                    Internal administration tool
+                </p>
+
+            </div>
+
+        </div>
 
     </header>
 
@@ -877,6 +1015,44 @@
             </div>
 
 
+            <div
+                class="form-group"
+                id="add-specification-group"
+            >
+
+                <label for="add-specification">
+                    Specification
+                </label>
+
+
+                <input
+                    id="add-specification"
+                    type="text"
+                    placeholder="e.g. Wireless Charging Case"
+                >
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="add-case-size-group"
+            >
+
+                <label for="add-case-size">
+                    Case Size
+                </label>
+
+
+                <input
+                    id="add-case-size"
+                    type="text"
+                    placeholder="e.g. 45 mm"
+                >
+
+            </div>
+
+
             <div class="form-group">
 
                 <label for="add-provider">
@@ -1080,17 +1256,31 @@
                 class="hidden"
             >
 
-                <div class="notice">
+                <div class="modify-modal">
 
-                    <strong>
-                        Current Record
-                    </strong>
+                    <button
+                        type="button"
+                        id="modify-close-button"
+                        class="modify-close-button"
+                        aria-label="Close"
+                    >
+                        &times;
+                    </button>
 
+                    <div class="modify-modal-title">
+                        Modify Record
+                    </div>
 
-                    <p id="modify-current-info">
-                    </p>
+                    <div class="notice">
 
-                </div>
+                        <strong>
+                            Current Record
+                        </strong>
+
+                        <p id="modify-current-info">
+                        </p>
+
+                    </div>
 
 
                 <div class="form-group">
@@ -1167,6 +1357,8 @@
                     id="modify-result"
                     class="result"
                 ></div>
+
+                </div>
 
             </div>
 
@@ -1472,6 +1664,20 @@
         // SUB-DEVICE DATA
         // ====================================================
 
+        const CONNECTIVITY_OPTIONS = {
+
+            "iPad": [
+                "Wi-Fi",
+                "Wi-Fi + Cellular"
+            ],
+
+            "Apple Watch": [
+                "GPS",
+                "GPS + Cellular"
+            ]
+
+        };
+
         const SUB_DEVICES = {
 
             "iPhone": [
@@ -1705,6 +1911,8 @@
                 document.getElementById("add-storage-type").value = "";
                 document.getElementById("add-chipset").value = "";
                 document.getElementById("add-connectivity").value = "";
+                document.getElementById("add-specification").value = "";
+                document.getElementById("add-case-size").value = "";
                 document.getElementById("add-provider").value = "";
 
                 document
@@ -1823,9 +2031,31 @@
 
                     // Reset
 
+                    const configHint = {
+                        "iPhone":
+                            "Provider → Storage → Chipset → Trade-In",
+
+                        "iPad":
+                            "Provider → Storage → Connectivity → Chipset → Trade-In",
+
+                        "Mac":
+                            "Provider → Storage → Storage Type → Processor → Trade-In",
+
+                        "Apple Watch":
+                            "Provider → Storage → Case Size → Connectivity → Trade-In",
+
+                        "AirPods":
+                            "Provider → Specification → Trade-In"
+                    };
+
                     recordSelect.innerHTML = `
                         <option value="">
                             Select configuration
+                            ${
+                                configHint[device]
+                                    ? `(${configHint[device]})`
+                                    : ""
+                            }
                         </option>
                     `;
 
@@ -1871,111 +2101,142 @@
                                 option.value =
                                     record.id;
 
-
-                                // ------------------------------------------------
-                                // BUILD CONFIGURATION LABEL
-                                // ------------------------------------------------
-
                                 const parts = [];
 
-
-                                // Storage
-
-                                if (
-                                    record.storage !== null &&
-                                    record.storage !== undefined
-                                ) {
-
-                                    parts.push(
-                                        `${record.storage} GB`
-                                    );
-
-                                }
-                                else {
-
-                                    parts.push(
-                                        "N/A"
-                                    );
-
-                                }
-
-
-                                // Connectivity
-
-                                if (
-                                    record.connectivity
-                                ) {
-
-                                    parts.push(
-                                        record.connectivity
-                                    );
-
-                                }
-
-
-                                // RAM
-
-                                if (
-                                    record.ram
-                                ) {
-
-                                    parts.push(
-                                        `${record.ram} GB RAM`
-                                    );
-
-                                }
-
-
-                                // Chipset
-
-                                if (
-                                    record.chipset
-                                ) {
-
-                                    parts.push(
-                                        record.chipset
-                                    );
-
-                                }
-
-
                                 // Provider
+                                parts.push(
+                                    record.provider ?? "Unknown"
+                                );
 
-                                if (
-                                    record.provider
-                                ) {
+                                // ============================================================
+                                // DEVICE-SPECIFIC CONFIGURATION ORDER
+                                // ============================================================
 
+                                if (device === "iPhone") {
+
+                                    // Storage
                                     parts.push(
-                                        record.provider
+                                        record.storage !== null &&
+                                        record.storage !== undefined &&
+                                        record.storage !== ""
+                                            ? `${record.storage} GB`
+                                            : "Unknown"
+                                    );
+
+                                    // Chipset
+                                    parts.push(
+                                        record.chipset ?? "Unknown"
                                     );
 
                                 }
 
 
-                                // Trade-in value
+                                else if (device === "iPad") {
 
-                                let price =
-                                    "N/A";
+                                    // Storage
+                                    parts.push(
+                                        record.storage !== null &&
+                                        record.storage !== undefined &&
+                                        record.storage !== ""
+                                            ? `${record.storage} GB`
+                                            : "Unknown"
+                                    );
+
+                                    // Connectivity
+                                    parts.push(
+                                        record.connectivity ?? "Unknown"
+                                    );
+
+                                    // Chipset
+                                    parts.push(
+                                        record.chipset ?? "Unknown"
+                                    );
+
+                                }
 
 
-                                if (
+                                else if (device === "Mac") {
+
+                                    // Storage
+                                    parts.push(
+                                        record.storage !== null &&
+                                        record.storage !== undefined &&
+                                        record.storage !== ""
+                                            ? `${record.storage} GB`
+                                            : "Unknown"
+                                    );
+
+                                    // Storage Type
+                                    parts.push(
+                                        record.storage_type ?? "Unknown"
+                                    );
+
+                                    // Processor
+                                    parts.push(
+                                        record.chipset ?? "Unknown"
+                                    );
+
+                                }
+
+
+                                else if (device === "Apple Watch") {
+
+                                    // Storage
+                                    parts.push(
+                                        record.storage !== null &&
+                                        record.storage !== undefined &&
+                                        record.storage !== ""
+                                            ? `${record.storage} GB`
+                                            : "Unknown"
+                                    );
+
+                                    // Case Size
+                                    parts.push(
+                                        record.specification ?? "Unknown"
+                                    );
+
+                                    // Connectivity
+                                    parts.push(
+                                        record.connectivity ?? "Unknown"
+                                    );
+
+                                }
+
+
+                                else if (device === "AirPods") {
+
+                                    // Specification
+                                    parts.push(
+                                        record.specification ?? "Unknown"
+                                    );
+
+                                }
+
+
+                                // ============================================================
+                                // TRADE-IN VALUE
+                                // ============================================================
+
+                                parts.push(
                                     record.trade_in_value !== null &&
                                     record.trade_in_value !== undefined &&
                                     record.trade_in_value !== ""
-                                ) {
+                                        ? `RM ${Number(record.trade_in_value).toLocaleString(
+                                            undefined,
+                                            {
+                                                maximumFractionDigits: 0
+                                            }
+                                        )}`
+                                        : "Unknown"
+                                );
 
-                                    price =
-                                        `RM ${
-                                            Number(
-                                                record.trade_in_value
-                                            ).toLocaleString()
-                                        }`;
 
-                                }
-
+                                // ============================================================
+                                // FINAL LABEL
+                                // ============================================================
 
                                 option.textContent =
-                                    `${parts.join(" — ")} — ${price}`;
+                                    parts.join(" → ");
 
 
                                 recordSelect
@@ -2090,8 +2351,38 @@
                 document
                     .getElementById("forecast-model");
 
+            const recordSelect =
+                document
+                    .getElementById("forecast-record");
 
-            // Reset
+
+            // ------------------------------------------------------------
+            // DEVICE-SPECIFIC CONFIGURATION HINT
+            // ------------------------------------------------------------
+
+            const configHint = {
+
+                "iPhone":
+                    "Provider → Storage → Chipset → Trade-In",
+
+                "iPad":
+                    "Provider → Storage → Connectivity → Chipset → Trade-In",
+
+                "Mac":
+                    "Provider → Storage → Storage Type → Processor → Trade-In",
+
+                "Apple Watch":
+                    "Provider → Storage → Case Size → Connectivity → Trade-In",
+
+                "AirPods":
+                    "Provider → Specification → Trade-In"
+
+            };
+
+
+            // ------------------------------------------------------------
+            // RESET MODEL DROPDOWN
+            // ------------------------------------------------------------
 
             modelSelect.innerHTML = `
                 <option value="">
@@ -2100,19 +2391,30 @@
             `;
 
 
-            document
-                .getElementById("forecast-record")
-                .innerHTML = `
-                    <option value="">
-                        Select configuration
-                    </option>
-                `;
+            // ------------------------------------------------------------
+            // RESET CONFIGURATION DROPDOWN
+            // ------------------------------------------------------------
+
+            recordSelect.innerHTML = `
+                <option value="">
+                    Select configuration
+                    ${
+                        configHint[device]
+                            ? `(${configHint[device]})`
+                            : ""
+                    }
+                </option>
+            `;
 
 
             if (!device) {
                 return;
             }
 
+
+            // ------------------------------------------------------------
+            // LOAD MODELS
+            // ------------------------------------------------------------
 
             try {
 
@@ -2148,8 +2450,11 @@
                             );
 
 
-                        option.value = model;
-                        option.textContent = model;
+                        option.value =
+                            model;
+
+                        option.textContent =
+                            model;
 
 
                         modelSelect.appendChild(
@@ -2171,7 +2476,6 @@
             }
 
         }
-
 
         // Device → Models
 
@@ -3098,6 +3402,25 @@
                 }
             );
 
+        // ====================================================
+        // DELETE — CANCEL CONFIRMATION
+        // ====================================================
+
+        document
+            .getElementById("delete-cancel-button")
+            .addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById("delete-confirm")
+                        .classList.add("hidden");
+
+                    selectedDeleteRecordId = null;
+
+                }
+            );
+
 
         // ====================================================
         // ADD — DEVICE FIELDS
@@ -3129,7 +3452,7 @@
                 )
                 .classList.toggle(
                     "hidden",
-                    device === "AirPods"
+                    device !== "Mac"
                 );
 
 
@@ -3153,8 +3476,63 @@
                 )
                 .classList.toggle(
                     "hidden",
-                    device !== "iPad"
+                    ![
+                        "iPad",
+                        "Apple Watch"
+                    ].includes(device)
                 );
+
+
+            document
+                .getElementById(
+                    "add-specification-group"
+                )
+                .classList.toggle(
+                    "hidden",
+                    device !== "AirPods"
+                );
+
+
+            document
+                .getElementById(
+                    "add-case-size-group"
+                )
+                .classList.toggle(
+                    "hidden",
+                    device !== "Apple Watch"
+                );
+
+            const connectivitySelect =
+                document.getElementById(
+                    "add-connectivity"
+                );
+
+            connectivitySelect.innerHTML = `
+                <option value="">
+                    Select connectivity
+                </option>
+            `;
+
+            (
+                CONNECTIVITY_OPTIONS[device]
+                || []
+            ).forEach(
+                value => {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+                    option.value = value;
+                    option.textContent = value;
+
+                    connectivitySelect.appendChild(
+                        option
+                    );
+
+                }
+            );
 
         }
 
@@ -3304,6 +3682,24 @@
                             .value;
 
 
+                    const specification =
+                        document
+                            .getElementById(
+                                "add-specification"
+                            )
+                            .value
+                            .trim();
+
+
+                    const caseSize =
+                        document
+                            .getElementById(
+                                "add-case-size"
+                            )
+                            .value
+                            .trim();
+
+
                     const priceStatus =
                         document
                             .querySelector(
@@ -3411,12 +3807,12 @@
                                 ),
 
                         StorageType:
-                            device === "AirPods"
-                                ? null
-                                : (
+                            device === "Mac"
+                                ? (
                                     storageType ||
                                     null
-                                ),
+                                )
+                                : null,
 
                         ModelYear:
                             year
@@ -3430,12 +3826,28 @@
                             chipset || null,
 
                         Connectivity:
-                            device === "iPad"
+                            [
+                                "iPad",
+                                "Apple Watch"
+                            ].includes(device)
                                 ? (
                                     connectivity ||
                                     null
                                 )
-                                : null
+                                : null,
+
+                        Specification:
+                            device === "AirPods"
+                                ? (
+                                    specification ||
+                                    null
+                                )
+                                : device === "Apple Watch"
+                                    ? (
+                                        caseSize ||
+                                        null
+                                    )
+                                    : null
 
                     };
 
@@ -4086,6 +4498,25 @@
 
                     selectedRecordId =
                         null;
+
+                }
+            );
+
+        // ====================================================
+        // MODIFY — CLOSE MODAL
+        // ====================================================
+
+        document
+            .getElementById("modify-close-button")
+            .addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById("modify-form")
+                        .classList.add("hidden");
+
+                    selectedRecordId = null;
 
                 }
             );

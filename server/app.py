@@ -477,6 +477,8 @@ class AdminAddDevice(BaseModel):
     Chipset: Optional[str] = None
     Connectivity: Optional[str] = None
 
+    Specification: Optional[str] = None
+
     ScreenSize: Optional[str] = None
 
     Material: Optional[str] = None
@@ -609,6 +611,12 @@ def admin_add_device(item: AdminAddDevice):
         else np.nan
     )
 
+    specification = (
+        item.Specification.strip()
+        if item.Specification
+        else np.nan
+    )
+
     screen_size = (
         item.ScreenSize.strip()
         if item.ScreenSize
@@ -720,7 +728,7 @@ def admin_add_device(item: AdminAddDevice):
             msrp,
 
         "Specification":
-            np.nan,
+            specification,
 
         "Storage (GB)":
             storage,
@@ -1034,6 +1042,11 @@ def admin_records(
             "connectivity":
                 clean_value(
                     "Connectivity"
+                ),
+
+            "specification":
+                clean_value(
+                    "Specification"
                 ),
 
             "material":
