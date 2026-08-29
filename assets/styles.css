@@ -82,8 +82,8 @@ select {
 .brand-mark img {
   display: block;
   width: auto;
-  max-width: 240px;
-  height: 82px;
+  max-width: 480px;
+  height: 164px;
   object-fit: contain;
 }
 
