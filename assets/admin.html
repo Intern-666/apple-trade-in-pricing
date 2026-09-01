@@ -1474,7 +1474,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/records"
+                                "/admin/records"
                                 + `?device=${encodeURIComponent(device)}`
                                 + `&model=${encodeURIComponent(model)}`
                             );
@@ -1704,7 +1704,7 @@
             try {
 
                 const response = await fetch(
-                    "http://127.0.0.1:8000/admin/models"
+                    "/admin/models"
                 );
 
                 if (!response.ok) {
@@ -1830,7 +1830,7 @@
 
                 const response =
                     await fetch(
-                        "http://127.0.0.1:8000/admin/models"
+                        "/admin/models"
                     );
 
 
@@ -2024,7 +2024,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/forecast",
+                                "/admin/forecast",
                                 {
 
                                     method: "POST",
@@ -2486,7 +2486,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/records"
+                                "/admin/records"
                                 + `?device=${encodeURIComponent(device)}`
                                 + `&model=${encodeURIComponent(model)}`
                             );
@@ -2722,7 +2722,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/delete",
+                                "/admin/delete",
                                 {
                                     method: "POST",
 
@@ -3302,7 +3302,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/add",
+                                "/admin/add",
                                 {
 
                                     method:
@@ -3454,7 +3454,7 @@
 
                 const response =
                     await fetch(
-                        "http://127.0.0.1:8000/admin/models"
+                        "/admin/models"
                     );
 
 
@@ -3561,7 +3561,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/records"
+                                "/admin/records"
                                 +
                                 `?device=${encodeURIComponent(device)}`
                                 +
@@ -3823,7 +3823,7 @@
 
                         const response =
                             await fetch(
-                                "http://127.0.0.1:8000/admin/modify",
+                                "/admin/modify",
                                 {
 
                                     method:
@@ -3984,7 +3984,7 @@
 
                 const response =
                     await fetch(
-                        "http://127.0.0.1:8000/admin/status"
+                        "/admin/status"
                     );
 
 

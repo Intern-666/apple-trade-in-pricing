@@ -354,8 +354,8 @@ window.addEventListener("DOMContentLoaded", async function () {
     try {
 
         const [modelsResponse, configResponse] = await Promise.all([
-            fetch("http://127.0.0.1:8000/available-models"),
-            fetch("http://127.0.0.1:8000/model-configuration")
+            fetch("/available-models"),
+            fetch("/model-configuration")
         ]);
 
         if (!modelsResponse.ok) {
@@ -1053,7 +1053,7 @@ async function fetchPredictedPrice(
 ) {
 
     const apiUrl =
-        "http://127.0.0.1:8000/predict";
+        "/predict";
 
     try {
 
