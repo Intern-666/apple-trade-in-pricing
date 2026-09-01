@@ -13,36 +13,70 @@
   <main class="page-shell">
 
     <!-- Header -->
-    <header class="hero">
+    <header class="hero hero-left">
       <div class="brand-mark">
         <img src="/assets/imycom.png" alt="iMyCom logo">
       </div>
-      <p class="eyebrow">TRADE-IN ESTIMATE</p>
-      <h1>What is your Apple device worth?</h1>
-      <p class="hero-copy">
-        Select your device and tell us about its condition to get an estimated trade-in value.
-      </p>
+      <div class="hero-text">
+        <p class="eyebrow">TRADE-IN ESTIMATE</p>
+        <h1>What is your Apple device worth?</h1>
+        <p class="hero-copy">
+          Select your device and tell us about its condition to get an estimated trade-in value.
+        </p>
+      </div>
     </header>
+
+  <!-- Valuation Layout -->
+  <div class="valuation-layout">
 
     <!-- Main Form -->
     <section class="trade-in-card">
 
-      <!-- Progress -->
-      <div class="progress-header">
-        <div>
-          <span class="progress-label">YOUR DEVICE</span>
-          <span id="progressText">Step 1 of 5</span>
-        </div>
-
-        <div class="progress-track">
-          <div id="progressBar" class="progress-fill"></div>
-        </div>
+      <!-- Step Indicator -->
+      <div class="step-indicator-header">
+        <ol id="stepIndicator" class="step-indicator" role="list">
+          <li class="step-indicator-item" data-step="1">
+            <button type="button" class="step-indicator-button" data-goto-step="1">
+              <span class="step-indicator-dot">1</span>
+              <span class="step-indicator-label">Device</span>
+            </button>
+          </li>
+          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+          <li class="step-indicator-item" data-step="2">
+            <button type="button" class="step-indicator-button" data-goto-step="2">
+              <span class="step-indicator-dot">2</span>
+              <span class="step-indicator-label">Product Line</span>
+            </button>
+          </li>
+          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+          <li class="step-indicator-item" data-step="3">
+            <button type="button" class="step-indicator-button" data-goto-step="3">
+              <span class="step-indicator-dot">3</span>
+              <span class="step-indicator-label">Model</span>
+            </button>
+          </li>
+          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+          <li class="step-indicator-item" data-step="4">
+            <button type="button" class="step-indicator-button" data-goto-step="4">
+              <span class="step-indicator-dot">4</span>
+              <span class="step-indicator-label">Configuration</span>
+            </button>
+          </li>
+          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+          <li class="step-indicator-item" data-step="5">
+            <button type="button" class="step-indicator-button" data-goto-step="5">
+              <span class="step-indicator-dot">5</span>
+              <span class="step-indicator-label">Condition</span>
+            </button>
+          </li>
+        </ol>
       </div>
 
+      <div id="stepViewport" class="step-viewport">
       <form id="tradeInForm">
 
         <!-- Device Selection -->
-        <section class="form-section active-section">
+        <section class="form-section step-panel" data-step="1">
           <div class="section-heading">
             <span class="step-number">01</span>
             <div>
@@ -52,9 +86,14 @@
           </div>
 
           <div class="form-group">
-            <label for="deviceSelect">Device type</label>
-            <div class="select-wrapper">
-              <select id="deviceSelect" required>
+            <label id="deviceSelectLabel">Device type</label>
+
+            <div id="deviceBoxGrid" class="device-box-grid" role="listbox" aria-labelledby="deviceSelectLabel">
+              <!-- Boxes injected by app.js from deviceData -->
+            </div>
+
+            <div class="select-wrapper sr-only-select">
+              <select id="deviceSelect" required aria-hidden="true" tabindex="-1">
                 <option value="" disabled selected>Select a device...</option>
               </select>
             </div>
@@ -62,7 +101,7 @@
         </section>
 
         <!-- Product Line -->
-        <section class="form-section" id="productLineSection">
+        <section class="form-section step-panel" id="productLineSection" data-step="2">
           <div class="section-heading">
             <span class="step-number">02</span>
             <div>
@@ -72,9 +111,14 @@
           </div>
 
           <div class="form-group">
-            <label for="subDeviceSelect">Product line</label>
-            <div class="select-wrapper">
-              <select id="subDeviceSelect" disabled required>
+            <label id="subDeviceSelectLabel">Product line</label>
+
+            <div id="subDeviceBoxGrid" class="subdevice-box-grid disabled" role="listbox" aria-labelledby="subDeviceSelectLabel">
+              <!-- Boxes injected by app.js from deviceData -->
+            </div>
+
+            <div class="select-wrapper sr-only-select">
+              <select id="subDeviceSelect" disabled required aria-hidden="true" tabindex="-1">
                 <option value="" disabled selected>Select a product line...</option>
               </select>
             </div>
@@ -82,13 +126,17 @@
         </section>
 
         <!-- Model -->
-        <section class="form-section" id="modelSection">
+        <section class="form-section step-panel" id="modelSection" data-step="3">
           <div class="section-heading">
             <span class="step-number">03</span>
             <div>
               <h2>Select your model</h2>
               <p>Choose the exact model of your device.</p>
             </div>
+          </div>
+
+          <div id="deviceImagePreview" class="device-image-preview hidden">
+            <img id="deviceImagePreviewImg" src="" alt="">
           </div>
 
           <div class="form-group">
@@ -101,13 +149,13 @@
           </div>
         </section>
 
-        <!-- Storage -->
-        <section class="form-section" id="storageSection">
+        <!-- Configuration -->
+        <section class="form-section step-panel" id="configurationSection" data-step="4">
           <div class="section-heading">
             <span class="step-number">04</span>
             <div>
-              <h2>Choose your storage</h2>
-              <p>Select the storage capacity of your device.</p>
+              <h2>Configuration</h2>
+              <p>Tell us the specifics of your device.</p>
             </div>
           </div>
 
@@ -119,10 +167,28 @@
               </select>
             </div>
           </div>
+
+          <div class="form-group hidden" id="storageTypeGroup">
+            <label for="storageTypeSelect">Storage type</label>
+            <div class="select-wrapper">
+              <select id="storageTypeSelect">
+                <option value="" disabled selected>Select storage type...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group hidden" id="connectivityGroup">
+            <label for="connectivitySelect">Connectivity</label>
+            <div class="select-wrapper">
+              <select id="connectivitySelect">
+                <option value="" disabled selected>Select connectivity...</option>
+              </select>
+            </div>
+          </div>
         </section>
 
         <!-- Condition -->
-        <section id="conditionSection" class="form-section condition-section hidden">
+        <section id="conditionSection" class="form-section step-panel condition-section" data-step="5">
 
           <div class="section-heading">
             <span class="step-number">05</span>
@@ -531,6 +597,12 @@
         </section>
 
       </form>
+      </div>
+
+    </section>
+
+    <!-- Result -->
+          </section>
 
       <!-- Result -->
       <div id="resultCard" class="result-card hidden" aria-live="polite">
@@ -545,7 +617,7 @@
         </button>
       </div>
 
-    </section>
+    </div>
 
     <footer class="footer">
       <p>Estimated value only. Final trade-in value may vary after physical inspection.</p>

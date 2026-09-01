@@ -240,6 +240,8 @@ for col in TEXT_COLUMNS:
 
 device_model_map = {}
 
+device_config_map = {}
+
 
 for (
     device,
@@ -281,6 +283,42 @@ for (
         model_name
     ] = clean_storages
 
+    # --------------------------------------------------------
+    # CONFIGURATION (Storage Type + Connectivity)
+    #
+    # Built alongside device_model_map, in the same groupby pass.
+    # "Unknown" values (from TEXT_COLUMNS cleaning above) are
+    # dropped here so the frontend only sees real options and
+    # can decide to skip rendering a field with none.
+    # --------------------------------------------------------
+
+    if device not in device_config_map:
+        device_config_map[device] = {}
+
+    if sub_device not in device_config_map[device]:
+        device_config_map[device][sub_device] = {}
+
+    storage_types = sorted(
+        t for t in group["Storage Type"].dropna().unique().tolist()
+        if t and t != "Unknown"
+    ) if "Storage Type" in group.columns else []
+
+    connectivity_options = sorted(
+        c for c in group["Connectivity"].dropna().unique().tolist()
+        if c and c != "Unknown"
+    ) if "Connectivity" in group.columns else []
+
+    device_config_map[
+        device
+    ][
+        sub_device
+    ][
+        model_name
+    ] = {
+        "storageTypes": storage_types,
+        "connectivity": connectivity_options,
+    }
+
 
 print(
     f"Devices available: {len(device_model_map)}"
@@ -300,6 +338,18 @@ def get_models():
 
 
 # ============================================================
+# MODEL CONFIGURATION
+# (Storage Type + Connectivity, additive -- does not change
+# the /available-models response shape above)
+# ============================================================
+
+@app.get("/model-configuration")
+def get_model_configuration():
+
+    return device_config_map
+
+
+# ============================================================
 # REQUEST MODEL
 # ============================================================
 
@@ -308,6 +358,8 @@ class DeviceInput(BaseModel):
     SubDevice: str
     Model: str
     Storage: float | None = None
+    StorageType: str | None = None
+    Connectivity: str | None = None
 
 
 # ============================================================
@@ -325,6 +377,8 @@ def predict_price(item: DeviceInput):
     print(f"Sub-Device : {item.SubDevice}")
     print(f"Model      : {item.Model}")
     print(f"Storage    : {item.Storage} GB")
+    print(f"StorageType: {item.StorageType}")
+    print(f"Connectivity: {item.Connectivity}")
 
 
     # ========================================================
@@ -378,6 +432,27 @@ def predict_price(item: DeviceInput):
                 )
             )
         ].copy()
+
+        # ----------------------------------------------------
+        # OPTIONAL CONFIGURATION FILTERS
+        #
+        # Only applied when the client actually sends a value --
+        # devices without Storage Type / Connectivity in the
+        # dataset (e.g. iPhone) never send these, so their
+        # matching behaves exactly as before this change.
+        # ----------------------------------------------------
+
+        if item.StorageType:
+
+            matches = matches[
+                matches["Storage Type"] == item.StorageType
+            ]
+
+        if item.Connectivity:
+
+            matches = matches[
+                matches["Connectivity"] == item.Connectivity
+            ]
 
 
     # ========================================================
@@ -482,7 +557,7 @@ class AdminAddDevice(BaseModel):
     ScreenSize: Optional[str] = None
 
     Material: Optional[str] = None
-    CaseSize: Optional[str] = None
+    CaseSize: Optional[int] = None
 
     ChargingMethod: Optional[str] = None
 
@@ -504,6 +579,16 @@ def admin_add_device(item: AdminAddDevice):
     print("\n" + "=" * 70)
     print("ADMIN — ADD DEVICE")
     print("=" * 70)
+
+    VALID_CHARGING_METHODS = [
+        "Wired",
+        "Wireless",
+        "Lightning",
+        "USB-C",
+        "MagSafe",
+        "MagSafe + Lightning",
+        "MagSafe + USB-C"
+    ]
 
     # ========================================================
     # BASIC VALIDATION
@@ -529,6 +614,16 @@ def admin_add_device(item: AdminAddDevice):
         return {
             "status": "error",
             "message": "Model is required."
+        }
+
+    if (
+        device == "AirPods"
+        and not pd.isna(charging_method)
+        and charging_method not in VALID_CHARGING_METHODS
+    ):
+        return {
+            "status": "error",
+            "message": "Invalid charging method."
         }
 
     # ========================================================
@@ -630,8 +725,8 @@ def admin_add_device(item: AdminAddDevice):
     )
 
     case_size = (
-        item.CaseSize.strip()
-        if item.CaseSize
+        int(item.CaseSize)
+        if item.CaseSize is not None
         else np.nan
     )
 
@@ -740,7 +835,11 @@ def admin_add_device(item: AdminAddDevice):
             connectivity,
 
         "Material":
-            material,
+            (
+                item.Material.strip()
+                if item.Material
+                else np.nan
+            ),
 
         "Max. Trade-In Value (RM)":
             trade_in_value,
@@ -873,56 +972,328 @@ def admin_add_device(item: AdminAddDevice):
     }
 
 # ============================================================
-# ADMIN — TRADE-IN DATA STATUS
+# ADMIN — DATA STATUS
 # ============================================================
 
 @app.get("/admin/status")
 def admin_status():
 
-    total_records = len(df)
+    print(df["Device"].value_counts(dropna=False))
+    # --------------------------------------------------------
+    # DEVICE-SPECIFIC INTENTIONAL MISSING FIELDS
+    # --------------------------------------------------------
 
-    missing_trade_in = (
-        df["Max. Trade-In Value (RM)"]
-        .isna()
-        .sum()
+    excluded_fields = {
+
+        "iPhone": {
+            "Connectivity",
+            "Material",
+            "Case Size",
+            "Charging Method",
+            "Storage Type"
+        },
+
+        "iPad": {
+            "Storage Type",
+            "Material",
+            "Case Size",
+            "Charging Method"
+        },
+
+        "Mac": {
+            "Connectivity",
+            "Material",
+            "Case Size",
+            "Charging Method"
+        },
+
+        "Apple Watch": {
+            "Storage Type",
+            "Charging Method"
+        },
+
+        "AirPods": {
+            "Storage (GB)",
+            "Storage Type",
+            "Connectivity",
+            "Material",
+            "Case Size"
+        }
+
+    }
+
+
+    # --------------------------------------------------------
+    # COLUMNS ACTUALLY USED BY THE APPLICATION
+    # --------------------------------------------------------
+
+    fields = [
+
+        "Provider",
+        "Device",
+        "Sub-device",
+        "Standardized Model",
+        "MSRP",
+        "Storage (GB)",
+        "Storage Type",
+        "Connectivity",
+        "Material",
+        "Max. Trade-In Value (RM)",
+        "Model_Year",
+        "Chipset",
+        "Case Size",
+        "Charging Method"
+
+    ]
+
+
+    # --------------------------------------------------------
+    # MISSING VALUE CHECK
+    # --------------------------------------------------------
+
+    def is_missing(value):
+
+        if pd.isna(value):
+            return True
+
+        if isinstance(value, str):
+
+            value = value.strip().lower()
+
+            return value in {
+                "",
+                "n/a",
+                "na",
+                "Unknown",
+                "none",
+                "nan"
+            }
+
+        return False
+
+
+    categories = []
+
+
+    # --------------------------------------------------------
+    # CHECK EACH COLUMN
+    # --------------------------------------------------------
+
+    for field in fields:
+
+        if field not in df.columns:
+            continue
+
+
+        affected_records = []
+
+
+        for index, row in df.iterrows():
+
+            device = (
+                None
+                if pd.isna(row["Device"])
+                else str(row["Device"]).strip()
+            )
+
+
+            # ------------------------------------------------
+            # SKIP INTENTIONALLY MISSING FIELDS
+            # ------------------------------------------------
+
+            if (
+                device in excluded_fields
+                and
+                field in excluded_fields[device]
+            ):
+
+                continue
+
+
+            # ------------------------------------------------
+            # CHECK VALUE
+            # ------------------------------------------------
+
+            if not is_missing(row[field]):
+                continue
+
+            if field == "Charging Method":
+                print(
+                    "CHARGING METHOD MISSING:",
+                    device,
+                    "|",
+                    row["Charging Method"]
+                )
+
+
+            affected_records.append({
+
+                "id":
+                    int(cast(int, index)),
+
+                "device":
+                    device,
+
+                "sub_device":
+                    (
+                        None
+                        if pd.isna(row["Sub-device"])
+                        else str(
+                            row["Sub-device"]
+                        ).strip()
+                    ),
+
+                "model":
+                    (
+                        None
+                        if pd.isna(
+                            row["Standardized Model"]
+                        )
+                        else str(
+                            row["Standardized Model"]
+                        ).strip()
+                    ),
+
+                "provider":
+                    (
+                        None
+                        if pd.isna(row["Provider"])
+                        else str(
+                            row["Provider"]
+                        ).strip()
+                    ),
+
+                "storage":
+                    (
+                        None
+                        if pd.isna(
+                            row["Storage (GB)"]
+                        )
+                        else float(
+                            row["Storage (GB)"]
+                        )
+                    ),
+
+                "storage_type":
+                    (
+                        None
+                        if pd.isna(
+                            row["Storage Type"]
+                        )
+                        else str(
+                            row["Storage Type"]
+                        ).strip()
+                    ),
+
+                "connectivity":
+                    (
+                        None
+                        if pd.isna(
+                            row["Connectivity"]
+                        )
+                        else str(
+                            row["Connectivity"]
+                        ).strip()
+                    ),
+
+                "material":
+                    (
+                        None
+                        if pd.isna(row["Material"])
+                        else str(
+                            row["Material"]
+                        ).strip()
+                    ),
+
+                "chipset":
+                    (
+                        None
+                        if pd.isna(row["Chipset"])
+                        else str(
+                            row["Chipset"]
+                        ).strip()
+                    ),
+
+                "case_size":
+                    (
+                        None
+                        if pd.isna(
+                            row["Case Size"]
+                        )
+                        else str(
+                            row["Case Size"]
+                        ).strip()
+                    ),
+
+                "charging_method":
+                    (
+                        None
+                        if pd.isna(
+                            row["Charging Method"]
+                        )
+                        else str(
+                            row["Charging Method"]
+                        ).strip()
+                    ),
+
+                "trade_in_value":
+                    (
+                        None
+                        if pd.isna(
+                            row[
+                                "Max. Trade-In Value (RM)"
+                            ]
+                        )
+                        else float(
+                            row[
+                                "Max. Trade-In Value (RM)"
+                            ]
+                        )
+                    )
+
+            })
+
+
+        # ----------------------------------------------------
+        # ONLY CREATE CATEGORY IF SOMETHING IS MISSING
+        # ----------------------------------------------------
+
+        if affected_records:
+
+            categories.append({
+
+                "field":
+                    field,
+
+                "count":
+                    len(affected_records),
+
+                "records":
+                    affected_records
+
+            })
+
+
+    # --------------------------------------------------------
+    # SUMMARY
+    # --------------------------------------------------------
+
+    total_missing = sum(
+        category["count"]
+        for category in categories
     )
 
-    confirmed_trade_in = (
-        total_records
-        -
-        missing_trade_in
-    )
-
-    if total_records > 0:
-
-        missing_percentage = (
-            missing_trade_in
-            /
-            total_records
-            *
-            100
-        )
-
-    else:
-
-        missing_percentage = 0
 
     return {
 
         "total_records":
-            int(total_records),
+            int(len(df)),
 
-        "confirmed_trade_in":
-            int(confirmed_trade_in),
+        "categories":
+            categories,
 
-        "missing_trade_in":
-            int(missing_trade_in),
-
-        "missing_percentage":
-            round(
-                float(missing_percentage),
-                2
-            )
+        "total_missing":
+            int(total_missing)
 
     }
 
@@ -1982,9 +2353,19 @@ def customer_frontend():
 
 @app.get("/admin")
 def admin_frontend():
-
     return FileResponse(
         ASSETS_DIR / "admin.html"
+    )
+
+
+# ============================================================
+# ADMIN — DATA STATUS FRONTEND
+# ============================================================
+
+@app.get("/admin/status-page")
+def admin_status_page():
+    return FileResponse(
+        ASSETS_DIR / "status.html"
     )
 
 

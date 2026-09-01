@@ -12,717 +12,14 @@
 
     <title>Apple Trade-In — Admin Tool</title>
 
+    <link
+        rel="stylesheet"
+        href="assets/admin.css"
+    >
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-
-        body {
-
-            margin: 0;
-
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-
-            background: #f5f5f7;
-
-            color: #1d1d1f;
-
-        }
-
-
-        .header {
-            background: #000;
-            color: white;
-            padding: 26px 40px;
-            border-bottom: 1px solid #222;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .admin-logo {
-            display: block;
-            width: auto;
-            height: 48px;
-            max-width: 180px;
-            object-fit: contain;
-        }
-
-        .header-text h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .header-text p {
-            margin: 6px 0 0;
-            color: #aaa;
-            font-size: 14px;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 25px;
-            font-weight: 600;
-            letter-spacing: -0.4px;
-        }
-
-        .header p {
-            margin: 7px 0 0;
-            color: #a1a1a6;
-            font-size: 14px;
-        }
-
-
-        .container {
-            max-width: 1080px;
-            margin: 36px auto 60px;
-            padding: 0 24px;
-        }
-
-
-        .admin-nav {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 24px;
-            padding: 5px;
-            background: #e8e8ed;
-            border-radius: 12px;
-            width: fit-content;
-            max-width: 100%;
-            flex-wrap: wrap;
-        }
-
-        .admin-nav button {
-            border: none;
-            background: transparent;
-            color: #555;
-            padding: 10px 20px;
-            border-radius: 9px;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            cursor: pointer;
-            transition:
-                background 0.18s ease,
-                color 0.18s ease,
-                box-shadow 0.18s ease;
-        }
-
-        .admin-nav button:hover {
-            color: #1d1d1f;
-            background: rgba(255, 255, 255, 0.65);
-        }
-
-        .admin-nav button.active {
-            background: #d32f2f;
-            color: #fff;
-            border: #d32f2f;
-            box-shadow:
-                0 1px 3px rgba(0, 0, 0, 0.10);
-        }
-
-
-        .card {
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid #e5e5e7;
-            border-radius: 18px;
-            padding: 34px;
-            box-shadow:
-                0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .card h2 {
-            margin: 0 0 8px;
-            font-size: 23px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-            color: #1d1d1f;
-        }
-
-        .card h2::before {
-            content: "";
-            display: inline-block;
-            width: 4px;
-            height: 22px;
-            margin-right: 10px;
-            vertical-align: -3px;
-            background: #d32f2f;
-            border-radius: 3px;
-        }
-
-        .description {
-            margin: 0 0 30px;
-            color: #6e6e73;
-            font-size: 14px;
-            line-height: 1.55;
-        }
-
-
-        .form-group {
-            margin-bottom: 22px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #3a3a3c;
-        }
-
-
-        input,
-        select {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #d2d2d7;
-            border-radius: 10px;
-            font-size: 15px;
-            background: #fff;
-            color: #1d1d1f;
-            transition:
-                border-color 0.18s ease,
-                box-shadow 0.18s ease,
-                background 0.18s ease;
-        }
-
-        input:hover,
-        select:hover {
-            border-color: #b8b8bd;
-        }
-
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: #0071e3;
-            box-shadow:
-                0 0 0 3px rgba(0, 113, 227, 0.12);
-        }
-
-        input::placeholder {
-            color: #9a9aa0;
-        }
-
-        /* ============================================================
-            RADIO BUTTONS
-            ============================================================ */
-
-        input[type="radio"] {
-            width: 16px;
-            height: 16px;
-            padding: 0;
-            margin: 0;
-            accent-color: #d32f2f;
-        }
-
-        .form-group label:has(input[type="radio"]) {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: fit-content;
-            margin-bottom: 9px;
-            font-weight: 400;
-            color: #4a4a4f;
-            cursor: pointer;
-        }
-
-        input:focus,
-        select:focus {
-
-            outline: none;
-
-            border-color: #d32f2f;
-
-            box-shadow:
-                0 0 0 2px
-                rgba(211, 47, 47, 0.12);
-
-        }
-
-
-        .buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
-        }
-
-        .buttons button {
-            flex: 1;
-            min-height: 46px;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition:
-                transform 0.12s ease,
-                background 0.18s ease,
-                box-shadow 0.18s ease;
-        }
-
-        .buttons button:hover {
-            transform: translateY(-1px);
-        }
-
-        .buttons button:active {
-            transform: translateY(0);
-        }
-
-        .buttons button:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .primary {
-            background: #d32f2f;
-            color: white;
-            border: none;
-            box-shadow:
-                0 2px 6px rgba(0, 113, 227, 0.20);
-        }
-
-        .primary:hover {
-            background: #b71c1c;
-        }
-
-        .secondary {
-            background: #fff;
-            color: #1d1d1f;
-            border: 1px solid #d2d2d7;
-        }
-
-        .secondary:hover {
-            background: #f5f5f7;
-        }
-
-        .danger {
-            background: #d32f2f;
-            color: white;
-            border: none;
-        }
-
-        .danger:hover {
-            background: #e3001b;
-        }
-
-
-        .notice {
-
-            padding: 15px 18px;
-
-            background: #f5f5f7;
-
-            border-radius: 8px;
-
-            margin-bottom: 20px;
-
-            font-size: 14px;
-
-        }
-
-
-        .notice strong {
-
-            display: block;
-
-            margin-bottom: 5px;
-
-        }
-
-
-        .notice p {
-
-            margin: 0;
-
-            color: #666;
-
-        }
-
-
-        .result {
-            margin-top: 20px;
-            padding: 14px 16px;
-            border-radius: 10px;
-            display: none;
-            font-size: 14px;
-            line-height: 1.5;
-            border: 1px solid transparent;
-        }
-
-        .success {
-            display: block;
-            background: #eef8f0;
-            color: #216e39;
-            border-color: #c9e8cf;
-        }
-
-        .error {
-            display: block;
-            background: #fff1f1;
-            color: #b42318;
-            border-color: #f2cccc;
-        }
-
-
-        .hidden {
-
-            display: none !important;
-
-        }
-
-
-        .record-list {
-
-            margin-top: 20px;
-
-        }
-
-
-        .record {
-            border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 17px 18px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            background: #fff;
-            transition:
-                border-color 0.18s ease,
-                background 0.18s ease,
-                box-shadow 0.18s ease,
-                transform 0.12s ease;
-        }
-
-        .record:hover {
-            background: #fff7f7;
-            border-color: #e0a0a0;
-            box-shadow:
-                0 4px 12px rgba(0, 0, 0, 0.06);
-            transform: translateY(-1px);
-        }
-
-        .record:active {
-            transform: translateY(0);
-        }
-
-        .record-title {
-            font-weight: 600;
-            font-size: 15px;
-            margin-bottom: 7px;
-            color: #1d1d1f;
-        }
-
-        .record-details {
-            color: #6e6e73;
-            font-size: 13px;
-            line-height: 1.65;
-        }
-
-        .price-na {
-            color: #b42318;
-            font-weight: 600;
-        }
-
-        .price-confirmed {
-            color: #216e39;
-            font-weight: 600;
-        }
-
-
-        @media (max-width: 600px) {
-
-            .header-brand {
-                gap: 12px;
-            }
-
-            .admin-logo {
-                height: 40px;
-                max-width: 140px;
-            }
-
-            .header-text h1 {
-                font-size: 20px;
-            }
-
-            .header-text p {
-                font-size: 12px;
-            }
-
-            .header {
-                padding: 22px 20px;
-            }
-
-            .header h1 {
-                font-size: 21px;
-            }
-
-            .container {
-                margin-top: 22px;
-                padding: 0 14px;
-            }
-
-            .admin-nav {
-                width: 100%;
-                overflow-x: auto;
-                flex-wrap: nowrap;
-            }
-
-            .admin-nav button {
-                flex: 1;
-                min-width: 90px;
-                padding: 10px 14px;
-            }
-
-            .card {
-                padding: 22px 18px;
-                border-radius: 14px;
-            }
-
-            .card h2 {
-                font-size: 21px;
-            }
-
-            .buttons {
-                flex-direction: column;
-            }
-
-            .forecast-chart-wrapper {
-                height: 300px;
-                padding: 12px;
-            }
-
-            .delete-modal {
-                padding: 22px;
-            }
-
-        }
-
-    /* ============================================================
-        DELETE CONFIRMATION MODAL
-        ============================================================ */
-
-        #delete-confirm {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px);
-        }
-
-        #delete-confirm.hidden {
-            display: none;
-        }
-
-
-        /* ============================================================
-        MODAL BOX
-        ============================================================ */
-
-        .delete-modal {
-            width: 100%;
-            max-width: 460px;
-            padding: 28px;
-            background: #fff;
-            border: 1px solid #e5e5e7;
-            border-radius: 16px;
-            box-shadow:
-                0 24px 70px rgba(0, 0, 0, 0.22);
-        }
-
-        .delete-modal-title {
-            margin-bottom: 12px;
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: -0.2px;
-        }
-
-        .delete-modal-info {
-            margin: 0 0 24px;
-            font-size: 14px;
-            line-height: 1.7;
-            color: #555;
-        }
-
-
-        /* ============================================================
-        BUTTONS
-        ============================================================ */
-
-        .delete-modal .buttons {
-            display: flex;
-
-            justify-content: flex-end;
-
-            gap: 10px;
-        }
-
-        /* ============================================================
-        MODIFY CONFIRMATION MODAL
-        ============================================================ */
-
-        #modify-form {
-            position: fixed;
-            inset: 0;
-            z-index: 9998;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            background: rgba(0, 0, 0, 0.40);
-            backdrop-filter: blur(2px);
-        }
-
-        #modify-form.hidden {
-            display: none !important;
-        }
-
-        .modify-modal {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            box-sizing: border-box;
-            padding: 26px;
-            background: var(--white, #ffffff);
-            border: 1px solid #dddddd;
-            border-radius: 10px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.20);
-        }
-
-        .modify-close-button {
-            position: absolute;
-            top: 12px;
-            right: 14px;
-
-            width: 32px;
-            height: 32px;
-
-            padding: 0;
-
-            border: none;
-            border-radius: 50%;
-
-            background: transparent;
-            color: #666;
-
-            font-size: 25px;
-            line-height: 32px;
-
-            cursor: pointer;
-        }
-
-        .modify-close-button:hover {
-            background: #f5f5f7;
-            color: #1d1d1f;
-        }
-
-        .modify-modal-title {
-            margin-bottom: 14px;
-            font-size: 19px;
-            font-weight: 600;
-        }
-
-        .modify-modal-info {
-            margin: 0 0 24px 0;
-            font-size: 14px;
-            line-height: 1.7;
-        }
-
-        /* ============================================================
-        FORECAST CHART
-        ============================================================ */
-
-        .forecast-chart-wrapper {
-            position: relative;
-            width: 100%;
-            height: 350px;
-            margin: 24px 0;
-        }
-
-        .forecast-summary {
-            margin-top: 28px;
-            padding: 20px;
-            background: #f5f5f7;
-            border: 1px solid #e5e5e7;
-            border-radius: 12px;
-        }
-
-        .forecast-summary h3 {
-            margin: 0 0 6px;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .forecast-summary p {
-            margin: 0;
-            color: #6e6e73;
-            font-size: 14px;
-        }
-
-        .forecast-chart-wrapper {
-            position: relative;
-            width: 100%;
-            height: 380px;
-            margin: 24px 0;
-            padding: 20px;
-            background: #fff;
-            border: 1px solid #e5e5e7;
-            border-radius: 14px;
-        }
-
-        .forecast-table-wrapper {
-            overflow-x: auto;
-            border: 1px solid #e5e5e7;
-            border-radius: 12px;
-        }
-
-        .forecast-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-            background: #fff;
-        }
-
-        .forecast-table th {
-            padding: 13px 16px;
-            background: #f5f5f7;
-            color: #555;
-            font-size: 12px;
-            font-weight: 600;
-            text-align: left;
-            white-space: nowrap;
-        }
-
-        .forecast-table td {
-            padding: 14px 16px;
-            border-top: 1px solid #eeeef0;
-            color: #3a3a3c;
-            white-space: nowrap;
-        }
-
-        .forecast-table tbody tr:hover {
-            background: #fafafa;
-        }
-
-    </style>
-
 </head>
-
 
 <body>
 
@@ -759,6 +56,70 @@
 
 
     <main class="container">
+
+        <!-- ============================================================
+            ADMIN — DATA STATUS
+            ============================================================ -->
+
+        <div
+            id="admin-status"
+            class="admin-status"
+        >
+
+            <button
+                id="admin-status-button"
+                class="admin-status-button"
+                type="button"
+            >
+
+                <span>
+                    Data Status
+                </span>
+
+                <span
+                    id="admin-status-count"
+                    class="admin-status-count"
+                >
+                    0
+                </span>
+
+            </button>
+
+
+            <div
+                id="admin-status-panel"
+                class="admin-status-panel hidden"
+            >
+
+                <div class="admin-status-header">
+
+                    <strong>
+                        Missing / Unknown Values
+                    </strong>
+
+                    <button
+                        id="admin-status-close"
+                        type="button"
+                    >
+                        ×
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="admin-status-categories"
+                >
+
+                    <p>
+                        Checking data...
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
 
 
         <!-- =================================================
@@ -1017,39 +378,83 @@
 
             <div
                 class="form-group"
-                id="add-specification-group"
-            >
-
-                <label for="add-specification">
-                    Specification
-                </label>
-
-
-                <input
-                    id="add-specification"
-                    type="text"
-                    placeholder="e.g. Wireless Charging Case"
-                >
-
-            </div>
-
-
-            <div
-                class="form-group"
                 id="add-case-size-group"
             >
 
                 <label for="add-case-size">
-                    Case Size
+                    Case Size (mm)
                 </label>
-
 
                 <input
                     id="add-case-size"
-                    type="text"
-                    placeholder="e.g. 45 mm"
+                    type="number"
+                    min="1"
+                    step="1"
+                    placeholder="e.g. 45"
                 >
 
+            </div>
+
+            <div
+                class="form-group"
+                id="add-charging-method-group"
+            >
+
+                <label for="add-charging-method">
+                    Charging Method
+                </label>
+
+                <select id="add-charging-method">
+
+                    <option value="">
+                        Select charging method
+                    </option>
+
+                    <option value="Wired">
+                        Wired
+                    </option>
+
+                    <option value="Wireless">
+                        Wireless
+                    </option>
+
+                    <option value="Lightning">
+                        Lightning
+                    </option>
+
+                    <option value="USB-C">
+                        USB-C
+                    </option>
+
+                    <option value="MagSafe">
+                        MagSafe
+                    </option>
+
+                    <option value="MagSafe + Lightning">
+                        MagSafe + Lightning
+                    </option>
+
+                    <option value="MagSafe + USB-C">
+                        MagSafe + USB-C
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div
+                id="add-material-container"
+                class="form-group"
+            >
+                <label for="add-material">
+                    Material
+                </label>
+
+                <input
+                    type="text"
+                    id="add-material"
+                    placeholder="e.g. Stainless Steel"
+                >
             </div>
 
 
@@ -2042,7 +1447,7 @@
                             "Provider → Storage → Storage Type → Processor → Trade-In",
 
                         "Apple Watch":
-                            "Provider → Storage → Case Size → Connectivity → Trade-In",
+                            "Provider → Storage → Case Size → Connectivity → Material → Trade-In",
 
                         "AirPods":
                             "Provider → Specification → Trade-In"
@@ -2198,6 +1603,11 @@
                                     // Connectivity
                                     parts.push(
                                         record.connectivity ?? "Unknown"
+                                    );
+
+                                    parts.push(
+                                        record.material ??
+                                        "Unknown"
                                     );
 
                                 }
@@ -2372,7 +1782,7 @@
                     "Provider → Storage → Storage Type → Processor → Trade-In",
 
                 "Apple Watch":
-                    "Provider → Storage → Case Size → Connectivity → Trade-In",
+                    "Provider → Storage → Case Size → Connectivity → Material → Trade-In",
 
                 "AirPods":
                     "Provider → Specification → Trade-In"
@@ -3485,7 +2895,7 @@
 
             document
                 .getElementById(
-                    "add-specification-group"
+                    "add-charging-method-group"
                 )
                 .classList.toggle(
                     "hidden",
@@ -3501,6 +2911,16 @@
                     "hidden",
                     device !== "Apple Watch"
                 );
+
+            document
+                .getElementById(
+                    "add-material-container"
+                )
+                .classList.toggle(
+                    "hidden",
+                    device !== "Apple Watch"
+                );
+                
 
             const connectivitySelect =
                 document.getElementById(
@@ -3682,13 +3102,12 @@
                             .value;
 
 
-                    const specification =
+                    const chargingMethod =
                         document
                             .getElementById(
-                                "add-specification"
+                                "add-charging-method"
                             )
-                            .value
-                            .trim();
+                            .value;
 
 
                     const caseSize =
@@ -3696,8 +3115,7 @@
                             .getElementById(
                                 "add-case-size"
                             )
-                            .value
-                            .trim();
+                            .value;
 
 
                     const priceStatus =
@@ -3825,6 +3243,9 @@
                         Chipset:
                             chipset || null,
 
+                        Material:
+                            document.getElementById("add-material").value.trim() || null,
+
                         Connectivity:
                             [
                                 "iPad",
@@ -3837,17 +3258,36 @@
                                 : null,
 
                         Specification:
+                            null,
+
+                        CaseSize:
+                            device === "Apple Watch"
+                                ? (
+                                    caseSize
+                                        ? parseInt(caseSize, 10)
+                                        : null
+                                )
+                                : null,
+
+                        ChargingMethod:
                             device === "AirPods"
                                 ? (
-                                    specification ||
+                                    chargingMethod ||
                                     null
                                 )
-                                : device === "Apple Watch"
-                                    ? (
-                                        caseSize ||
-                                        null
-                                    )
-                                    : null
+                                : null,
+
+                        Material:
+                            device === "Apple Watch"
+                                ? (
+                                    document
+                                        .getElementById(
+                                            "add-material"
+                                        )
+                                        .value
+                                        .trim() || null
+                                )
+                                : null,
 
                     };
 
@@ -4443,6 +3883,8 @@
                         result.style.display =
                             "block";
 
+                        loadAdminStatus();
+
 
                     }
                     catch (error) {
@@ -4520,6 +3962,302 @@
 
                 }
             );
+
+        // ============================================================
+        // ADMIN — DATA STATUS
+        // ============================================================
+
+        async function loadAdminStatus() {
+
+            const count =
+                document.getElementById(
+                    "admin-status-count"
+                );
+
+            const categories =
+                document.getElementById(
+                    "admin-status-categories"
+                );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "http://127.0.0.1:8000/admin/status"
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Failed to load data status."
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                count.textContent =
+                    data.total_missing;
+
+
+                categories.innerHTML = "";
+
+
+                if (
+                    !data.categories ||
+                    data.categories.length === 0
+                ) {
+
+                    categories.innerHTML = `
+                        <p class="status-clean">
+                            No missing or unknown values.
+                        </p>
+                    `;
+
+                    return;
+
+                }
+
+
+                data.categories.forEach(
+                    category => {
+
+                        const section =
+                            document.createElement(
+                                "div"
+                            );
+
+                        section.className =
+                            "admin-status-category";
+
+
+                        const header =
+                            document.createElement(
+                                "button"
+                            );
+
+                        header.type =
+                            "button";
+
+                        header.className =
+                            "admin-status-category-header";
+
+
+                        header.innerHTML = `
+
+                            <span>
+                                ${category.field}
+                            </span>
+
+                            <span>
+                                ${category.count}
+                            </span>
+
+                        `;
+
+
+                        header.addEventListener(
+                            "click",
+                            () => {
+
+                                window.location.href =
+                                    `/admin/status-page?field=${
+                                        encodeURIComponent(
+                                            category.field
+                                        )
+                                    }`;
+
+                            }
+                        );
+
+
+                        section.appendChild(
+                            header
+                        );
+
+
+                        categories.appendChild(
+                            section
+                        );
+
+                    }
+                );
+
+
+            }
+            catch (error) {
+
+                console.error(
+                    "ADMIN STATUS ERROR:",
+                    error
+                );
+
+
+                categories.innerHTML = `
+                    <p>
+                        Unable to load data status.
+                    </p>
+                `;
+
+            }
+
+        }
+
+        // ============================================================
+        // ADMIN STATUS — OPEN RECORD
+        // ============================================================
+
+        function openStatusRecord(record) {
+
+            // Close the status panel
+            document
+                .getElementById(
+                    "admin-status-panel"
+                )
+                .classList.add(
+                    "hidden"
+                );
+
+
+            // Switch to MODIFY section
+            document
+                .getElementById(
+                    "nav-modify"
+                )
+                .click();
+
+
+            // Open the selected record directly
+            openModifyRecord(
+                record
+            );
+
+
+            // Scroll to the modify section
+            document
+                .getElementById(
+                    "modify-section"
+                )
+                .scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+
+        }
+
+        // ============================================================
+        // ADMIN STATUS — OPEN SAVED RECORD
+        // ============================================================
+
+        function loadStatusRecordFromStorage() {
+
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+
+            if (
+                params.get(
+                    "statusRecord"
+                ) !== "1"
+            ) {
+
+                return;
+
+            }
+
+
+            const storedRecord =
+                localStorage.getItem(
+                    "adminStatusRecord"
+                );
+
+
+            if (!storedRecord) {
+
+                return;
+
+            }
+
+
+            try {
+
+                const record =
+                    JSON.parse(
+                        storedRecord
+                    );
+
+
+                localStorage.removeItem(
+                    "adminStatusRecord"
+                );
+
+
+                openStatusRecord(
+                    record
+                );
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Unable to open status record:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        document
+            .getElementById(
+                "admin-status-button"
+            )
+            .addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById(
+                            "admin-status-panel"
+                        )
+                        .classList.toggle(
+                            "hidden"
+                        );
+
+                }
+            );
+
+
+        document
+            .getElementById(
+                "admin-status-close"
+            )
+            .addEventListener(
+                "click",
+                () => {
+
+                    document
+                        .getElementById(
+                            "admin-status-panel"
+                        )
+                        .classList.add(
+                            "hidden"
+                        );
+
+                }
+            );
+
+        loadStatusRecordFromStorage();
+
+        loadAdminStatus(); 
 
     </script>
 
