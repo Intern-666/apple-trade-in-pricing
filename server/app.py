@@ -388,6 +388,53 @@ REFRESH_INTERVAL_SECONDS = 10 * 60
 _last_refresh_at = datetime.now()
 
 
+def write_csv_atomically(raw_df, destination_path):
+    """
+    Writes `raw_df` to `destination_path` safely: writes to a temp
+    file in the same directory first, then atomically renames it
+    over the real path. This avoids ever leaving master_msrp.csv
+    half-written (e.g. if the process is killed mid-write) --
+    since this file is read again on every server boot, a
+    corrupted or truncated copy would take the whole app down.
+
+    Returns True on success, False on any failure (never raises --
+    a failed write-back must not affect the in-memory refresh that
+    already succeeded by the time this is called).
+    """
+
+    temp_path = destination_path.with_suffix(
+        destination_path.suffix + ".tmp"
+    )
+
+    try:
+
+        raw_df.to_csv(temp_path, index=False)
+
+        os.replace(temp_path, destination_path)
+
+        return True
+
+    except Exception as exc:
+
+        print(
+            "WARNING: Failed to write refreshed data back to "
+            f"{destination_path.name}, local fallback file is "
+            f"now stale until the next successful refresh: {exc}"
+        )
+
+        # Best-effort cleanup of the temp file if it was created
+        # but the rename itself failed.
+        try:
+
+            if temp_path.exists():
+                temp_path.unlink()
+
+        except Exception:
+            pass
+
+        return False
+
+
 def refresh_data_if_stale():
 
     global df, device_model_map, device_config_map, _last_refresh_at
@@ -444,6 +491,29 @@ def refresh_data_if_stale():
     df = refreshed_df
     device_model_map = refreshed_model_map
     device_config_map = refreshed_config_map
+
+    # ----------------------------------------------------------
+    # WRITE BACK TO master_msrp.csv
+    #
+    # Keeps the local CSV (the boot-time fallback) in sync with
+    # whatever Sheets currently has, so a server restart boots
+    # from the last-known-good Sheets state rather than a
+    # potentially old/stale CSV snapshot. Writes the RAW fetched
+    # frame (before clean_dataset()'s transforms), so the CSV
+    # stays a faithful mirror of the Sheet's actual content --
+    # cleaning still happens fresh on every load regardless.
+    #
+    # This is a separate, independent step from the in-memory
+    # update above: if this write fails, df/the maps in memory
+    # are already correctly updated and stay that way -- only
+    # the on-disk fallback file remains stale until the next
+    # successful refresh tries again.
+    # ----------------------------------------------------------
+
+    write_csv_atomically(
+        fetch_result.dataframe,
+        DATA_FILE,
+    )
 
     print(
         "Sheets refresh applied -- "
