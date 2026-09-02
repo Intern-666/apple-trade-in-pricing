@@ -199,4 +199,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         window.location.href = "/index.html";
     });
+
+    window.addEventListener("pageshow", () => {
+        submitButton.disabled = false;
+        submitText.textContent = "Start my trade-in";
+    });
 });
