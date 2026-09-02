@@ -14,168 +14,165 @@
   <body>
     <main class="customer-detail-page">
       <div class="customer-detail-container">
+
         <header class="customer-detail-header">
           <div class="customer-detail-brand">
             <img src="/assets/imycom.png" alt="iMyCom logo" />
           </div>
 
-          <p class="customer-detail-eyebrow">APPLE TRADE-IN</p>
           <h1>Let's get to know you</h1>
+
           <p class="customer-detail-subtitle">
-            Enter your contact details to get started with your Apple device trade-in.
+            Enter your contact details to get started with your Apple device
+            trade-in.
           </p>
         </header>
 
-        <nav class="customer-detail-progress" aria-label="Trade-in progress">
-          <div class="customer-progress-item active">
-            <span class="customer-progress-number">1</span>
-            <span class="customer-progress-label">Your details</span>
-          </div>
-
-          <span class="customer-progress-separator" aria-hidden="true">→</span>
-
-          <div class="customer-progress-item">
-            <span class="customer-progress-number">2</span>
-            <span class="customer-progress-label">Device</span>
-          </div>
-
-          <span class="customer-progress-separator" aria-hidden="true">→</span>
-
-          <div class="customer-progress-item">
-            <span class="customer-progress-number">3</span>
-            <span class="customer-progress-label">Configuration</span>
-          </div>
-
-          <span class="customer-progress-separator" aria-hidden="true">→</span>
-
-          <div class="customer-progress-item">
-            <span class="customer-progress-number">4</span>
-            <span class="customer-progress-label">Condition</span>
-          </div>
-        </nav>
-
         <section class="customer-detail-card">
           <form id="customerDetailForm" novalidate>
+
             <div class="customer-form-section">
+
               <div class="customer-form-heading">
                 <h2>Your contact information</h2>
+
                 <p>
-                  We'll use these details to contact you about your trade-in enquiry.
+                  We'll use these details to contact you about your trade-in
+                  enquiry.
                 </p>
-                </div>
+              </div>
+
+              <!-- Full Name -->
               <div class="customer-form-group">
                 <label for="customerName">Full name</label>
 
                 <input
-                    type="text"
-                    id="customerName"
-                    name="customerName"
-                    placeholder="Enter your full name"
-                    autocomplete="name"
-                    required
-                    aria-describedby="customerName-error"
+                  type="text"
+                  id="customerName"
+                  name="customerName"
+                  placeholder="Enter your full name"
+                  autocomplete="name"
+                  aria-describedby="customerName-error"
+                  required
                 />
 
                 <p
-                    id="customerName-error"
-                    class="customer-field-error"
-                    aria-live="polite"
+                  id="customerName-error"
+                  class="customer-field-error"
+                  aria-live="polite"
                 ></p>
-                </div>
+              </div>
 
+              <!-- Phone Number -->
               <div class="customer-form-group">
                 <label for="customerPhone">Phone number</label>
 
                 <input
-                    type="tel"
-                    id="customerPhone"
-                    name="customerPhone"
-                    placeholder="e.g. 012-345 6789"
-                    autocomplete="tel"
-                    required
-                    aria-describedby="customerPhone-error customerPhone-help"
+                  type="tel"
+                  id="customerPhone"
+                  name="customerPhone"
+                  placeholder="e.g. 012-345 6789"
+                  autocomplete="tel"
+                  aria-describedby="customerPhone-help customerPhone-error"
+                  required
                 />
 
                 <p
-                    id="customerPhone-error"
-                    class="customer-field-error"
-                    aria-live="polite"
-                ></p>
+                  id="customerPhone-help"
+                  class="customer-field-help"
+                >
+                  We'll use this number if we need to contact you about your
+                  trade-in.
+                </p>
 
                 <p
-                    id="customerPhone-help"
-                    class="customer-field-help"
-                >
-                    We'll use this number if we need to contact you about your trade-in.
-                </p>
-                </div>
+                  id="customerPhone-error"
+                  class="customer-field-error"
+                  aria-live="polite"
+                ></p>
+              </div>
 
+              <!-- Email Address -->
               <div class="customer-form-group">
                 <label for="customerEmail">Email address</label>
 
                 <input
-                    type="email"
-                    id="customerEmail"
-                    name="customerEmail"
-                    placeholder="e.g. name@example.com"
-                    autocomplete="email"
-                    required
-                    aria-describedby="customerEmail-error"
+                  type="email"
+                  id="customerEmail"
+                  name="customerEmail"
+                  placeholder="e.g. name@example.com"
+                  autocomplete="email"
+                  aria-describedby="customerEmail-error"
+                  required
                 />
 
                 <p
-                    id="customerEmail-error"
-                    class="customer-field-error"
-                    aria-live="polite"
+                  id="customerEmail-error"
+                  class="customer-field-error"
+                  aria-live="polite"
                 ></p>
-                </div>
+              </div>
 
+              <!-- Preferred Contact Method -->
               <div class="customer-form-group">
-                <label for="customerContactMethod">Preferred contact method</label>
+                <label for="customerContactMethod">
+                  Preferred contact method
+                </label>
 
                 <div class="customer-select-wrapper">
-                    <select
+                  <select
                     id="customerContactMethod"
                     name="customerContactMethod"
-                    required
                     aria-describedby="customerContactMethod-error"
-                    >
+                    required
+                  >
                     <option value="" disabled selected>
-                        Select a contact method...
+                      Select a contact method...
                     </option>
 
                     <option value="whatsapp">WhatsApp</option>
                     <option value="phone">Phone call</option>
                     <option value="email">Email</option>
-                    </select>
+                  </select>
                 </div>
 
                 <p
-                    id="customerContactMethod-error"
-                    class="customer-field-error"
-                    aria-live="polite"
+                  id="customerContactMethod-error"
+                  class="customer-field-error"
+                  aria-live="polite"
                 ></p>
-                </div>
+              </div>
 
+            </div>
+
+            <!-- Privacy Notice -->
             <div class="customer-privacy-note">
-              <span class="customer-privacy-icon" aria-hidden="true"></span>
               <p>
-                Your information will only be used for your trade-in enquiry and related communication.
+                Your information will only be used for your trade-in enquiry
+                and related communication.
               </p>
             </div>
 
+            <!-- Submit -->
             <div class="customer-detail-actions">
-              <button type="submit" class="customer-primary-button">
+              <button
+                type="submit"
+                class="customer-primary-button"
+              >
                 <span>Start my trade-in</span>
                 <span aria-hidden="true">→</span>
               </button>
             </div>
+
           </form>
         </section>
 
         <footer class="customer-detail-footer">
-          <p>Your information is used only for your trade-in enquiry.</p>
+          <p>
+            Your information is used only for your trade-in enquiry.
+          </p>
         </footer>
+
       </div>
     </main>
 
