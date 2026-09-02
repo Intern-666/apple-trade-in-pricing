@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f5f7" />
+
+    <link rel="icon" type="image/png" href="/assets/imycom.png" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+
+    <title>Apple Trade-In | Customer Details</title>
+  </head>
+
+  <body>
+    <main class="customer-detail-page">
+      <div class="customer-detail-container">
+        <header class="customer-detail-header">
+          <div class="customer-detail-brand">
+            <img src="/assets/imycom.png" alt="iMyCom logo" />
+          </div>
+
+          <p class="customer-detail-eyebrow">APPLE TRADE-IN</p>
+          <h1>Let's get to know you</h1>
+          <p class="customer-detail-subtitle">
+            Enter your contact details to get started with your Apple device trade-in.
+          </p>
+        </header>
+
+        <nav class="customer-detail-progress" aria-label="Trade-in progress">
+          <div class="customer-progress-item active">
+            <span class="customer-progress-number">1</span>
+            <span class="customer-progress-label">Your details</span>
+          </div>
+
+          <span class="customer-progress-separator" aria-hidden="true">→</span>
+
+          <div class="customer-progress-item">
+            <span class="customer-progress-number">2</span>
+            <span class="customer-progress-label">Device</span>
+          </div>
+
+          <span class="customer-progress-separator" aria-hidden="true">→</span>
+
+          <div class="customer-progress-item">
+            <span class="customer-progress-number">3</span>
+            <span class="customer-progress-label">Configuration</span>
+          </div>
+
+          <span class="customer-progress-separator" aria-hidden="true">→</span>
+
+          <div class="customer-progress-item">
+            <span class="customer-progress-number">4</span>
+            <span class="customer-progress-label">Condition</span>
+          </div>
+        </nav>
+
+        <section class="customer-detail-card">
+          <form id="customerDetailForm" novalidate>
+            <div class="customer-form-section">
+              <div class="customer-form-heading">
+                <h2>Your contact information</h2>
+                <p>
+                  We'll use these details to contact you about your trade-in enquiry.
+                </p>
+              </div>
+
+              <div class="customer-form-group">
+                <label for="customerName">Full name</label>
+                <input
+                  type="text"
+                  id="customerName"
+                  name="customerName"
+                  placeholder="Enter your full name"
+                  autocomplete="name"
+                  required
+                />
+              </div>
+
+              <div class="customer-form-group">
+                <label for="customerPhone">Phone number</label>
+                <input
+                  type="tel"
+                  id="customerPhone"
+                  name="customerPhone"
+                  placeholder="e.g. 012-345 6789"
+                  autocomplete="tel"
+                  required
+                />
+
+                <p class="customer-field-help">
+                  We'll use this number if we need to contact you about your trade-in.
+                </p>
+              </div>
+
+              <div class="customer-form-group">
+                <label for="customerEmail">Email address</label>
+                <input
+                  type="email"
+                  id="customerEmail"
+                  name="customerEmail"
+                  placeholder="e.g. name@example.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+
+              <div class="customer-form-group">
+                <label for="customerContactMethod">Preferred contact method</label>
+                <div class="customer-select-wrapper">
+                  <select id="customerContactMethod" name="customerContactMethod" required>
+                    <option value="" disabled selected>Select a contact method...</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="phone">Phone call</option>
+                    <option value="email">Email</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="customer-privacy-note">
+              <span class="customer-privacy-icon" aria-hidden="true">🔒</span>
+              <p>
+                Your information will only be used for your trade-in enquiry and related communication.
+              </p>
+            </div>
+
+            <div class="customer-detail-actions">
+              <button type="submit" class="customer-primary-button">
+                <span>Start my trade-in</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <footer class="customer-detail-footer">
+          <p>Your information is used only for your trade-in enquiry.</p>
+        </footer>
+      </div>
+    </main>
+
+    <script src="/assets/customer-detail.js"></script>
+  </body>
+</html>

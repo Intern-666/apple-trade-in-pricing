@@ -60,6 +60,23 @@ class SyncResult:
         }
 
 
+@dataclass
+class FetchResult:
+
+    success: bool
+    dataframe: Optional[pd.DataFrame]
+    rows_fetched: Optional[int]
+    error: Optional[str]
+
+    def as_dict(self):
+
+        return {
+            "success": self.success,
+            "rows_fetched": self.rows_fetched,
+            "error": self.error,
+        }
+
+
 # ------------------------------------------------------------------
 # Sync client
 # ------------------------------------------------------------------
@@ -229,4 +246,149 @@ class SheetsSync:
                 success=False,
                 rows_synced=None,
                 error=str(exc),
+            )
+
+    def fetch_dataset(self) -> "FetchResult":
+        """
+        Reads the target worksheet's current contents back into a
+        DataFrame -- the read-side counterpart to sync_dataset().
+
+        This is what makes the Sheet the actual source of truth: a
+        row deleted directly in the Sheet (rather than through the
+        admin tool) is reflected here, since this reads whatever is
+        currently in the worksheet, not whatever sync_dataset() last
+        wrote.
+
+        Never raises -- any failure (auth, network, empty sheet,
+        malformed data) is captured in the returned FetchResult so
+        the caller can fall back to its last-known-good dataframe
+        instead of crashing or serving empty data.
+        """
+
+        if not self.is_available:
+
+            return FetchResult(
+                success=False,
+                dataframe=None,
+                rows_fetched=None,
+                error=(
+                    self._init_error
+                    or "Google Sheets client is not initialized."
+                ),
+            )
+
+        try:
+
+            records = self._worksheet.get_all_records()
+
+            if not records:
+
+                return FetchResult(
+                    success=False,
+                    dataframe=None,
+                    rows_fetched=0,
+                    error=(
+                        "Worksheet is empty or has no data rows "
+                        "below the header."
+                    ),
+                )
+
+            fetched_df = pd.DataFrame(records)
+
+            return FetchResult(
+                success=True,
+                dataframe=fetched_df,
+                rows_fetched=len(fetched_df),
+                error=None,
+            )
+
+        except Exception as exc:
+
+            print(
+                f"WARNING: Google Sheets fetch failed: {exc}"
+            )
+
+            return FetchResult(
+                success=False,
+                dataframe=None,
+                rows_fetched=None,
+                error=str(exc),
+            )
+
+    def append_record(self, record: dict) -> SyncResult:
+
+        if not self.is_available:
+            return SyncResult(
+                success=False,
+                rows_synced=0,
+                error=self._init_error
+                or "Google Sheets sync is unavailable."
+            )
+
+        try:
+            # Expected column order for customer trade-in records
+            columns = [
+                "Timestamp",
+                "Customer Name",
+                "Phone",
+                "Email",
+                "Preferred Contact",
+                "Device",
+                "Sub-device",
+                "Model",
+                "Storage (GB)",
+                "Storage Type",
+                "Connectivity",
+                "Market Value (RM)",
+                "Condition Score",
+                "Grade",
+                "Multiplier",
+                "Final Trade-In Value (RM)"
+            ]
+
+            # Create the header if the worksheet is completely empty.
+            existing_values = self._worksheet.get_all_values()
+
+            if not existing_values:
+                self._worksheet.append_row(
+                    columns,
+                    value_input_option="USER_ENTERED"
+                )
+
+            # Keep values in the exact same order as the headers.
+            row = [
+                record.get("Timestamp", ""),
+                record.get("Customer Name", ""),
+                record.get("Phone", ""),
+                record.get("Email", ""),
+                record.get("Preferred Contact", ""),
+                record.get("Device", ""),
+                record.get("Sub-device", ""),
+                record.get("Model", ""),
+                record.get("Storage (GB)", ""),
+                record.get("Storage Type", ""),
+                record.get("Connectivity", ""),
+                record.get("Market Value (RM)", ""),
+                record.get("Condition Score", ""),
+                record.get("Grade", ""),
+                record.get("Multiplier", ""),
+                record.get("Final Trade-In Value (RM)", "")
+            ]
+
+            self._worksheet.append_row(
+                row,
+                value_input_option="USER_ENTERED"
+            )
+
+            return SyncResult(
+                success=True,
+                rows_synced=1,
+                error=None
+            )
+
+        except Exception as exc:
+            return SyncResult(
+                success=False,
+                rows_synced=0,
+                error=str(exc)
             )

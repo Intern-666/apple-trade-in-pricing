@@ -2,6 +2,18 @@ let deviceData = {};
 let configData = {};
 
 /* =========================================================
+   CUSTOMER DETAILS
+========================================================= */
+
+const customerDetails = JSON.parse(
+    sessionStorage.getItem("customerDetails") || "null"
+);
+
+if (!customerDetails) {
+    window.location.href = "/customer-detail.html";
+}
+
+/* =========================================================
    DEVICE IMAGE MAP
    Keyed by Device -> Sub-device (not by exact model name),
    so new models under an existing sub-device need no changes.
@@ -1589,6 +1601,77 @@ tradeInForm.addEventListener(
             finalPrice.toLocaleString(
                 "en-MY"
             );
+
+        /* =====================================================
+        TRADE-IN RECORD
+        ===================================================== */
+
+        const tradeInRecord = {
+            customer: customerDetails,
+
+            device: {
+                device: device,
+                subDevice: subDevice,
+                model: model,
+                storage: storage || null,
+                storageType: storageType || null,
+                connectivity: connectivity || null
+            },
+
+            valuation: {
+                marketValue: medianPrice,
+                conditionScore: score,
+                grade: grade,
+                multiplier: multiplier,
+                finalValue: finalPrice
+            },
+
+            createdAt: new Date().toISOString()
+        };
+
+        sessionStorage.setItem(
+            "tradeInRecord",
+            JSON.stringify(tradeInRecord)
+        );
+
+        console.log(
+            "Trade-in record:",
+            tradeInRecord
+        );
+
+        /* =====================================================
+        SAVE TRADE-IN RECORD
+        ===================================================== */
+
+        try {
+            const saveResponse = await fetch("/customer/trade-in", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(tradeInRecord)
+            });
+
+            const saveResult = await saveResponse.json();
+
+            if (!saveResponse.ok || saveResult.status !== "success") {
+                console.error(
+                    "Failed to save trade-in record:",
+                    saveResult
+                );
+            } else {
+                console.log(
+                    "Trade-in record saved successfully:",
+                    saveResult
+                );
+            }
+
+        } catch (error) {
+            console.error(
+                "Customer trade-in save error:",
+                error
+            );
+        }
 
 
         /* =====================================================

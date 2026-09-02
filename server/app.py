@@ -66,6 +66,8 @@ SHEETS_SPREADSHEET_ID = (
 
 SHEETS_WORKSHEET_NAME = "Cleaned Master"
 
+CUSTOMER_SHEETS_WORKSHEET_NAME = "Customer Data"
+
 
 # ============================================================
 # FASTAPI
@@ -91,7 +93,185 @@ app.add_middleware(
 
 
 # ============================================================
-# LOAD DATA
+# DATA CLEANING + MAP BUILDING (REUSABLE)
+#
+# Extracted into functions so the exact same cleaning/build
+# logic can run both at startup (from the local CSV) and later
+# on a refresh (from a Google Sheets read) -- one code path,
+# two possible sources.
+# ============================================================
+
+def storage_to_gb(value):
+
+    if pd.isna(value):
+        return np.nan
+
+    value = str(value).strip().lower()
+
+    if "tb" in value:
+
+        numbers = [
+            x for x in value.replace(",", "").split()
+            if x.replace(".", "", 1).isdigit()
+        ]
+
+        if numbers:
+            return float(numbers[0]) * 1024
+
+    if "gb" in value:
+
+        numbers = [
+            x for x in value.replace(",", "").split()
+            if x.replace(".", "", 1).isdigit()
+        ]
+
+        if numbers:
+            return float(numbers[0])
+
+    try:
+        return float(value)
+
+    except (ValueError, TypeError):
+        return np.nan
+
+
+TEXT_COLUMNS = [
+    "Device",
+    "Sub-device",
+    "Standardized Model",
+    "Provider",
+    "Storage Type",
+    "Connectivity",
+    "Chipset",
+    "Mac Generation"
+]
+
+
+def clean_dataset(raw_df):
+    """
+    Applies the exact same cleaning steps to `raw_df` regardless of
+    whether it came from the local CSV (startup) or a live Google
+    Sheets read (refresh): storage parsing, numeric coercion on the
+    target column, and text-column normalization.
+    """
+
+    cleaned = raw_df.copy()
+
+    if "Storage (GB)" in cleaned.columns:
+
+        cleaned["Storage (GB)"] = (
+            cleaned["Storage (GB)"]
+            .apply(storage_to_gb)
+        )
+
+    if "Max. Trade-In Value (RM)" in cleaned.columns:
+
+        cleaned["Max. Trade-In Value (RM)"] = pd.to_numeric(
+            cleaned["Max. Trade-In Value (RM)"],
+            errors="coerce"
+        )
+
+    # Keep records with missing trade-in values.
+    # Admin needs these records so they can later be modified.
+    cleaned = cleaned.copy()
+
+    for col in TEXT_COLUMNS:
+
+        if col in cleaned.columns:
+
+            cleaned[col] = (
+                cleaned[col]
+                .fillna("Unknown")
+                .astype(str)
+                .str.strip()
+            )
+
+    return cleaned
+
+
+def build_device_maps(cleaned_df):
+    """
+    Builds device_model_map and device_config_map from a cleaned
+    dataframe. Pure function of `cleaned_df` -- same output every
+    time for the same input, whether that input came from the CSV
+    at startup or a fresh Sheets read.
+    """
+
+    model_map = {}
+    config_map = {}
+
+    for (
+        device,
+        sub_device,
+        model_name
+    ), group in cleaned_df.groupby(
+        [
+            "Device",
+            "Sub-device",
+            "Standardized Model"
+        ]
+    ):
+
+        if device not in model_map:
+            model_map[device] = {}
+
+        if sub_device not in model_map[device]:
+            model_map[device][sub_device] = {}
+
+        storages = (
+            group["Storage (GB)"]
+            .dropna()
+            .unique()
+            .tolist()
+        )
+
+        storages = sorted(storages)
+
+        clean_storages = [
+            int(x) if float(x).is_integer() else float(x)
+            for x in storages
+        ]
+
+        model_map[
+            device
+        ][
+            sub_device
+        ][
+            model_name
+        ] = clean_storages
+
+        if device not in config_map:
+            config_map[device] = {}
+
+        if sub_device not in config_map[device]:
+            config_map[device][sub_device] = {}
+
+        storage_types = sorted(
+            t for t in group["Storage Type"].dropna().unique().tolist()
+            if t and t != "Unknown"
+        ) if "Storage Type" in group.columns else []
+
+        connectivity_options = sorted(
+            c for c in group["Connectivity"].dropna().unique().tolist()
+            if c and c != "Unknown"
+        ) if "Connectivity" in group.columns else []
+
+        config_map[
+            device
+        ][
+            sub_device
+        ][
+            model_name
+        ] = {
+            "storageTypes": storage_types,
+            "connectivity": connectivity_options,
+        }
+
+    return model_map, config_map
+
+
+# ============================================================
+# LOAD DATA (INITIAL, FROM LOCAL CSV)
 # ============================================================
 
 print("=" * 70)
@@ -147,178 +327,38 @@ else:
         "to Google Sheets until this is resolved."
     )
 
-
 # ============================================================
-# CLEAN STORAGE
+# CUSTOMER GOOGLE SHEETS SYNC
 # ============================================================
 
-def storage_to_gb(value):
-
-    if pd.isna(value):
-        return np.nan
-
-    value = str(value).strip().lower()
-
-    if "tb" in value:
-
-        numbers = [
-            x for x in value.replace(",", "").split()
-            if x.replace(".", "", 1).isdigit()
-        ]
-
-        if numbers:
-            return float(numbers[0]) * 1024
-
-    if "gb" in value:
-
-        numbers = [
-            x for x in value.replace(",", "").split()
-            if x.replace(".", "", 1).isdigit()
-        ]
-
-        if numbers:
-            return float(numbers[0])
-
-    try:
-        return float(value)
-
-    except (ValueError, TypeError):
-        return np.nan
-
-
-df["Storage (GB)"] = (
-    df["Storage (GB)"]
-    .apply(storage_to_gb)
+customer_sheets_sync = SheetsSync(
+    service_account_file=str(SHEETS_SERVICE_ACCOUNT_FILE),
+    service_account_json=SHEETS_SERVICE_ACCOUNT_JSON,
+    spreadsheet_id=SHEETS_SPREADSHEET_ID,
+    worksheet_name=CUSTOMER_SHEETS_WORKSHEET_NAME,
 )
 
+if customer_sheets_sync.is_available:
 
-# ============================================================
-# CLEAN TARGET
-# ============================================================
-
-df["Max. Trade-In Value (RM)"] = pd.to_numeric(
-    df["Max. Trade-In Value (RM)"],
-    errors="coerce"
-)
-
-# Keep records with missing trade-in values.
-# Admin needs these records so they can later be modified.
-df = df.copy()
-
-
-# ============================================================
-# CLEAN TEXT COLUMNS
-# ============================================================
-
-TEXT_COLUMNS = [
-    "Device",
-    "Sub-device",
-    "Standardized Model",
-    "Provider",
-    "Storage Type",
-    "Connectivity",
-    "Chipset",
-    "Mac Generation"
-]
-
-
-for col in TEXT_COLUMNS:
-
-    if col in df.columns:
-
-        df[col] = (
-            df[col]
-            .fillna("Unknown")
-            .astype(str)
-            .str.strip()
-        )
-
-
-# ============================================================
-# BUILD DEVICE MODEL MAP
-# ============================================================
-
-device_model_map = {}
-
-device_config_map = {}
-
-
-for (
-    device,
-    sub_device,
-    model_name
-), group in df.groupby(
-    [
-        "Device",
-        "Sub-device",
-        "Standardized Model"
-    ]
-):
-
-    if device not in device_model_map:
-        device_model_map[device] = {}
-
-    if sub_device not in device_model_map[device]:
-        device_model_map[device][sub_device] = {}
-
-    storages = (
-        group["Storage (GB)"]
-        .dropna()
-        .unique()
-        .tolist()
+    print(
+        "Customer Google Sheets sync ready -> "
+        f"worksheet '{CUSTOMER_SHEETS_WORKSHEET_NAME}'"
     )
 
-    storages = sorted(storages)
+else:
 
-    clean_storages = [
-        int(x) if float(x).is_integer() else float(x)
-        for x in storages
-    ]
+    print(
+        "Customer Google Sheets sync UNAVAILABLE."
+    )
 
-    device_model_map[
-        device
-    ][
-        sub_device
-    ][
-        model_name
-    ] = clean_storages
 
-    # --------------------------------------------------------
-    # CONFIGURATION (Storage Type + Connectivity)
-    #
-    # Built alongside device_model_map, in the same groupby pass.
-    # "Unknown" values (from TEXT_COLUMNS cleaning above) are
-    # dropped here so the frontend only sees real options and
-    # can decide to skip rendering a field with none.
-    # --------------------------------------------------------
+# ============================================================
+# CLEAN + BUILD (INITIAL PASS, FROM THE CSV LOADED ABOVE)
+# ============================================================
 
-    if device not in device_config_map:
-        device_config_map[device] = {}
+df = clean_dataset(df)
 
-    if sub_device not in device_config_map[device]:
-        device_config_map[device][sub_device] = {}
-
-    storage_types = sorted(
-        t for t in group["Storage Type"].dropna().unique().tolist()
-        if t and t != "Unknown"
-    ) if "Storage Type" in group.columns else []
-
-    connectivity_options = sorted(
-        c for c in group["Connectivity"].dropna().unique().tolist()
-        if c and c != "Unknown"
-    ) if "Connectivity" in group.columns else []
-
-    device_config_map[
-        device
-    ][
-        sub_device
-    ][
-        model_name
-    ] = {
-        "storageTypes": storage_types,
-        "connectivity": connectivity_options,
-    }
-
+device_model_map, device_config_map = build_device_maps(df)
 
 print(
     f"Devices available: {len(device_model_map)}"
@@ -328,11 +368,98 @@ print("=" * 70)
 
 
 # ============================================================
+# LIVE REFRESH FROM GOOGLE SHEETS
+#
+# "Cleaned Master" (the sheet `sheets_sync` points at) is the
+# intended source of truth -- rows deleted or edited directly in
+# the Sheet must be reflected here, not just admin-tool writes.
+#
+# A refresh is attempted at most once per REFRESH_INTERVAL: cheap
+# on every request when the cache is still fresh (a timestamp
+# comparison), and a real Sheets read only every 10 minutes at
+# most. If a refresh attempt fails for any reason (network, auth,
+# quota, malformed data), the existing in-memory df/maps are kept
+# untouched and used as-is -- this must never take the app down
+# or serve empty data because of a transient Sheets issue.
+# ============================================================
+
+REFRESH_INTERVAL_SECONDS = 10 * 60
+
+_last_refresh_at = datetime.now()
+
+
+def refresh_data_if_stale():
+
+    global df, device_model_map, device_config_map, _last_refresh_at
+
+    seconds_since_refresh = (
+        datetime.now() - _last_refresh_at
+    ).total_seconds()
+
+    if seconds_since_refresh < REFRESH_INTERVAL_SECONDS:
+        return
+
+    # Mark the attempt time regardless of outcome, so a failed
+    # fetch doesn't retry on every single request until the next
+    # interval -- it still waits the full interval before trying
+    # again, matching the fail-safe design of SheetsSync itself.
+    _last_refresh_at = datetime.now()
+
+    if not sheets_sync.is_available:
+        return
+
+    fetch_result = sheets_sync.fetch_dataset()
+
+    if not fetch_result.success:
+
+        print(
+            "WARNING: Sheets refresh failed, keeping existing "
+            f"in-memory data: {fetch_result.error}"
+        )
+
+        return
+
+    try:
+
+        refreshed_df = clean_dataset(
+            fetch_result.dataframe
+        )
+
+        refreshed_model_map, refreshed_config_map = (
+            build_device_maps(refreshed_df)
+        )
+
+    except Exception as exc:
+
+        # A malformed Sheet (missing column, bad header, etc.)
+        # must not corrupt the currently-working in-memory data.
+        print(
+            "WARNING: Sheets refresh fetched data but it failed "
+            f"to clean/build correctly, keeping existing "
+            f"in-memory data: {exc}"
+        )
+
+        return
+
+    df = refreshed_df
+    device_model_map = refreshed_model_map
+    device_config_map = refreshed_config_map
+
+    print(
+        "Sheets refresh applied -- "
+        f"{fetch_result.rows_fetched} rows, "
+        f"{len(device_model_map)} devices"
+    )
+
+
+# ============================================================
 # AVAILABLE MODELS
 # ============================================================
 
 @app.get("/available-models")
 def get_models():
+
+    refresh_data_if_stale()
 
     return device_model_map
 
@@ -345,6 +472,8 @@ def get_models():
 
 @app.get("/model-configuration")
 def get_model_configuration():
+
+    refresh_data_if_stale()
 
     return device_config_map
 
@@ -368,6 +497,8 @@ class DeviceInput(BaseModel):
 
 @app.post("/predict")
 def predict_price(item: DeviceInput):
+
+    refresh_data_if_stale()
 
     print("\n" + "=" * 70)
     print("CUSTOMER VALUATION REQUEST")
@@ -529,6 +660,175 @@ def predict_price(item: DeviceInput):
     }
 
 # ============================================================
+# CUSTOMER TRADE-IN RECORD
+# ============================================================
+
+class CustomerTradeInRecord(BaseModel):
+
+    customer: dict
+
+    device: dict
+
+    valuation: dict
+
+    createdAt: str
+
+# ============================================================
+# CUSTOMER — SAVE TRADE-IN RECORD
+# ============================================================
+
+@app.post("/customer/trade-in")
+def save_customer_trade_in(
+    item: CustomerTradeInRecord
+):
+
+    print("\n" + "=" * 70)
+    print("CUSTOMER — TRADE-IN RECORD")
+    print("=" * 70)
+
+    customer = item.customer
+    device = item.device
+    valuation = item.valuation
+
+    # --------------------------------------------------------
+    # CUSTOMER DETAILS
+    # --------------------------------------------------------
+
+    customer_name = str(
+        customer.get("name", "")
+    ).strip()
+
+    customer_phone = str(
+        customer.get("phone", "")
+    ).strip()
+
+    customer_email = str(
+        customer.get("email", "")
+    ).strip()
+
+    preferred_contact = str(
+        customer.get("preferredContact", "")
+    ).strip()
+
+    if not customer_name:
+        return {
+            "status": "error",
+            "message": "Customer name is required."
+        }
+
+    if not customer_phone:
+        return {
+            "status": "error",
+            "message": "Customer phone is required."
+        }
+
+    if not customer_email:
+        return {
+            "status": "error",
+            "message": "Customer email is required."
+        }
+
+    if not preferred_contact:
+        return {
+            "status": "error",
+            "message": "Preferred contact method is required."
+        }
+
+    # --------------------------------------------------------
+    # DEVICE DETAILS
+    # --------------------------------------------------------
+
+    device_name = device.get("device")
+    sub_device = device.get("subDevice")
+    model_name = device.get("model")
+
+    # --------------------------------------------------------
+    # VALUATION DETAILS
+    # --------------------------------------------------------
+
+    market_value = valuation.get("marketValue")
+    condition_score = valuation.get("conditionScore")
+    grade = valuation.get("grade")
+    multiplier = valuation.get("multiplier")
+    final_value = valuation.get("finalValue")
+
+    # --------------------------------------------------------
+    # GOOGLE SHEETS ROW
+    # --------------------------------------------------------
+
+    customer_record = {
+        "Timestamp": item.createdAt,
+        "Customer Name": customer_name,
+        "Phone": customer_phone,
+        "Email": customer_email,
+        "Preferred Contact": preferred_contact,
+
+        "Device": device_name,
+        "Sub-device": sub_device,
+        "Model": model_name,
+        "Storage (GB)": device.get("storage"),
+        "Storage Type": device.get("storageType"),
+        "Connectivity": device.get("connectivity"),
+
+        "Market Value (RM)": market_value,
+        "Condition Score": condition_score,
+        "Grade": grade,
+        "Multiplier": multiplier,
+        "Final Trade-In Value (RM)": final_value
+    }
+
+    # --------------------------------------------------------
+    # SAVE TO CUSTOMER SHEET
+    # --------------------------------------------------------
+
+    sync_result = customer_sheets_sync.append_record(
+        customer_record
+    )
+
+    # --------------------------------------------------------
+    # LOG RESULT
+    # --------------------------------------------------------
+
+    print(f"Customer : {customer_name}")
+    print(f"Device   : {device_name}")
+    print(f"Model    : {model_name}")
+
+    if final_value is not None:
+        print(
+            f"Final    : RM {final_value:,.2f}"
+        )
+    else:
+        print("Final    : N/A")
+
+    print(
+        "Sheets   : "
+        + (
+            "SAVED"
+            if sync_result.success
+            else "FAILED"
+        )
+    )
+
+    if sync_result.error:
+        print(
+            f"Sheets error: {sync_result.error}"
+        )
+
+    print("=" * 70)
+
+    # --------------------------------------------------------
+    # RESPONSE
+    # --------------------------------------------------------
+
+    return {
+        "status": "success",
+        "message": "Trade-in record received successfully.",
+        "customer": customer_name,
+        "model": model_name,
+        "sheets": sync_result.as_dict()
+    }
+
+# ============================================================
 # ADMIN ADD REQUEST
 # ============================================================
 
@@ -616,11 +916,18 @@ def admin_add_device(item: AdminAddDevice):
             "message": "Model is required."
         }
 
+    charging_method = (
+    item.ChargingMethod.strip()
+    if item.ChargingMethod
+    else np.nan
+    )
+
     if (
         device == "AirPods"
         and not pd.isna(charging_method)
         and charging_method not in VALID_CHARGING_METHODS
     ):
+        
         return {
             "status": "error",
             "message": "Invalid charging method."
@@ -2344,6 +2651,21 @@ def customer_frontend():
 
     return FileResponse(
         ASSETS_DIR / "index.html"
+    )
+
+@app.get("/index.html")
+def customer_index_page():
+
+    return FileResponse(
+        ASSETS_DIR / "index.html"
+    )
+
+
+@app.get("/customer-detail.html")
+def customer_detail_page():
+
+    return FileResponse(
+        ASSETS_DIR / "customer-detail.html"
     )
 
 
