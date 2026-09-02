@@ -2932,22 +2932,13 @@ def admin_forecast(item: dict):
 
 @app.get("/")
 def customer_frontend():
-
-    return FileResponse(
-        ASSETS_DIR / "index.html"
-    )
-
-@app.get("/index.html")
-def customer_index_page():
-
     return FileResponse(
         ASSETS_DIR / "index.html"
     )
 
 
-@app.get("/customer-detail.html")
+@app.get("/customer-detail")
 def customer_detail_page():
-
     return FileResponse(
         ASSETS_DIR / "customer-detail.html"
     )

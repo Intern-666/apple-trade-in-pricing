@@ -197,7 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
         submitButton.disabled = true;
         submitText.textContent = "Starting...";
 
-        window.location.href = "/index.html";
+        window.location.href = "/";
     });
 
     window.addEventListener("pageshow", () => {
