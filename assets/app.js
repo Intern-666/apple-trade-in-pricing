@@ -363,6 +363,13 @@ stepIndicator.addEventListener("click", function (event) {
 
 window.addEventListener("DOMContentLoaded", async function () {
 
+    const customerDetails = sessionStorage.getItem("customerDetails");
+
+    if (!customerDetails) {
+        window.location.replace("/customer-detail");
+        return;
+    }
+
     try {
 
         const [modelsResponse, configResponse] = await Promise.all([
