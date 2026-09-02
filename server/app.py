@@ -9,9 +9,9 @@ import numpy as np
 import sys
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Optional, cast
@@ -500,6 +500,8 @@ def refresh_data_if_stale():
     device_model_map = refreshed_model_map
     device_config_map = refreshed_config_map
 
+    bump_data_version()
+
     # ----------------------------------------------------------
     # WRITE BACK TO master_msrp.csv
     #
@@ -528,6 +530,94 @@ def refresh_data_if_stale():
         f"{fetch_result.rows_fetched} rows, "
         f"{len(device_model_map)} devices"
     )
+
+# ------------------------------------------------------------
+# DATA VERSION STAMP
+#
+# Distinct from _last_refresh_at, which updates on every refresh
+# ATTEMPT (including failed ones, to avoid hammering Sheets after
+# an error). This stamp only changes when df is ACTUALLY replaced
+# -- a successful Sheets refresh, or an admin add/modify/delete.
+#
+# Admin's modify/delete requests carry the stamp they saw when
+# they loaded /admin/records; the backend rejects the write if it
+# no longer matches, since that means the row positions they're
+# relying on may no longer point at the same records.
+# ------------------------------------------------------------
+
+_data_version = datetime.now().isoformat()
+
+def force_refresh_from_sheets():
+    """
+    Force an immediate Google Sheets check.
+
+    Updates the backend dataframe and data version only when
+    the Sheet contents actually differ from the current dataframe.
+    """
+    global df, device_model_map, model_config_map, _last_refresh_at
+
+    if not sheets_sync.is_available:
+        print("Admin force refresh failed: Google Sheets sync is not available.")
+        return False
+
+    try:
+        fetch_result = sheets_sync.fetch_dataset()
+
+        if not fetch_result.success or fetch_result.dataframe is None:
+            print(f"Admin force refresh failed: {fetch_result.error}")
+            return False
+
+        refreshed_df = clean_dataset(fetch_result.dataframe)
+
+        if refreshed_df.empty:
+            print("Admin force refresh returned an empty dataset.")
+            return False
+
+        # Compare the actual dataset contents.
+        current = df.reset_index(drop=True).fillna("").astype(str)
+        refreshed = refreshed_df.reset_index(drop=True).fillna("").astype(str)
+
+        data_changed = not current.equals(refreshed)
+
+        # Always use the latest Sheet data in memory.
+        df = refreshed_df
+        device_model_map, model_config_map = build_device_maps(df)
+        _last_refresh_at = datetime.now()
+
+        if data_changed:
+            bump_data_version()
+            print(
+                f"Admin force refresh detected a data change: "
+                f"{len(df)} rows loaded."
+            )
+        else:
+            print(
+                f"Admin force refresh: no data changes detected "
+                f"({len(df)} rows)."
+            )
+
+        try:
+            df.to_csv(DATA_FILE, index=False)
+        except Exception as exc:
+            print(f"Warning: failed to update local CSV cache: {exc}")
+
+        return True
+
+    except Exception as exc:
+        print(f"Admin force refresh error: {exc}")
+        return False
+
+def bump_data_version():
+
+    global _data_version
+
+    _data_version = datetime.now().isoformat()
+
+
+# The startup refresh above may have already replaced df once --
+# stamp that as the initial version so admin's very first page
+# load already reflects it correctly.
+bump_data_version()
 
 
 # ------------------------------------------------------------
@@ -977,6 +1067,8 @@ def admin_add_device(item: AdminAddDevice):
     print("ADMIN — ADD DEVICE")
     print("=" * 70)
 
+    force_refresh_from_sheets()
+
     VALID_CHARGING_METHODS = [
         "Wired",
         "Wireless",
@@ -1298,6 +1390,8 @@ def admin_add_device(item: AdminAddDevice):
     # SYNC TO GOOGLE SHEETS (best-effort, non-blocking)
     # ========================================================
 
+    bump_data_version()
+
     sync_result = sheets_sync.sync_dataset(df)
 
     if not sync_result.success:
@@ -1381,6 +1475,7 @@ def admin_add_device(item: AdminAddDevice):
 
 @app.get("/admin/status")
 def admin_status():
+    refresh_data_if_stale()
 
     print(df["Device"].value_counts(dropna=False))
     # --------------------------------------------------------
@@ -1707,6 +1802,7 @@ def admin_status():
 
 @app.get("/admin/models")
 def admin_models():
+    refresh_data_if_stale()
 
     models = {}
 
@@ -1733,6 +1829,8 @@ def admin_records(
     device: str,
     model: str
 ):
+
+    refresh_data_if_stale()
 
     matches = df[
         (df["Device"] == device)
@@ -1791,6 +1889,40 @@ def admin_records(
 
             return str(value).strip()
 
+        def safe_numeric(value):
+            if value is None:
+                return None
+
+            if isinstance(value, str):
+                value = value.strip()
+                if value == "":
+                    return None
+
+            try:
+                number = float(value)
+            except (TypeError, ValueError):
+                return None
+
+            return int(number) if number.is_integer() else number
+
+        def clean_json_value(value):
+            if isinstance(value, float) and np.isnan(value):
+                return None
+
+            if isinstance(value, dict):
+                return {
+                    key: clean_json_value(val)
+                    for key, val in value.items()
+                }
+
+            if isinstance(value, list):
+                return [
+                    clean_json_value(item)
+                    for item in value
+                ]
+
+            return value
+
 
         # ----------------------------------------------------
         # BUILD RECORD
@@ -1829,19 +1961,7 @@ def admin_records(
                     "Material"
                 ),
 
-            "ram":
-                (
-                    None
-                    if (
-                        "RAM Min (GB)" not in row.index
-                        or pd.isna(row["RAM Min (GB)"])
-                    )
-                    else (
-                        int(row["RAM Min (GB)"])
-                        if float(row["RAM Min (GB)"]).is_integer()
-                        else float(row["RAM Min (GB)"])
-                    )
-                ),
+            "ram": safe_numeric(row["RAM Min (GB)"]),
 
             "chipset":
                 clean_value(
@@ -1871,7 +1991,12 @@ def admin_records(
         })
 
 
-    return records
+    records = clean_json_value(records)
+
+    return JSONResponse(
+        content=records,
+        headers={"X-Data-Version": _data_version}
+    )
 
 # ============================================================
 # ADMIN MODIFY REQUEST
@@ -1880,6 +2005,8 @@ def admin_records(
 class AdminModifyDevice(BaseModel):
 
     id: int
+
+    dataVersion: Optional[str] = None
 
     Provider: Optional[str] = None
 
@@ -1898,6 +2025,8 @@ def admin_modify_device(
     print("ADMIN — MODIFY DEVICE")
     print("=" * 70)
 
+    force_refresh_from_sheets()
+
     # ========================================================
     # CHECK RECORD
     # ========================================================
@@ -1907,6 +2036,31 @@ def admin_modify_device(
         return {
             "status": "error",
             "message": "Record not found."
+        }
+
+    # ========================================================
+    # CHECK DATA VERSION
+    #
+    # item.id is a POSITIONAL row index into df. If the
+    # underlying data was reloaded (Sheets refresh, or another
+    # admin's write) since this admin last loaded /admin/records,
+    # that same index may now point at a completely different
+    # record. Reject rather than silently write to the wrong row.
+    # ========================================================
+
+    if (
+        item.dataVersion is not None
+        and item.dataVersion != _data_version
+    ):
+
+        return {
+            "status": "error",
+            "message": (
+                "The underlying data has changed since you "
+                "loaded this record. Please reload and try "
+                "again to avoid editing the wrong record."
+            ),
+            "stale": True
         }
 
     # ========================================================
@@ -2040,6 +2194,8 @@ def admin_modify_device(
     # SYNC TO GOOGLE SHEETS (best-effort, non-blocking)
     # ========================================================
 
+    bump_data_version()
+
     sync_result = sheets_sync.sync_dataset(df)
 
     if not sync_result.success:
@@ -2129,6 +2285,7 @@ def admin_delete_device(
     print("ADMIN — DELETE DEVICE")
     print("=" * 70)
 
+    force_refresh_from_sheets()
 
     # --------------------------------------------------------
     # GET RECORD ID
@@ -2166,6 +2323,33 @@ def admin_delete_device(
         return {
             "status": "error",
             "message": "Record not found."
+        }
+
+
+    # --------------------------------------------------------
+    # CHECK DATA VERSION
+    #
+    # Same reasoning as /admin/modify: record_id is a POSITIONAL
+    # row index, which can silently point at a different record
+    # if df was reloaded since this admin last loaded the record
+    # list. Reject rather than risk deleting the wrong row.
+    # --------------------------------------------------------
+
+    submitted_version = item.get("dataVersion")
+
+    if (
+        submitted_version is not None
+        and submitted_version != _data_version
+    ):
+
+        return {
+            "status": "error",
+            "message": (
+                "The underlying data has changed since you "
+                "loaded this record. Please reload and try "
+                "again to avoid deleting the wrong record."
+            ),
+            "stale": True
         }
 
 
@@ -2216,6 +2400,8 @@ def admin_delete_device(
     # SYNC TO GOOGLE SHEETS (best-effort, non-blocking)
     # --------------------------------------------------------
 
+    bump_data_version()
+
     sync_result = sheets_sync.sync_dataset(df)
 
     if not sync_result.success:
@@ -2249,6 +2435,7 @@ def admin_delete_device(
 
 @app.post("/admin/forecast")
 def admin_forecast(item: dict):
+    refresh_data_if_stale()
 
     try:
 
@@ -2786,6 +2973,34 @@ def admin_status_page():
     return FileResponse(
         ASSETS_DIR / "status.html"
     )
+
+@app.post("/admin/refresh")
+def admin_refresh():
+    try:
+        refreshed = force_refresh_from_sheets()
+
+        if not refreshed:
+            raise HTTPException(
+                status_code=503,
+                detail="force_refresh_from_sheets() returned False. Check FastAPI terminal."
+            )
+
+        return {
+            "success": True,
+            "message": "Data refreshed successfully.",
+            "dataVersion": _data_version,
+            "rows": len(df)
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        print(f"Admin refresh endpoint error: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc)
+        )
 
 
 # ============================================================

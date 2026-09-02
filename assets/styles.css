@@ -1294,6 +1294,124 @@ color: #86868b;
 font-size: 12px;
 }
 
+.customer-form-group input:hover,
+.customer-form-group select:hover {
+    border-color: #b8b8bd;
+}
+
+.customer-form-group input.customer-input-error,
+.customer-form-group select.customer-input-error {
+    border-color: #ff3b30;
+    box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.08);
+}
+
+.customer-field-error {
+    display: none;
+    margin: 7px 2px 0;
+    color: #d70015;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.customer-field-error.visible {
+    display: block;
+}
+
+.customer-primary-button:disabled {
+    background: #86868b;
+    cursor: not-allowed;
+    transform: none;
+    opacity: 0.8;
+}
+
+.customer-primary-button:disabled:hover {
+    background: #86868b;
+    transform: none;
+}
+
+.customer-privacy-icon {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.customer-privacy-icon::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 7px;
+    width: 10px;
+    height: 8px;
+    border-radius: 2px;
+    background: #6e6e73;
+}
+
+.customer-privacy-icon::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 8px;
+    border: 2px solid #6e6e73;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+}
+
+@media (max-width: 640px) {
+    .customer-detail-page {
+        padding: 28px 16px 30px;
+    }
+
+    .customer-detail-brand {
+        margin-bottom: 22px;
+    }
+
+    .customer-detail-header {
+        margin-bottom: 22px;
+    }
+
+    .customer-detail-header h1 {
+        font-size: 38px;
+    }
+
+    .customer-detail-subtitle {
+        font-size: 15px;
+    }
+
+    .customer-detail-progress {
+        gap: 9px;
+        padding: 12px 14px;
+        border-radius: 15px;
+    }
+
+    .customer-progress-label {
+        font-size: 12px;
+    }
+
+    .customer-progress-number {
+        width: 26px;
+        height: 26px;
+    }
+
+    .customer-detail-card {
+        border-radius: 22px;
+    }
+
+    .customer-form-section {
+        padding: 26px 20px;
+    }
+
+    .customer-detail-actions {
+        padding: 20px;
+    }
+
+    .customer-privacy-note {
+        padding: 15px 20px;
+    }
+}
+
 /* Mobile */
 
 @media (max-width: 600px) {

@@ -346,10 +346,14 @@ class SheetsSync:
                 "Final Trade-In Value (RM)"
             ]
 
-            # Create the header if the worksheet is completely empty.
             existing_values = self._worksheet.get_all_values()
 
-            if not existing_values:
+            # Create headers if the worksheet has no actual data.
+            if not existing_values or not any(
+                str(cell).strip()
+                for row in existing_values
+                for cell in row
+            ):
                 self._worksheet.append_row(
                     columns,
                     value_input_option="USER_ENTERED"
@@ -359,7 +363,7 @@ class SheetsSync:
             row = [
                 record.get("Timestamp", ""),
                 record.get("Customer Name", ""),
-                record.get("Phone", ""),
+                "'" + str(record.get("Phone", "")),
                 record.get("Email", ""),
                 record.get("Preferred Contact", ""),
                 record.get("Device", ""),

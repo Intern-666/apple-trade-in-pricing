@@ -124,8 +124,8 @@
 
 
         <!-- =================================================
-             NAVIGATION
-             ================================================= -->
+            NAVIGATION
+            ================================================= -->
 
         <nav class="admin-nav">
 
@@ -137,7 +137,6 @@
                 ADD
             </button>
 
-
             <button
                 type="button"
                 id="nav-modify"
@@ -145,14 +144,12 @@
                 MODIFY
             </button>
 
-
             <button
                 type="button"
                 id="nav-delete"
             >
                 DELETE
             </button>
-
 
             <button
                 type="button"
@@ -162,6 +159,13 @@
             </button>
 
         </nav>
+
+        <button
+            id="admin-refresh-button"
+            type="button"
+        >
+            Refresh Data
+        </button>
 
 
         <!-- =================================================
@@ -1317,7 +1321,6 @@
                 document.getElementById("add-storage-type").value = "";
                 document.getElementById("add-chipset").value = "";
                 document.getElementById("add-connectivity").value = "";
-                document.getElementById("add-specification").value = "";
                 document.getElementById("add-case-size").value = "";
                 document.getElementById("add-provider").value = "";
 
@@ -1487,6 +1490,11 @@
                                 "Failed to load configurations."
                             );
 
+                        }
+
+                        const version=response.headers.get("X-Data-Version");
+                        if(version){
+                            adminDataVersion=version;
                         }
 
 
@@ -2498,6 +2506,11 @@
                             );
                         }
 
+                        const version=response.headers.get("X-Data-Version");
+                        if(version){
+                            adminDataVersion=version;
+                        }
+
                         const records =
                             await response.json();
 
@@ -2591,11 +2604,14 @@
         // ============================================================
 
         let selectedDeleteRecordId = null;
+        let selectedDeleteDataVersion = null;
+        let adminDataVersion=null;
 
 
         function selectDeleteRecord(record) {
 
             selectedDeleteRecordId = record.id;
+            selectedDeleteDataVersion=adminDataVersion;
 
 
             const price =
@@ -2732,9 +2748,9 @@
                                             "application/json"
                                     },
 
-                                    body: JSON.stringify({
-                                        id:
-                                            selectedDeleteRecordId
+                                    body:JSON.stringify({
+                                        id:selectedDeleteRecordId,
+                                        dataVersion:selectedDeleteDataVersion
                                     })
                                 }
                             );
@@ -2750,9 +2766,27 @@
                         );
 
 
+                        if (response.status === 409) {
+
+                            showAdminToast(
+                                data.detail ||
+                                "The data has changed. Please refresh before editing.",
+                                "warning",
+                                5000
+                            );
+
+                            selectedDeleteRecordId = null;
+                            selectedDeleteDataVersion = null;
+
+                            return;
+
+                        }
+
+
                         if (!response.ok) {
 
                             throw new Error(
+                                data.detail ||
                                 data.message ||
                                 "Delete failed."
                             );
@@ -2779,20 +2813,9 @@
                             );
 
 
-                        result.className =
-                            "result success";
-
-
-                        result.textContent =
-                            "Record deleted successfully.";
-
-
-                        result.style.display =
-                            "block";
-
-
-                        selectedDeleteRecordId =
-                            null;
+                        showAdminToast(
+                            "Device added successfully."
+                        );
 
 
                         // Refresh model list
@@ -2817,20 +2840,12 @@
         // DELETE — CANCEL CONFIRMATION
         // ====================================================
 
-        document
-            .getElementById("delete-cancel-button")
-            .addEventListener(
-                "click",
-                () => {
-
-                    document
-                        .getElementById("delete-confirm")
-                        .classList.add("hidden");
-
-                    selectedDeleteRecordId = null;
-
-                }
-            );
+        document.getElementById("delete-cancel-button").addEventListener("click",async()=>{
+            document.getElementById("delete-confirm").classList.add("hidden");
+            selectedDeleteRecordId=null;
+            selectedDeleteDataVersion=null;
+            await loadDeleteModels();
+        });
 
 
         // ====================================================
@@ -3352,16 +3367,7 @@
                                 );
 
 
-                        result.className =
-                            "result success";
-
-                        result.textContent =
-                            "Device added successfully.";
-
-                        result.style.display =
-                            "block";
-
-                        alert(
+                        showAdminToast(
                             "Device added successfully."
                         );
 
@@ -3569,6 +3575,15 @@
                                 `&model=${encodeURIComponent(model)}`
                             );
 
+                        if(!response.ok){
+                            throw new Error("Failed to load records.");
+                        }
+
+                        const version=response.headers.get("X-Data-Version");
+                        if(version){
+                            adminDataVersion=version;
+                        }
+
 
                         const records =
                             await response.json();
@@ -3677,71 +3692,23 @@
 
         let selectedRecordId =
             null;
+        let selectedRecordDataVersion=null;
 
 
-        function openModifyRecord(
-            record
-        ) {
+        function openModifyRecord(record){
+            selectedRecordId=record.id;
+            selectedRecordDataVersion=adminDataVersion;
 
-            selectedRecordId =
-                record.id;
+            document.getElementById("modify-current-info").textContent=
+                `Storage: ${record.storage??"N/A"} GB | Provider: ${record.provider??"Unknown"} | Current Trade-In Value: `+
+                (null===record.trade_in_value?"N/A":`RM ${Number(record.trade_in_value).toLocaleString()}`);
 
+            document.getElementById("modify-price").value=
+                null===record.trade_in_value?"":record.trade_in_value;
 
-            document
-                .getElementById(
-                    "modify-current-info"
-                )
-                .textContent =
-
-                    `Storage: ${
-                        record.storage ?? "N/A"
-                    } GB | `
-
-                    +
-
-                    `Provider: ${
-                        record.provider ?? "Unknown"
-                    } | `
-
-                    +
-
-                    `Current Trade-In Value: ${
-                        record.trade_in_value === null
-                            ? "N/A"
-                            : `RM ${Number(
-                                record.trade_in_value
-                            ).toLocaleString()}`
-                    }`;
-
-
-            document
-                .getElementById(
-                    "modify-price"
-                )
-                .value =
-
-                    record.trade_in_value === null
-                        ? ""
-                        : record.trade_in_value;
-
-            document
-                .getElementById("modify-provider")
-                .value = record.provider ?? "";
-
-            document
-                .getElementById("modify-msrp")
-                .value =
-                    record.msrp ?? "";
-
-
-            document
-                .getElementById(
-                    "modify-form"
-                )
-                .classList.remove(
-                    "hidden"
-                );
-
+            document.getElementById("modify-provider").value=record.provider??"";
+            document.getElementById("modify-msrp").value=record.msrp??"";
+            document.getElementById("modify-form").classList.remove("hidden");
         }
 
 
@@ -3793,25 +3760,12 @@
 
                     const payload = {
 
-                        id:
-                            selectedRecordId,
-
-                        Provider:
-                            provider === ""
-                                ? null
-                                : provider,
-
-                        MSRP:
-                            msrp === ""
-                                ? null
-                                : parseFloat(msrp),
-
-                        TradeInValue:
-                            tradeInValue === ""
-                                ? null
-                                : parseFloat(tradeInValue)
-
-                    };
+                        id:selectedRecordId,
+                            dataVersion:selectedRecordDataVersion,
+                            Provider:""===provider?null:provider,
+                            MSRP:""===msrp?null:parseFloat(msrp),
+                            TradeInValue:""===tradeInValue?null:parseFloat(tradeInValue)
+                        };
 
 
                     console.log(
@@ -3855,10 +3809,25 @@
                             data
                         );
 
+                        if (response.status === 409) {
+
+                            alert(
+                                data.detail ||
+                                "The data has changed. Please refresh the records before modifying."
+                            );
+
+                            selectedRecordId = null;
+                            selectedRecordDataVersion = null;
+
+                            return;
+
+                        }
+
 
                         if (!response.ok) {
 
                             throw new Error(
+                                data.detail ||
                                 data.message ||
                                 "Failed to modify record."
                             );
@@ -3873,16 +3842,9 @@
                                 );
 
 
-                        result.className =
-                            "result success";
-
-
-                        result.textContent =
-                            "Record updated successfully.";
-
-
-                        result.style.display =
-                            "block";
+                        showAdminToast(
+                            "Device modified successfully."
+                        );
 
                         loadAdminStatus();
 
@@ -3919,31 +3881,16 @@
             );
 
 
+
         // ====================================================
         // MODIFY — CANCEL
         // ====================================================
 
-        document
-            .getElementById(
-                "modify-cancel"
-            )
-            .addEventListener(
-                "click",
-                () => {
-
-                    document
-                        .getElementById(
-                            "modify-form"
-                        )
-                        .classList.add(
-                            "hidden"
-                        );
-
-                    selectedRecordId =
-                        null;
-
-                }
-            );
+        document.getElementById("modify-cancel").addEventListener("click",()=>{
+            document.getElementById("modify-form").classList.add("hidden");
+            selectedRecordId=null;
+            selectedRecordDataVersion=null;
+        });
 
         // ====================================================
         // MODIFY — CLOSE MODAL
@@ -3951,18 +3898,39 @@
 
         document
             .getElementById("modify-close-button")
-            .addEventListener(
-                "click",
-                () => {
+            .addEventListener("click", () => {
 
-                    document
-                        .getElementById("modify-form")
-                        .classList.add("hidden");
+                document
+                    .getElementById("modify-form")
+                    .classList.add("hidden");
 
-                    selectedRecordId = null;
+                selectedRecordId = null;
+                selectedRecordDataVersion = null;
 
-                }
-            );
+                document
+                    .getElementById("modify-device")
+                    .value = "";
+
+                document
+                    .getElementById("modify-model")
+                    .innerHTML = `
+                        <option value="">
+                            Select model
+                        </option>
+                    `;
+
+                document
+                    .getElementById("modify-records")
+                    .innerHTML = "";
+
+                document
+                    .getElementById("modify-result")
+                    .className = "result";
+
+                document
+                    .getElementById("modify-result")
+                    .textContent = "";
+            });
 
         // ============================================================
         // ADMIN — DATA STATUS
@@ -4260,7 +4228,87 @@
 
         loadAdminStatus(); 
 
+        document.getElementById("admin-refresh-button").addEventListener("click", async () => {
+            const button = document.getElementById("admin-refresh-button");
+
+            button.disabled = true;
+            button.textContent = "Refreshing...";
+
+            try {
+                const response = await fetch("/admin/refresh", {
+                    method: "POST"
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Failed to refresh data.");
+                }
+
+                adminDataVersion = data.dataVersion;
+
+                showAdminToast(
+                    "Data refreshed successfully."
+                );
+
+                // Reload the currently relevant admin data.
+                if (typeof loadModifyModels === "function") {
+                    await loadModifyModels();
+                }
+
+                if (typeof loadDeleteModels === "function") {
+                    await loadDeleteModels();
+                }
+
+                if (typeof loadForecastModels === "function") {
+                    await loadForecastModels();
+                }
+
+            } catch (error) {
+                console.error("Refresh failed:", error);
+                alert(error.message || "Failed to refresh data.");
+            } finally {
+                button.disabled = false;
+                button.textContent = "Refresh Data";
+            }
+        });
+
+        function showAdminToast(message, type = "success", duration = 3000) {
+            const container =
+                document.getElementById("admin-toast-container");
+
+            if (!container) {
+                console.error("Toast container not found.");
+                return;
+            }
+
+            const toast =
+                document.createElement("div");
+
+            toast.className =
+                `admin-toast ${type}`;
+
+            toast.textContent =
+                message;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add("show");
+            });
+
+            setTimeout(() => {
+                toast.classList.remove("show");
+
+                setTimeout(() => {
+                    toast.remove();
+                }, 250);
+            }, duration);
+        }
+
     </script>
+
+    <div id="admin-toast-container"></div>
 
 </body>
 

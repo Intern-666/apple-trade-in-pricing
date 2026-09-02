@@ -62,63 +62,103 @@
                 <p>
                   We'll use these details to contact you about your trade-in enquiry.
                 </p>
-              </div>
-
+                </div>
               <div class="customer-form-group">
                 <label for="customerName">Full name</label>
+
                 <input
-                  type="text"
-                  id="customerName"
-                  name="customerName"
-                  placeholder="Enter your full name"
-                  autocomplete="name"
-                  required
+                    type="text"
+                    id="customerName"
+                    name="customerName"
+                    placeholder="Enter your full name"
+                    autocomplete="name"
+                    required
+                    aria-describedby="customerName-error"
                 />
-              </div>
+
+                <p
+                    id="customerName-error"
+                    class="customer-field-error"
+                    aria-live="polite"
+                ></p>
+                </div>
 
               <div class="customer-form-group">
                 <label for="customerPhone">Phone number</label>
+
                 <input
-                  type="tel"
-                  id="customerPhone"
-                  name="customerPhone"
-                  placeholder="e.g. 012-345 6789"
-                  autocomplete="tel"
-                  required
+                    type="tel"
+                    id="customerPhone"
+                    name="customerPhone"
+                    placeholder="e.g. 012-345 6789"
+                    autocomplete="tel"
+                    required
+                    aria-describedby="customerPhone-error customerPhone-help"
                 />
 
-                <p class="customer-field-help">
-                  We'll use this number if we need to contact you about your trade-in.
+                <p
+                    id="customerPhone-error"
+                    class="customer-field-error"
+                    aria-live="polite"
+                ></p>
+
+                <p
+                    id="customerPhone-help"
+                    class="customer-field-help"
+                >
+                    We'll use this number if we need to contact you about your trade-in.
                 </p>
-              </div>
+                </div>
 
               <div class="customer-form-group">
                 <label for="customerEmail">Email address</label>
+
                 <input
-                  type="email"
-                  id="customerEmail"
-                  name="customerEmail"
-                  placeholder="e.g. name@example.com"
-                  autocomplete="email"
-                  required
+                    type="email"
+                    id="customerEmail"
+                    name="customerEmail"
+                    placeholder="e.g. name@example.com"
+                    autocomplete="email"
+                    required
+                    aria-describedby="customerEmail-error"
                 />
-              </div>
+
+                <p
+                    id="customerEmail-error"
+                    class="customer-field-error"
+                    aria-live="polite"
+                ></p>
+                </div>
 
               <div class="customer-form-group">
                 <label for="customerContactMethod">Preferred contact method</label>
+
                 <div class="customer-select-wrapper">
-                  <select id="customerContactMethod" name="customerContactMethod" required>
-                    <option value="" disabled selected>Select a contact method...</option>
+                    <select
+                    id="customerContactMethod"
+                    name="customerContactMethod"
+                    required
+                    aria-describedby="customerContactMethod-error"
+                    >
+                    <option value="" disabled selected>
+                        Select a contact method...
+                    </option>
+
                     <option value="whatsapp">WhatsApp</option>
                     <option value="phone">Phone call</option>
                     <option value="email">Email</option>
-                  </select>
+                    </select>
                 </div>
-              </div>
-            </div>
+
+                <p
+                    id="customerContactMethod-error"
+                    class="customer-field-error"
+                    aria-live="polite"
+                ></p>
+                </div>
 
             <div class="customer-privacy-note">
-              <span class="customer-privacy-icon" aria-hidden="true">🔒</span>
+              <span class="customer-privacy-icon" aria-hidden="true"></span>
               <p>
                 Your information will only be used for your trade-in enquiry and related communication.
               </p>
