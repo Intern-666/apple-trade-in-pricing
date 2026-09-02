@@ -10,7 +10,7 @@ const customerDetails = JSON.parse(
 );
 
 if (!customerDetails) {
-    window.location.href = "/customer-detail.html";
+    window.location.href = "/customer-detail";
 }
 
 /* =========================================================
