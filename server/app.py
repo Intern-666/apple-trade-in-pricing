@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from typing import Optional, cast
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta
 from internal.tradein_fallback import TradeInFallback
 from internal.sheets_sync import SheetsSync
 
@@ -385,7 +385,15 @@ print("=" * 70)
 
 REFRESH_INTERVAL_SECONDS = 10 * 60
 
-_last_refresh_at = datetime.now()
+# Deliberately set in the past (further back than the interval
+# itself) so the very first call to refresh_data_if_stale() after
+# server startup always counts as stale and checks Sheets right
+# away -- a restart should reflect the latest Sheets state
+# immediately, not after waiting a full 10 minutes.
+_last_refresh_at = (
+    datetime.now()
+    - timedelta(seconds=REFRESH_INTERVAL_SECONDS + 1)
+)
 
 
 def write_csv_atomically(raw_df, destination_path):
@@ -520,6 +528,25 @@ def refresh_data_if_stale():
         f"{fetch_result.rows_fetched} rows, "
         f"{len(device_model_map)} devices"
     )
+
+
+# ------------------------------------------------------------
+# STARTUP REFRESH
+#
+# Check Sheets once immediately at boot, rather than waiting for
+# the first incoming request. This way, a server restart always
+# reflects the latest Sheets state right away -- not "eventually,
+# whenever the first customer happens to hit an endpoint".
+#
+# Uses the same fail-safe function as every later check: if this
+# fails (Sheets down, credentials bad, etc.), the app still boots
+# normally and simply keeps serving from the CSV-loaded data,
+# exactly as before this feature existed.
+# ------------------------------------------------------------
+
+print("Checking Google Sheets for the latest data at startup...")
+
+refresh_data_if_stale()
 
 
 # ============================================================
