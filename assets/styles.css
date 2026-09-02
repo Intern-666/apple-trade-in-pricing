@@ -525,14 +525,20 @@ select {
 }
 
 .select-wrapper::after {
-  content: "⌄";
+  content: "";
   position: absolute;
   top: 50%;
-  right: 16px;
-  transform: translateY(-55%);
+  right: 18px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--text-secondary);
+  border-bottom: 1.5px solid var(--text-secondary);
+  transform: translateY(-65%) rotate(45deg);
   pointer-events: none;
-  color: var(--text-secondary);
-  font-size: 1.1rem;
+}
+
+.select-wrapper:focus-within::after {
+  border-color: var(--accent);
 }
 
 select {
@@ -1288,18 +1294,20 @@ select:disabled {
 }
 
 .customer-select-wrapper::after {
-  content: "⌄";
-
+  content: "";
   position: absolute;
   top: 50%;
-  right: 17px;
-
-  transform: translateY(-55%);
-
-  color: var(--text-secondary);
-  font-size: 18px;
-
+  right: 18px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--text-secondary);
+  border-bottom: 1.5px solid var(--text-secondary);
+  transform: translateY(-65%) rotate(45deg);
   pointer-events: none;
+}
+
+.customer-select-wrapper:focus-within::after {
+  border-color: var(--accent);
 }
 
 /* ---------------------------------------------------------
