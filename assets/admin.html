@@ -889,163 +889,101 @@
             FORECAST
             ============================================================ -->
 
-        <section
-            id="forecast-section"
-            class="card hidden"
-        >
-
-            <h2>
-                Forecast
-            </h2>
-
+        <section id="forecast-section" class="card hidden">
+            <h2>Forecast</h2>
             <p class="description">
-                Estimate the trade-in value of a model across
-                different years using the current ML model.
-                This does not modify the database.
+                Estimate the trade-in value of multiple models across different years. 
+                All selections must belong to the same product line.
             </p>
 
+            <div class="forecast-grid">
+                
+                <!-- LEFT COLUMN: CONTROLS -->
+                <div class="forecast-controls">
+                    
+                    <div class="form-group">
+                        <label for="forecast-device">Device</label>
+                        <select id="forecast-device">
+                            <option value="">Select device</option>
+                            <option value="iPhone">iPhone</option>
+                            <option value="iPad">iPad</option>
+                            <option value="Mac">Mac</option>
+                            <option value="Apple Watch">Apple Watch</option>
+                            <option value="AirPods">AirPods</option>
+                        </select>
+                    </div>
 
-            <!-- Device -->
+                    <div class="form-group">
+                        <label for="forecast-sub-device">Sub-Device</label>
+                        <select id="forecast-sub-device" disabled>
+                            <option value="">Select sub-device</option>
+                        </select>
+                    </div>
 
-            <div class="form-group">
+                    <div class="form-group">
+                        <label for="forecast-model">Model</label>
+                        <select id="forecast-model" disabled>
+                            <option value="">Select model</option>
+                        </select>
+                    </div>
 
-                <label for="forecast-device">
-                    Device
-                </label>
+                    <div class="form-group">
+                        <label for="forecast-record">Configuration</label>
+                        <select id="forecast-record" disabled>
+                            <option value="">Select configuration</option>
+                        </select>
+                    </div>
 
-                <select id="forecast-device">
+                    <div class="add-btn-wrapper">
+                        <button type="button" id="add-forecast-model" class="secondary" style="width: 100%; font-size: 13px; min-height: 38px;">
+                            + ADD MODEL
+                        </button>
+                    </div>
 
-                    <option value="">
-                        Select device
-                    </option>
+                    <div class="selected-models-header">Selected Models</div>
+                    <div id="selected-models-list" class="selected-models-list">
+                        <!-- Added items appear here -->
+                    </div>
 
-                    <option value="iPhone">
-                        iPhone
-                    </option>
+                    <div class="form-group">
+                        <label for="forecast-until">Forecast until</label>
+                        <select id="forecast-until"></select>
+                    </div>
 
-                    <option value="iPad">
-                        iPad
-                    </option>
+                    <button type="button" id="generate-forecast" class="primary">
+                        Generate Forecast
+                    </button>
 
-                    <option value="Mac">
-                        Mac
-                    </option>
+                </div>
 
-                    <option value="Apple Watch">
-                        Apple Watch
-                    </option>
+                <!-- RIGHT COLUMN: RESULTS -->
+                <div class="forecast-results">
+                    
+                    <div id="forecast-results-container" class="hidden">
+                        
+                        <div id="forecast-graph-tabs" class="graph-tabs">
+                            <!-- Model Tabs appear here -->
+                        </div>
 
-                    <option value="AirPods">
-                        AirPods
-                    </option>
+                        <div class="forecast-chart-wrapper">
+                            <canvas id="forecast-chart"></canvas>
+                        </div>
 
-                </select>
+                        <div class="forecast-table-wrapper">
+                            <table class="forecast-table">
+                                <thead id="forecast-multi-table-head">
+                                    <!-- Dynamic Columns -->
+                                </thead>
+                                <tbody id="forecast-multi-table-body">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
 
-            </div>
-
-
-            <!-- Model -->
-
-            <div class="form-group">
-
-                <label for="forecast-model">
-                    Model
-                </label>
-
-                <select id="forecast-model">
-
-                    <option value="">
-                        Select model
-                    </option>
-
-                </select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="forecast-record">
-                    Configuration
-                </label>
-
-                <select id="forecast-record">
-
-                    <option value="">
-                        Select configuration
-                    </option>
-
-                </select>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="forecast-until">
-                    Forecast until
-                </label>
-
-                <select id="forecast-until"></select>
-
-            </div>
-
-
-            <button
-                type="button"
-                id="generate-forecast"
-                class="primary"
-            >
-                Generate Forecast
-            </button>
-
-
-            <!-- Results -->
-
-            <div
-                id="forecast-results"
-                class="hidden"
-            >
-            </div>
-
-
-            <div
-                id="forecast-table-container"
-                class="hidden"
-            >
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                Year
-                            </th>
-
-                            <th>
-                                Estimated Trade-In Value
-                            </th>
-
-                            <th>
-                                Change
-                            </th>
-
-                            <th>
-                                Change %
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody
-                        id="forecast-table-body"
-                    ></tbody>
-
-                </table>
+                    </div>
+                </div>
 
             </div>
-
         </section>
 
     </main>
@@ -1259,23 +1197,35 @@
 
                 document.getElementById("forecast-device").value = "";
 
+                // Reset all dropdowns
+                const subDeviceEl = document.getElementById("forecast-sub-device");
+                if (subDeviceEl) {
+                    subDeviceEl.innerHTML = '<option value="">Select sub-device</option>';
+                    subDeviceEl.disabled = true;
+                }
+
                 document.getElementById("forecast-model").innerHTML = `
-                    <option value="">
-                        Select model
-                    </option>
+                    <option value="">Select model</option>
                 `;
+                document.getElementById("forecast-model").disabled = true;
 
                 document.getElementById("forecast-record").innerHTML = `
-                    <option value="">
-                        Select configuration
-                    </option>
+                    <option value="">Select configuration</option>
                 `;
+                document.getElementById("forecast-record").disabled = true;
 
-                const forecastResults =
-                    document.getElementById("forecast-results");
+                // Clear the selected models array and UI list
+                if (typeof selectedForecastConfigs !== 'undefined') {
+                    selectedForecastConfigs = [];
+                }
+                const selectedList = document.getElementById("selected-models-list");
+                if (selectedList) selectedList.innerHTML = "";
 
-                forecastResults.classList.add("hidden");
-                forecastResults.innerHTML = "";
+                // Hide the container, but DO NOT wipe its innerHTML
+                const forecastResults = document.getElementById("forecast-results-container");
+                if (forecastResults) {
+                    forecastResults.classList.add("hidden");
+                }
 
                 if (forecastChart) {
                     forecastChart.destroy();
@@ -1384,285 +1334,10 @@
 
                 showSection("forecast");
 
-                await loadForecastModels();
+                await loadForecastHierarchy();
 
             }
         );
-
-        // ============================================================
-        // FORECAST — LOAD CONFIGURATIONS
-        // ============================================================
-
-        document
-            .getElementById("forecast-model")
-            .addEventListener(
-                "change",
-                async () => {
-
-                    const device =
-                        document
-                            .getElementById(
-                                "forecast-device"
-                            )
-                            .value;
-
-
-                    const model =
-                        document
-                            .getElementById(
-                                "forecast-model"
-                            )
-                            .value;
-
-
-                    const recordSelect =
-                        document
-                            .getElementById(
-                                "forecast-record"
-                            );
-
-
-                    // Reset
-
-                    const configHint = {
-                        "iPhone":
-                            "Provider → Storage → Chipset → Trade-In",
-
-                        "iPad":
-                            "Provider → Storage → Connectivity → Chipset → Trade-In",
-
-                        "Mac":
-                            "Provider → Storage → Storage Type → Processor → Trade-In",
-
-                        "Apple Watch":
-                            "Provider → Storage → Case Size → Connectivity → Material → Trade-In",
-
-                        "AirPods":
-                            "Provider → Specification → Trade-In"
-                    };
-
-                    recordSelect.innerHTML = `
-                        <option value="">
-                            Select configuration
-                            ${
-                                configHint[device]
-                                    ? `(${configHint[device]})`
-                                    : ""
-                            }
-                        </option>
-                    `;
-
-
-                    if (!device || !model) {
-                        return;
-                    }
-
-
-                    try {
-
-                        const response =
-                            await fetch(
-                                "/admin/records"
-                                + `?device=${encodeURIComponent(device)}`
-                                + `&model=${encodeURIComponent(model)}`
-                            );
-
-
-                        if (!response.ok) {
-
-                            throw new Error(
-                                "Failed to load configurations."
-                            );
-
-                        }
-
-                        const version=response.headers.get("X-Data-Version");
-                        if(version){
-                            adminDataVersion=version;
-                        }
-
-
-                        const records =
-                            await response.json();
-
-
-                        records.forEach(
-                            record => {
-
-                                const option =
-                                    document
-                                        .createElement(
-                                            "option"
-                                        );
-
-
-                                option.value =
-                                    record.id;
-
-                                const parts = [];
-
-                                // Provider
-                                parts.push(
-                                    record.provider ?? "Unknown"
-                                );
-
-                                // ============================================================
-                                // DEVICE-SPECIFIC CONFIGURATION ORDER
-                                // ============================================================
-
-                                if (device === "iPhone") {
-
-                                    // Storage
-                                    parts.push(
-                                        record.storage !== null &&
-                                        record.storage !== undefined &&
-                                        record.storage !== ""
-                                            ? `${record.storage} GB`
-                                            : "Unknown"
-                                    );
-
-                                    // Chipset
-                                    parts.push(
-                                        record.chipset ?? "Unknown"
-                                    );
-
-                                }
-
-
-                                else if (device === "iPad") {
-
-                                    // Storage
-                                    parts.push(
-                                        record.storage !== null &&
-                                        record.storage !== undefined &&
-                                        record.storage !== ""
-                                            ? `${record.storage} GB`
-                                            : "Unknown"
-                                    );
-
-                                    // Connectivity
-                                    parts.push(
-                                        record.connectivity ?? "Unknown"
-                                    );
-
-                                    // Chipset
-                                    parts.push(
-                                        record.chipset ?? "Unknown"
-                                    );
-
-                                }
-
-
-                                else if (device === "Mac") {
-
-                                    // Storage
-                                    parts.push(
-                                        record.storage !== null &&
-                                        record.storage !== undefined &&
-                                        record.storage !== ""
-                                            ? `${record.storage} GB`
-                                            : "Unknown"
-                                    );
-
-                                    // Storage Type
-                                    parts.push(
-                                        record.storage_type ?? "Unknown"
-                                    );
-
-                                    // Processor
-                                    parts.push(
-                                        record.chipset ?? "Unknown"
-                                    );
-
-                                }
-
-
-                                else if (device === "Apple Watch") {
-
-                                    // Storage
-                                    parts.push(
-                                        record.storage !== null &&
-                                        record.storage !== undefined &&
-                                        record.storage !== ""
-                                            ? `${record.storage} GB`
-                                            : "Unknown"
-                                    );
-
-                                    // Case Size
-                                    parts.push(
-                                        record.specification ?? "Unknown"
-                                    );
-
-                                    // Connectivity
-                                    parts.push(
-                                        record.connectivity ?? "Unknown"
-                                    );
-
-                                    parts.push(
-                                        record.material ??
-                                        "Unknown"
-                                    );
-
-                                }
-
-
-                                else if (device === "AirPods") {
-
-                                    // Specification
-                                    parts.push(
-                                        record.specification ?? "Unknown"
-                                    );
-
-                                }
-
-
-                                // ============================================================
-                                // TRADE-IN VALUE
-                                // ============================================================
-
-                                parts.push(
-                                    record.trade_in_value !== null &&
-                                    record.trade_in_value !== undefined &&
-                                    record.trade_in_value !== ""
-                                        ? `RM ${Number(record.trade_in_value).toLocaleString(
-                                            undefined,
-                                            {
-                                                maximumFractionDigits: 0
-                                            }
-                                        )}`
-                                        : "Unknown"
-                                );
-
-
-                                // ============================================================
-                                // FINAL LABEL
-                                // ============================================================
-
-                                option.textContent =
-                                    parts.join(" → ");
-
-
-                                recordSelect
-                                    .appendChild(
-                                        option
-                                    );
-
-                            }
-                        );
-
-
-                    }
-                    catch (error) {
-
-                        console.error(
-                            "FORECAST CONFIGURATION ERROR:",
-                            error
-                        );
-
-                    }
-
-                }
-            );
 
         // ============================================================
         // DELETE — LOAD MODELS
@@ -1739,156 +1414,6 @@
                 loadDeleteModels
             );
 
-        // ============================================================
-        // FORECAST — LOAD MODELS
-        // ============================================================
-
-        async function loadForecastModels() {
-
-            const device =
-                document
-                    .getElementById("forecast-device")
-                    .value;
-
-            const modelSelect =
-                document
-                    .getElementById("forecast-model");
-
-            const recordSelect =
-                document
-                    .getElementById("forecast-record");
-
-
-            // ------------------------------------------------------------
-            // DEVICE-SPECIFIC CONFIGURATION HINT
-            // ------------------------------------------------------------
-
-            const configHint = {
-
-                "iPhone":
-                    "Provider → Storage → Chipset → Trade-In",
-
-                "iPad":
-                    "Provider → Storage → Connectivity → Chipset → Trade-In",
-
-                "Mac":
-                    "Provider → Storage → Storage Type → Processor → Trade-In",
-
-                "Apple Watch":
-                    "Provider → Storage → Case Size → Connectivity → Material → Trade-In",
-
-                "AirPods":
-                    "Provider → Specification → Trade-In"
-
-            };
-
-
-            // ------------------------------------------------------------
-            // RESET MODEL DROPDOWN
-            // ------------------------------------------------------------
-
-            modelSelect.innerHTML = `
-                <option value="">
-                    Select model
-                </option>
-            `;
-
-
-            // ------------------------------------------------------------
-            // RESET CONFIGURATION DROPDOWN
-            // ------------------------------------------------------------
-
-            recordSelect.innerHTML = `
-                <option value="">
-                    Select configuration
-                    ${
-                        configHint[device]
-                            ? `(${configHint[device]})`
-                            : ""
-                    }
-                </option>
-            `;
-
-
-            if (!device) {
-                return;
-            }
-
-
-            // ------------------------------------------------------------
-            // LOAD MODELS
-            // ------------------------------------------------------------
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/admin/models"
-                    );
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to load models."
-                    );
-
-                }
-
-
-                const data =
-                    await response.json();
-
-
-                const models =
-                    data[device] || [];
-
-
-                models.forEach(
-                    model => {
-
-                        const option =
-                            document.createElement(
-                                "option"
-                            );
-
-
-                        option.value =
-                            model;
-
-                        option.textContent =
-                            model;
-
-
-                        modelSelect.appendChild(
-                            option
-                        );
-
-                    }
-                );
-
-
-            }
-            catch (error) {
-
-                console.error(
-                    "FORECAST MODEL ERROR:",
-                    error
-                );
-
-            }
-
-        }
-
-        // Device → Models
-
-        document
-            .getElementById("forecast-device")
-            .addEventListener(
-                "change",
-                loadForecastModels
-            );
-
         let forecastChart = null;
 
         // ============================================================
@@ -1945,503 +1470,451 @@
         populateForecastYears();
 
         // ============================================================
-        // FORECAST — GENERATE
+        // EXPERIMENTAL FORECAST LOGIC
         // ============================================================
+        let forecastHierarchy = {};
+        let selectedForecastConfigs = [];
+        let forecastResultsCache = [];
 
-        document
-            .getElementById("generate-forecast")
-            .addEventListener(
-                "click",
-                async () => {
+        async function loadForecastHierarchy() {
+            try {
+                const res = await fetch("/admin/forecast-models");
 
-                    const recordId =
-                        document
-                            .getElementById(
-                                "forecast-record"
-                            )
-                            .value;
-
-
-                    const forecastUntil =
-                        document
-                            .getElementById(
-                                "forecast-until"
-                            )
-                            .value;
-
-
-                    // ------------------------------------------------
-                    // VALIDATION
-                    // ------------------------------------------------
-
-                    if (!recordId) {
-
-                        showAdminToast(
-                            "Please select a configuration.",
-                            "warning"
-                        );
-
-                        return;
-
-                    }
-
-
-                    if (!forecastUntil) {
-
-                        showAdminToast(
-                            "Please select a forecast year.",
-                            "warning"
-                        );
-
-                        return;
-
-                    }
-
-
-                    const button =
-                        document
-                            .getElementById(
-                                "generate-forecast"
-                            );
-
-
-                    button.disabled = true;
-
-                    button.textContent =
-                        "Generating...";
-
-
-                    try {
-
-                        // --------------------------------------------
-                        // SEND REQUEST
-                        // --------------------------------------------
-
-                        const response =
-                            await fetch(
-                                "/admin/forecast",
-                                {
-
-                                    method: "POST",
-
-                                    headers: {
-                                        "Content-Type":
-                                            "application/json"
-                                    },
-
-                                    body:
-                                        JSON.stringify({
-
-                                            record_id:
-                                                Number(
-                                                    recordId
-                                                ),
-
-                                            forecast_until:
-                                                Number(
-                                                    forecastUntil
-                                                )
-
-                                        })
-
-                                }
-                            );
-
-
-                        const data =
-                            await response.json();
-
-
-                        if (!response.ok) {
-
-                            throw new Error(
-                                data.message ||
-                                "Forecast request failed."
-                            );
-
-                        }
-
-
-                        if (
-                            data.status !==
-                            "success"
-                        ) {
-
-                            throw new Error(
-                                data.message ||
-                                "Forecast failed."
-                            );
-
-                        }
-
-
-                        // --------------------------------------------
-                        // SHOW RESULTS
-                        // --------------------------------------------
-
-                        displayForecastResults(
-                            data
-                        );
-
-
-                    }
-                    catch (error) {
-
-                        console.error(
-                            "FORECAST ERROR:",
-                            error
-                        );
-
-
-                        showAdminToast(
-                            error.message ||
-                            "Unable to generate forecast.",
-                            "error"
-                        );
-
-                    }
-                    finally {
-
-                        button.disabled = false;
-
-                        button.textContent =
-                            "Generate Forecast";
-
-                    }
-
+                if (!res.ok) {
+                    throw new Error("Failed to load forecast hierarchy.");
                 }
-            );
 
-        // ============================================================
-        // FORECAST — DISPLAY RESULTS
-        // ============================================================
+                forecastHierarchy = await res.json();
 
-        function displayForecastResults(data) {
-
-            const container =
-                document.getElementById(
-                    "forecast-results"
+            } catch (err) {
+                console.error(
+                    "Failed to load forecast hierarchy:",
+                    err
                 );
+            }
+        }
+
+        const fDevice =
+            document.getElementById("forecast-device");
+
+        const fSubDevice =
+            document.getElementById("forecast-sub-device");
+
+        const fModel =
+            document.getElementById("forecast-model");
+
+        const fRecord =
+            document.getElementById("forecast-record");
 
 
-            container.classList.remove(
-                "hidden"
-            );
+        fDevice.addEventListener("change", () => {
 
+            const dev = fDevice.value;
 
-            let html = `
-                <div class="forecast-summary">
+            fSubDevice.innerHTML =
+                '<option value="">Select sub-device</option>';
 
-                    <h3>
-                        ${data.model}
-                    </h3>
+            fModel.innerHTML =
+                '<option value="">Select model</option>';
 
-                    <p>
-                        Forecast through
-                        <strong>
-                            ${data.forecast_until}
-                        </strong>
-                    </p>
+            fRecord.innerHTML =
+                '<option value="">Select configuration</option>';
 
-                </div>
+            fSubDevice.disabled = true;
+            fModel.disabled = true;
+            fRecord.disabled = true;
 
-                <div class="forecast-chart-wrapper">
-
-                    <canvas id="forecast-chart"></canvas>
-
-                </div>
-
-                <div class="forecast-table-wrapper">
-
-                    <table class="forecast-table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>Year</th>
-
-                                <th>Device Age</th>
-
-                                <th>
-                                    Estimated Trade-In
-                                </th>
-
-                                <th>Change</th>
-
-                                <th>Change %</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-            `;
-
-
-            data.results.forEach(
-                result => {
-
-                    const estimated =
-                        `RM ${
-                            Number(
-                                result.estimated_trade_in
-                            ).toLocaleString(
-                                undefined,
-                                {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2
-                                }
-                            )
-                        }`;
-
-
-                    const change =
-                        result.change === null
-                            ? "—"
-                            : `RM ${
-                                Number(
-                                    result.change
-                                ).toLocaleString(
-                                    undefined,
-                                    {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    }
-                                )
-                            }`;
-
-
-                    const changePercent =
-                        result.change_percent === null
-                            ? "—"
-                            : `${
-                                Number(
-                                    result.change_percent
-                                ).toFixed(1)
-                            }%`;
-
-
-                    html += `
-
-                        <tr>
-
-                            <td>
-                                ${result.year}
-                            </td>
-
-                            <td>
-                                ${
-                                    result.device_age === null
-                                        ? "N/A"
-                                        : result.device_age +
-                                        " years"
-                                }
-                            </td>
-
-                            <td>
-                                <strong>
-                                    ${estimated}
-                                </strong>
-                            </td>
-
-                            <td>
-                                ${change}
-                            </td>
-
-                            <td>
-                                ${changePercent}
-                            </td>
-
-                        </tr>
-
-                    `;
-
-                }
-            );
-
-
-            html += `
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            `;
-
-
-            container.innerHTML =
-                html;
-
-
-            // ============================================================
-            // CREATE FORECAST CHART
-            // ============================================================
-
-            if (forecastChart) {
-
-                forecastChart.destroy();
-
-                forecastChart = null;
-
+            if (!dev || !forecastHierarchy[dev]) {
+                return;
             }
 
+            Object.keys(forecastHierarchy[dev])
+                .sort()
+                .forEach(sub => {
 
-            const ctx =
-                document
-                    .getElementById(
-                        "forecast-chart"
-                    )
-                    .getContext("2d");
+                    const opt =
+                        document.createElement("option");
+
+                    opt.value = sub;
+                    opt.textContent = sub;
+
+                    fSubDevice.appendChild(opt);
+                });
+
+            fSubDevice.disabled = false;
+        });
 
 
-            forecastChart =
-                new Chart(
-                    ctx,
-                    {
+        fSubDevice.addEventListener("change", () => {
 
-                        type: "line",
+            const dev = fDevice.value;
+            const sub = fSubDevice.value;
 
-                        data: {
+            fModel.innerHTML =
+                '<option value="">Select model</option>';
 
-                            labels:
-                                data.results.map(
-                                    result => result.year
-                                ),
+            fRecord.innerHTML =
+                '<option value="">Select configuration</option>';
 
-                            datasets: [
-                                {
+            fModel.disabled = true;
+            fRecord.disabled = true;
 
-                                    label:
-                                        "Estimated Trade-In Value",
+            if (
+                !dev ||
+                !sub ||
+                !forecastHierarchy[dev] ||
+                !forecastHierarchy[dev][sub]
+            ) {
+                return;
+            }
 
-                                    data:
-                                        data.results.map(
-                                            result =>
-                                                result.estimated_trade_in
-                                        ),
+            forecastHierarchy[dev][sub]
+                .forEach(mod => {
 
-                                    tension: 0.3,
+                    const opt =
+                        document.createElement("option");
 
-                                    pointRadius: 4,
+                    opt.value = mod;
+                    opt.textContent = mod;
 
-                                    pointHoverRadius: 6,
+                    fModel.appendChild(opt);
+                });
 
-                                    fill: false
+            fModel.disabled = false;
+        });
 
-                                }
-                            ]
 
-                        },
+        fModel.addEventListener("change", async () => {
+            const dev = fDevice.value;
+            const sub = fSubDevice.value;
+            const mod = fModel.value;
 
-                        options: {
+            fRecord.innerHTML = '<option value="">Loading configurations...</option>';
+            fRecord.disabled = true;
 
-                            responsive: true,
+            if (!dev || !sub || !mod) {
+                fRecord.innerHTML =
+                    '<option value="">Select configuration</option>';
+                return;
+            }
 
-                            maintainAspectRatio: false,
-
-                            plugins: {
-
-                                legend: {
-                                    display: false
-                                },
-
-                                tooltip: {
-
-                                    enabled: true,
-
-                                    mode: "nearest",
-
-                                    intersect: false,
-
-                                    callbacks: {
-
-                                        title: function(context) {
-
-                                            return `Year: ${context[0].label}`;
-
-                                        },
-
-                                        label: function(context) {
-
-                                            const value =
-                                                Number(context.raw).toLocaleString(
-                                                    undefined,
-                                                    {
-                                                        minimumFractionDigits: 2,
-                                                        maximumFractionDigits: 2
-                                                    }
-                                                );
-
-                                            return `Estimated Trade-In Value: RM ${value}`;
-
-                                        }
-
-                                    }
-
-                                }
-
-                            },
-
-                            interaction: {
-
-                                mode: "nearest",
-
-                                intersect: false
-
-                            },
-
-                            scales: {
-
-                                x: {
-
-                                    title: {
-                                        display: true,
-                                        text: "Year"
-                                    }
-
-                                },
-
-                                y: {
-
-                                    beginAtZero: true,
-
-                                    title: {
-                                        display: true,
-                                        text: "Estimated Trade-In Value (RM)"
-                                    },
-
-                                    ticks: {
-
-                                        callback:
-                                            function(value) {
-
-                                                return "RM " +
-                                                    Number(value)
-                                                        .toLocaleString();
-
-                                            }
-
-                                    }
-
-                                }
-
-                            }
-
-                        }
-
-                    }
+            try {
+                const response = await fetch(
+                    `/admin/records?device=${encodeURIComponent(dev)}` +
+                    `&sub_device=${encodeURIComponent(sub)}` +
+                    `&model=${encodeURIComponent(mod)}`
                 );
 
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
 
-            container.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
+                const version = response.headers.get("X-Data-Version");
+                if (version) {
+                    adminDataVersion = version;
+                }
+
+                const records = await response.json();
+
+                fRecord.innerHTML =
+                    '<option value="">Select configuration</option>';
+
+                if (!Array.isArray(records) || records.length === 0) {
+                    fRecord.innerHTML =
+                        '<option value="">No configurations found</option>';
+                    return;
+                }
+
+                records.forEach(r => {
+                    const opt = document.createElement("option");
+
+                    opt.value = r.id;
+
+                    const stor = r.storage
+                        ? `${r.storage}GB`
+                        : "";
+
+                    const trade = r.trade_in_value != null
+                        ? `RM ${Number(r.trade_in_value).toLocaleString()}`
+                        : "Unknown";
+
+                    opt.textContent =
+                        `${r.provider || "Unknown"} → ${stor} → ${trade}`;
+
+                    fRecord.appendChild(opt);
+                });
+
+                fRecord.disabled = false;
+
+            } catch (err) {
+                console.error("Error loading configurations:", err);
+
+                fRecord.innerHTML =
+                    '<option value="">Unable to load configurations</option>';
+
+                showAdminToast(
+                    "Unable to load configurations.",
+                    "error"
+                );
+            }
+        });
+
+
+        document
+            .getElementById("add-forecast-model")
+            .addEventListener("click", () => {
+
+                const id = fRecord.value;
+
+                if (!id) {
+                    showAdminToast(
+                        "Please select a configuration.",
+                        "warning"
+                    );
+                    return;
+                }
+
+                const dev = fDevice.value;
+                const sub = fSubDevice.value;
+                const modelName = fModel.value;
+
+                const configText =
+                    fRecord.options[
+                        fRecord.selectedIndex
+                    ].text;
+
+                const label =
+                    `${modelName} (${configText
+                        .split("→")[0]
+                        .trim()})`;
+
+                if (selectedForecastConfigs.length > 0) {
+
+                    const existing =
+                        selectedForecastConfigs[0];
+
+                    if (
+                        existing.device !== dev ||
+                        existing.subDevice !== sub
+                    ) {
+
+                        showAdminToast(
+                            `All selected models must belong to the same product line (${existing.device} > ${existing.subDevice}).`,
+                            "warning",
+                            4000
+                        );
+
+                        return;
+                    }
+                }
+
+                if (
+                    selectedForecastConfigs.some(
+                        config => config.id === id
+                    )
+                ) {
+
+                    showAdminToast(
+                        "This configuration is already selected.",
+                        "warning"
+                    );
+
+                    return;
+                }
+
+                selectedForecastConfigs.push({
+                    id,
+                    device: dev,
+                    subDevice: sub,
+                    label
+                });
+
+                renderSelectedModels();
             });
 
+        function renderSelectedModels() {
+            const list = document.getElementById("selected-models-list");
+            list.innerHTML = "";
+            selectedForecastConfigs.forEach((config, index) => {
+                const item = document.createElement("div");
+                item.className = "selected-model-item";
+
+                const span = document.createElement("span");
+                span.textContent = config.label;
+
+                const btn = document.createElement("button");
+                btn.className = "remove-model-btn";
+                btn.innerHTML = "&times;";
+                btn.onclick = () => {
+                    selectedForecastConfigs.splice(index, 1);
+                    renderSelectedModels();
+                };
+
+                item.appendChild(span);
+                item.appendChild(btn);
+                list.appendChild(item);
+            });
         }
+
+        // 4. Generate & Render
+        document.getElementById("generate-forecast").addEventListener("click", async () => {
+            if (selectedForecastConfigs.length === 0) {
+                showAdminToast("Please add at least one model to forecast.", "warning");
+                return;
+            }
+            
+            const btn = document.getElementById("generate-forecast");
+            const until = document.getElementById("forecast-until").value;
+            btn.disabled = true; btn.textContent = "Generating...";
+
+            try {
+                forecastResultsCache = [];
+                for (const config of selectedForecastConfigs) {
+                    const res = await fetch("/admin/forecast", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ record_id: Number(config.id), forecast_until: Number(until) })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.status !== "success") throw new Error(data.message || "Forecast failed.");
+                    data._label = config.label; // Pass frontend label to backend result
+                    forecastResultsCache.push(data);
+                }
+                
+                renderForecastTabs();
+                drawForecastGraph(0);
+                renderUnifiedTable();
+
+                document.getElementById("forecast-results-container").classList.remove("hidden");
+            } catch (err) {
+                showAdminToast(err.message, "error");
+            } finally {
+                btn.disabled = false; btn.textContent = "Generate Forecast";
+            }
+        });
+
+        function renderForecastTabs() {
+            const container = document.getElementById("forecast-graph-tabs");
+            container.innerHTML = "";
+            forecastResultsCache.forEach((data, index) => {
+                const btn = document.createElement("button");
+                btn.className = `graph-tab ${index === 0 ? "active" : ""}`;
+                btn.textContent = data._label;
+                btn.onclick = () => {
+                    document.querySelectorAll(".graph-tab").forEach(t => t.classList.remove("active"));
+                    btn.classList.add("active");
+                    drawForecastGraph(index);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function drawForecastGraph(index) {
+            const data = forecastResultsCache[index];
+            if (forecastChart) { forecastChart.destroy(); }
+            const ctx = document.getElementById("forecast-chart").getContext("2d");
+
+            // Mapping styles based on data_point_type
+            const bgColors = [], borders = [], radiuses = [], styles = [];
+            data.results.forEach(pt => {
+                if (pt.data_point_type === "msrp_baseline") {
+                    bgColors.push("#9a9aa0"); borders.push("#9a9aa0"); radiuses.push(5); styles.push("rect");
+                } else if (pt.data_point_type === "actual_observation") {
+                    bgColors.push("#34c759"); borders.push("#248a3d"); radiuses.push(6); styles.push("circle");
+                } else {
+                    bgColors.push("#d32f2f"); borders.push("#d32f2f"); radiuses.push(4); styles.push("circle");
+                }
+            });
+
+            forecastChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: data.results.map(r => r.year),
+                    datasets: [{
+                        label: data._label,
+                        data: data.results.map(r => r.estimated_trade_in),
+                        tension: 0.3,
+                        pointBackgroundColor: bgColors,
+                        pointBorderColor: borders,
+                        pointRadius: radiuses,
+                        pointStyle: styles,
+                        borderColor: '#d32f2f',
+                        borderWidth: 2,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: "nearest",
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    return `Year: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    const rawPt = data.results[context.dataIndex];
+                                    let prefix = "Predicted value";
+                                    if (rawPt.data_point_type === "msrp_baseline") prefix = "MSRP Baseline";
+                                    if (rawPt.data_point_type === "actual_observation") prefix = "Observed value";
+                                    return `${prefix}: RM ${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: "nearest",
+                        intersect: false
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: "Year" }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: "Estimated Trade-In Value (RM)" },
+                            ticks: {
+                                callback: function(value) {
+                                    return "RM " + Number(value).toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderUnifiedTable() {
+            // Find all unique years across all cached results
+            const yearsSet = new Set();
+            forecastResultsCache.forEach(d => d.results.forEach(pt => yearsSet.add(pt.year)));
+            const years = Array.from(yearsSet).sort((a, b) => a - b);
+
+            const thead = document.getElementById("forecast-multi-table-head");
+            let headHTML = '<tr><th>Model</th>';
+            years.forEach(y => headHTML += `<th>${y}</th>`);
+            headHTML += '</tr>';
+            thead.innerHTML = headHTML;
+
+            const tbody = document.getElementById("forecast-multi-table-body");
+            let bodyHTML = '';
+            forecastResultsCache.forEach(d => {
+                bodyHTML += `<tr><td><strong>${d.model}</strong><br><span style="color:#6e6e73;font-size:11px;">${d.provider}</span></td>`;
+                years.forEach(y => {
+                    const pt = d.results.find(p => p.year === y);
+                    if (pt) {
+                        bodyHTML += `<td>RM ${Number(pt.estimated_trade_in).toLocaleString(undefined, {minimumFractionDigits: 0})}</td>`;
+                    } else {
+                        bodyHTML += `<td style="color:#c7c7cc;">—</td>`;
+                    }
+                });
+                bodyHTML += '</tr>';
+            });
+            tbody.innerHTML = bodyHTML;
+        }
+
 
         // ============================================================
         // DELETE — LOAD RECORDS
@@ -4238,8 +3711,8 @@
                     await loadDeleteModels();
                 }
 
-                if (typeof loadForecastModels === "function") {
-                    await loadForecastModels();
+                if (typeof loadForecastHierarchy === "function") {
+                    await loadForecastHierarchy();
                 }
 
             } catch (error) {

@@ -3,10 +3,8 @@
 # CUSTOMER-FACING API
 # ============================================================
 
-import joblib
 import pandas as pd
 import numpy as np
-import sys
 import os
 
 from fastapi import FastAPI, HTTPException
@@ -35,8 +33,6 @@ APP_DIR = Path(__file__).resolve().parent
 ASSETS_DIR = BASE_DIR / "assets"
 
 DATA_FILE = BASE_DIR / "data" / "master_msrp.csv"
-
-MODEL_FILE = BASE_DIR / "model" / "model_v2.pkl"
 
 FITTED_CURVES_FILE = BASE_DIR / "data" / "fitted_curves.csv"
 
@@ -282,10 +278,6 @@ df = pd.read_csv(DATA_FILE)
 
 print(f"Rows loaded: {len(df)}")
 print(f"Master dataset: {DATA_FILE.name}")
-
-model = joblib.load(MODEL_FILE)
-
-print(f"Model loaded: {MODEL_FILE.name}")
 
 # ============================================================
 # LOAD DEPRECIATION FALLBACK
@@ -554,7 +546,7 @@ def force_refresh_from_sheets():
     Updates the backend dataframe and data version only when
     the Sheet contents actually differ from the current dataframe.
     """
-    global df, device_model_map, model_config_map, _last_refresh_at
+    global df, device_model_map, device_config_map, _last_refresh_at
 
     if not sheets_sync.is_available:
         print("Admin force refresh failed: Google Sheets sync is not available.")
@@ -579,9 +571,14 @@ def force_refresh_from_sheets():
 
         data_changed = not current.equals(refreshed)
 
-        # Always use the latest Sheet data in memory.
+        # Build the refreshed maps locally first.
+        # Global state is only updated after all refreshed data is ready.
+        refreshed_model_map, refreshed_config_map = build_device_maps(refreshed_df)
+
+        # Apply the refreshed state atomically.
         df = refreshed_df
-        device_model_map, model_config_map = build_device_maps(df)
+        device_model_map = refreshed_model_map
+        device_config_map = refreshed_config_map
         _last_refresh_at = datetime.now()
 
         if data_changed:
@@ -597,7 +594,7 @@ def force_refresh_from_sheets():
             )
 
         try:
-            df.to_csv(DATA_FILE, index=False)
+            fetch_result.dataframe.to_csv(DATA_FILE, index=False)
         except Exception as exc:
             print(f"Warning: failed to update local CSV cache: {exc}")
 
@@ -929,14 +926,29 @@ def save_customer_trade_in(
     sub_device = device.get("subDevice")
     model_name = device.get("model")
 
+    if not device_name:
+        return {
+            "status": "error",
+            "message": "Device is required."
+        }
+
+    if not sub_device:
+        return {
+            "status": "error",
+            "message": "Sub-device is required."
+        }
+
+    if not model_name:
+        return {
+            "status": "error",
+            "message": "Model is required."
+        }
+
     # --------------------------------------------------------
     # VALUATION DETAILS
     # --------------------------------------------------------
 
     market_value = valuation.get("marketValue")
-    condition_score = valuation.get("conditionScore")
-    grade = valuation.get("grade")
-    multiplier = valuation.get("multiplier")
     final_value = valuation.get("finalValue")
 
     # --------------------------------------------------------
@@ -958,9 +970,6 @@ def save_customer_trade_in(
         "Connectivity": device.get("connectivity"),
 
         "Market Value (RM)": market_value,
-        "Condition Score": condition_score,
-        "Grade": grade,
-        "Multiplier": multiplier,
         "Final Trade-In Value (RM)": final_value
     }
 
@@ -1067,7 +1076,11 @@ def admin_add_device(item: AdminAddDevice):
     print("ADMIN — ADD DEVICE")
     print("=" * 70)
 
-    force_refresh_from_sheets()
+    if not force_refresh_from_sheets():
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
+        )
 
     VALID_CHARGING_METHODS = [
         "Wired",
@@ -1821,13 +1834,60 @@ def admin_models():
     return models
 
 # ============================================================
+# ADMIN — FORECAST MODEL HIERARCHY
+# ============================================================
+
+@app.get("/admin/forecast-models")
+def admin_forecast_models():
+    """
+    Returns the Device -> Sub-device -> [Models] hierarchy used by
+    the Forecast page's cascading pickers:
+
+    {
+        "iPhone": {
+            "Standard": ["iPhone 13", "iPhone 14", ...],
+            "Pro": ["iPhone 13 Pro", "iPhone 14 Pro", ...]
+        },
+        ...
+    }
+    """
+    refresh_data_if_stale()
+
+    hierarchy = {}
+
+    for (device, sub_device), group in df.groupby(
+        ["Device", "Sub-device"]
+    ):
+        if pd.isna(device) or pd.isna(sub_device):
+            continue
+
+        device_str = str(device)
+        sub_device_str = str(sub_device)
+
+        if device_str not in hierarchy:
+            hierarchy[device_str] = {}
+
+        models = (
+            group["Standardized Model"]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+
+        hierarchy[device_str][sub_device_str] = sorted(models)
+
+    return hierarchy
+
+# ============================================================
 # ADMIN — FIND RECORDS
 # ============================================================
 
 @app.get("/admin/records")
 def admin_records(
     device: str,
-    model: str
+    model: str,
+    sub_device: Optional[str] = None
 ):
 
     refresh_data_if_stale()
@@ -1837,6 +1897,12 @@ def admin_records(
         &
         (df["Standardized Model"] == model)
     ]
+
+    if sub_device:
+
+        matches = matches[
+            matches["Sub-device"] == sub_device
+        ]
 
 
     records = []
@@ -1938,6 +2004,11 @@ def admin_records(
                     "Standardized Model"
                 ),
 
+            "sub_device":
+                clean_value(
+                    "Sub-device"
+                ),
+
             "storage":
                 storage,
 
@@ -2025,7 +2096,11 @@ def admin_modify_device(
     print("ADMIN — MODIFY DEVICE")
     print("=" * 70)
 
-    force_refresh_from_sheets()
+    if not force_refresh_from_sheets():
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
+        )
 
     # ========================================================
     # CHECK RECORD
@@ -2285,7 +2360,11 @@ def admin_delete_device(
     print("ADMIN — DELETE DEVICE")
     print("=" * 70)
 
-    force_refresh_from_sheets()
+    if not force_refresh_from_sheets():
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
+        )
 
     # --------------------------------------------------------
     # GET RECORD ID
@@ -2596,25 +2675,24 @@ def admin_forecast(item: dict):
         )
 
         print(
-            f"Forecast     : {current_year} → "
+            f"Forecast     : {model_year} → "
             f"{forecast_until}"
         )
 
 
         # ----------------------------------------------------
-        # GENERATE FORECAST
+        # TIMELINE ANCHORED TO DEVICE RELEASE YEAR
         #
-        # The forecast must never evaluate a year before the
-        # device's own Model Year, since device_age would be
-        # negative and there is no meaningful trade-in value
-        # before a device has been released. This matters for
-        # devices with a Model Year later than the current year
-        # (e.g. a not-yet-released model added in advance) --
-        # in that case the forecast starts at the device's
-        # release year instead of the server's current year.
+        # The forecast always starts from the device's own
+        # Model Year (not the server's current year), so admin
+        # sees the device's full modelled history from release
+        # through to the requested end year, not just the
+        # forward-looking portion. There is no meaningful
+        # trade-in value before a device has been released, so
+        # the timeline can never start earlier than model_year.
         # ----------------------------------------------------
 
-        forecast_start = max(current_year, model_year)
+        forecast_start = model_year
 
         if forecast_start > forecast_until:
 
@@ -2629,6 +2707,23 @@ def admin_forecast(item: dict):
         results = []
 
         previous_value = None
+
+
+        # ----------------------------------------------------
+        # ACTUAL OBSERVATION YEAR
+        #
+        # If this exact record has a real, recorded trade-in
+        # value, that value is ground truth for its collection
+        # year and takes priority over the fitted curve for
+        # that one year -- the curve still generates every
+        # other year in the timeline.
+        # ----------------------------------------------------
+
+        ACTUAL_OBSERVATION_YEAR = 2026
+
+        actual_trade_in_raw = base["Max. Trade-In Value (RM)"]
+
+        has_actual_trade_in = not pd.isna(actual_trade_in_raw)
 
 
         for year in range(
@@ -2648,6 +2743,32 @@ def admin_forecast(item: dict):
 
 
             # ------------------------------------------------
+            # ACTUAL OBSERVATION (PRIORITY)
+            #
+            # This exact record's own recorded trade-in value,
+            # used for its collection year instead of the
+            # fitted curve, since real data is ground truth
+            # where it exists.
+            # ------------------------------------------------
+
+            if (
+                year == ACTUAL_OBSERVATION_YEAR
+                and has_actual_trade_in
+            ):
+
+                prediction = float(actual_trade_in_raw)
+
+                point_type = "actual_observation"
+
+                print(
+                    f"Forecast {year}: "
+                    f"RM {prediction:,.2f} | "
+                    f"Tier: actual_observation | "
+                    f"Curve: recorded value"
+                )
+
+
+            # ------------------------------------------------
             # AGE 0
             #
             # Device is in its model year.
@@ -2655,9 +2776,11 @@ def admin_forecast(item: dict):
             # No depreciation curve is required.
             # ------------------------------------------------
 
-            if device_age == 0:
+            elif device_age == 0:
 
                 prediction = msrp
+
+                point_type = "msrp_baseline"
 
                 print(
                     f"Forecast {year}: "
@@ -2675,37 +2798,6 @@ def admin_forecast(item: dict):
 
             else:
 
-                print("\n" + "=" * 70)
-                print("DEBUG — FALLBACK OBJECT")
-                print("=" * 70)
-
-                print("Fallback class:")
-                print(type(fallback))
-
-                print("Fallback module:")
-                print(type(fallback).__module__)
-
-                print("Fallback file:")
-                print(sys.modules[type(fallback).__module__].__file__)
-
-                print("Reference year:")
-                print(year)
-
-                print("Device age:")
-                print(device_age)
-
-                print("Device:")
-                print(device)
-
-                print("Sub-device:")
-                print(sub_device)
-
-                print("Provider:")
-                print(provider)
-
-                print("MSRP:")
-                print(msrp)
-
                 fallback_result = fallback.predict(
 
                     device=device,
@@ -2720,17 +2812,6 @@ def admin_forecast(item: dict):
 
                     reference_year=year
 
-                )
-
-                print(
-                    f"DEBUG FORECAST RESULT: "
-                    f"year={year}, "
-                    f"age={device_age}, "
-                    f"tier={fallback_result.matched_tier}, "
-                    f"form={fallback_result.form}, "
-                    f"retention={fallback_result.predicted_retention}, "
-                    f"value={fallback_result.predicted_value}, "
-                    f"analogs={fallback_result.analog_models_used}"
                 )
 
 
@@ -2772,6 +2853,8 @@ def admin_forecast(item: dict):
                     fallback_result.predicted_value
                 )
 
+                point_type = "curve_forecast"
+
 
             # ------------------------------------------------
             # CHANGE
@@ -2803,17 +2886,6 @@ def admin_forecast(item: dict):
                 else:
 
                     change_percent = None
-
-
-            # ------------------------------------------------
-            # DEVICE AGE
-            # ------------------------------------------------
-
-            device_age = (
-                year
-                -
-                model_year
-            )
 
 
             # ------------------------------------------------
@@ -2852,7 +2924,10 @@ def admin_forecast(item: dict):
                             change_percent,
                             2
                         )
-                    )
+                    ),
+
+                "data_point_type":
+                    point_type
 
             })
 
