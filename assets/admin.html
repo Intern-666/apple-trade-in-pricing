@@ -129,44 +129,28 @@
 
         <nav class="admin-nav">
 
-            <button
-                type="button"
-                id="nav-add"
-                class="active"
-            >
+            <button type="button" id="nav-add" class="active">
                 ADD
             </button>
 
-            <button
-                type="button"
-                id="nav-modify"
-            >
+            <button type="button" id="nav-modify">
                 MODIFY
             </button>
 
-            <button
-                type="button"
-                id="nav-delete"
-            >
+            <button type="button" id="nav-delete">
                 DELETE
             </button>
 
-            <button
-                type="button"
-                id="nav-forecast"
-            >
+            <button type="button" id="nav-forecast">
                 FORECAST
             </button>
 
+            <!-- Moved inside admin-nav -->
+            <button id="admin-refresh-button" type="button">
+                Refresh Data
+            </button>
+
         </nav>
-
-        <button
-            id="admin-refresh-button"
-            type="button"
-        >
-            Refresh Data
-        </button>
-
 
         <!-- =================================================
              ADD
@@ -4225,7 +4209,8 @@
             const button = document.getElementById("admin-refresh-button");
 
             button.disabled = true;
-            button.textContent = "Refreshing...";
+            // Must be innerHTML, NOT textContent, to render the <span>
+            button.innerHTML = '<span class="refresh-spinner"></span> Refreshing...';
 
             try {
                 const response = await fetch("/admin/refresh", {
@@ -4262,7 +4247,8 @@
                 showAdminToast(error.message || "Failed to refresh data.", "error");
             } finally {
                 button.disabled = false;
-                button.textContent = "Refresh Data";
+                // Reset using innerHTML to clear the spinner out cleanly
+                button.innerHTML = 'Refresh Data';
             }
         });
 
