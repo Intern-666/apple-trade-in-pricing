@@ -1172,35 +1172,25 @@ function clearConditionFieldError(input) {
 
 
 function showConditionFieldError(input, message) {
-
-    if (!input) {
-        return;
-    }
+    if (!input) return;
 
     input.classList.add("customer-input-error");
 
-    let error =
-        document.getElementById(`${input.id}-error`);
+    let error = document.getElementById(`${input.id}-error`);
 
-    // Create the same error element used by
-    // customer-detail.js if it doesn't already exist.
     if (!error) {
+        error = document.createElement("p");
+        error.id = `${input.id}-error`;
+        error.className = "customer-field-error";
+        error.setAttribute("aria-live", "polite");
 
-        error =
-            document.createElement("p");
+        const wrapper = input.closest(".select-wrapper");
 
-        error.id =
-            `${input.id}-error`;
-
-        error.className =
-            "customer-field-error";
-
-        error.setAttribute(
-            "aria-live",
-            "polite"
-        );
-
-        input.parentElement.appendChild(error);
+        if (wrapper) {
+            wrapper.insertAdjacentElement("afterend", error);
+        } else {
+            input.parentElement.appendChild(error);
+        }
     }
 
     error.textContent = message;
