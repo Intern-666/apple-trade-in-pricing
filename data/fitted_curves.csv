@@ -1,90 +1,90 @@
-Device,Sub-device,Provider,Tier,FitGroup,n_rows,n_distinct_ages,form,a,b,rmse,r2,a_hit_ceiling
-AirPods,(device-level),Machines,2_device_provider,AirPods | (device-level) | Machines,12,6,power_law,1.5,1.76226,0.0323,0.92189,True
-AirPods,(device-level),Switch,2_device_provider,AirPods | (device-level) | Switch,11,5,exponential,0.31035,0.22606,0.02363,0.79666,False
-AirPods,(device-level),UR,2_device_provider,AirPods | (device-level) | UR,11,5,exponential,0.31035,0.22606,0.02363,0.79666,False
-AirPods,(device-level),iTworld,2_device_provider,AirPods | (device-level) | iTworld,11,5,exponential,0.31035,0.22606,0.02363,0.79666,False
-AirPods,(pooled),(pooled),3_device_only,"AirPods | (pooled, all providers)",45,6,hyperbolic,1.5,3.05103,0.03012,0.83803,True
-Apple Watch,Watch Series,CompAsia,1_subdevice_provider,Apple Watch | Watch Series | CompAsia,50,7,power_law,1.47653,1.42932,0.0644,0.86613,False
-Apple Watch,Watch Series,Machines,1_subdevice_provider,Apple Watch | Watch Series | Machines,50,7,power_law,1.47653,1.42932,0.0644,0.86613,False
-Apple Watch,Watch Series,Switch,1_subdevice_provider,Apple Watch | Watch Series | Switch,44,7,exponential,0.62457,0.33957,0.037,0.85428,False
-Apple Watch,Watch Series,UR,1_subdevice_provider,Apple Watch | Watch Series | UR,44,7,exponential,0.62457,0.33957,0.037,0.85428,False
-Apple Watch,Watch Series,iTworld,1_subdevice_provider,Apple Watch | Watch Series | iTworld,44,7,exponential,0.62457,0.33957,0.037,0.85428,False
-Apple Watch,(device-level),CompAsia,2_device_provider,Apple Watch | (device-level) | CompAsia,68,7,power_law,1.5,1.43081,0.0688,0.87214,True
-Apple Watch,(device-level),Machines,2_device_provider,Apple Watch | (device-level) | Machines,68,7,power_law,1.5,1.43081,0.0688,0.87214,True
-Apple Watch,(device-level),Switch,2_device_provider,Apple Watch | (device-level) | Switch,54,7,exponential,0.63494,0.33688,0.03688,0.84455,False
-Apple Watch,(device-level),UR,2_device_provider,Apple Watch | (device-level) | UR,54,7,exponential,0.63494,0.33688,0.03688,0.84455,False
-Apple Watch,(device-level),iTworld,2_device_provider,Apple Watch | (device-level) | iTworld,54,7,exponential,0.63494,0.33688,0.03688,0.84455,False
-Apple Watch,(pooled),(pooled),3_device_only,"Apple Watch | (pooled, all providers)",298,8,power_law,1.5,1.42036,0.05597,0.86902,True
-Mac,Mac mini,CompAsia,1_subdevice_provider,Mac | Mac mini | CompAsia,58,4,exponential,1.5,0.73822,0.05817,0.82043,True
-Mac,MacBook Air,CompAsia,1_subdevice_provider,Mac | MacBook Air | CompAsia,65,8,exponential,0.74563,0.31974,0.02948,0.97069,False
-Mac,MacBook Pro,CompAsia,1_subdevice_provider,Mac | MacBook Pro | CompAsia,278,10,exponential,0.70238,0.28133,0.03196,0.93953,False
-Mac,iMac,CompAsia,1_subdevice_provider,Mac | iMac | CompAsia,47,6,exponential,0.93071,0.37987,0.02849,0.95525,False
-Mac,Mac mini,Machines,1_subdevice_provider,Mac | Mac mini | Machines,58,4,exponential,1.5,0.73822,0.05817,0.82043,True
-Mac,MacBook Air,Machines,1_subdevice_provider,Mac | MacBook Air | Machines,65,8,exponential,0.74563,0.31974,0.02948,0.97069,False
-Mac,MacBook Pro,Machines,1_subdevice_provider,Mac | MacBook Pro | Machines,278,10,exponential,0.70238,0.28133,0.03196,0.93953,False
-Mac,iMac,Machines,1_subdevice_provider,Mac | iMac | Machines,47,6,exponential,0.93071,0.37987,0.02849,0.95525,False
-Mac,MacBook Air,Switch,1_subdevice_provider,Mac | MacBook Air | Switch,62,8,exponential,0.81247,0.34142,0.025,0.96268,False
-Mac,MacBook Pro,Switch,1_subdevice_provider,Mac | MacBook Pro | Switch,265,9,exponential,0.68027,0.27145,0.03227,0.90533,False
-Mac,MacBook Air,UR,1_subdevice_provider,Mac | MacBook Air | UR,62,8,exponential,0.81247,0.34142,0.025,0.96268,False
-Mac,MacBook Pro,UR,1_subdevice_provider,Mac | MacBook Pro | UR,265,9,exponential,0.68027,0.27145,0.03227,0.90533,False
-Mac,(device-level),CompAsia,2_device_provider,Mac | (device-level) | CompAsia,517,10,exponential,0.7409,0.30842,0.05304,0.86134,False
-Mac,(device-level),Machines,2_device_provider,Mac | (device-level) | Machines,517,10,exponential,0.7409,0.30842,0.05304,0.86134,False
-Mac,(device-level),Switch,2_device_provider,Mac | (device-level) | Switch,336,10,exponential,0.71576,0.28811,0.0319,0.91594,False
-Mac,(device-level),UR,2_device_provider,Mac | (device-level) | UR,336,10,exponential,0.71576,0.28811,0.0319,0.91594,False
-Mac,(pooled),(pooled),3_device_only,"Mac | (pooled, all providers)",1706,11,exponential,0.72984,0.2999,0.04608,0.87895,False
-iPad,iPad,CompAsia,1_subdevice_provider,iPad | iPad | CompAsia,22,5,exponential,0.45243,0.15841,0.035,0.87909,False
-iPad,iPad Air,CompAsia,1_subdevice_provider,iPad | iPad Air | CompAsia,40,4,power_law,0.61359,0.50921,0.02404,0.88668,False
-iPad,iPad Pro,CompAsia,1_subdevice_provider,iPad | iPad Pro | CompAsia,88,5,power_law,1.02045,0.88997,0.03783,0.923,False
-iPad,iPad,Machines,1_subdevice_provider,iPad | iPad | Machines,21,5,exponential,0.44825,0.15245,0.03286,0.88483,False
-iPad,iPad Air,Machines,1_subdevice_provider,iPad | iPad Air | Machines,40,4,power_law,0.61359,0.50921,0.02404,0.88668,False
-iPad,iPad Pro,Machines,1_subdevice_provider,iPad | iPad Pro | Machines,88,5,power_law,1.02045,0.88997,0.03783,0.923,False
-iPad,iPad,Switch,1_subdevice_provider,iPad | iPad | Switch,38,8,exponential,0.49426,0.20851,0.023,0.96644,False
-iPad,iPad Air,Switch,1_subdevice_provider,iPad | iPad Air | Switch,60,7,exponential,0.50123,0.1784,0.03505,0.94769,False
-iPad,iPad Pro,Switch,1_subdevice_provider,iPad | iPad Pro | Switch,119,8,exponential,0.49734,0.16842,0.03566,0.87128,False
-iPad,iPad mini,Switch,1_subdevice_provider,iPad | iPad mini | Switch,42,7,exponential,0.57662,0.19135,0.01816,0.9789,False
-iPad,iPad,UR,1_subdevice_provider,iPad | iPad | UR,38,8,exponential,0.49426,0.20851,0.023,0.96644,False
-iPad,iPad Air,UR,1_subdevice_provider,iPad | iPad Air | UR,60,7,exponential,0.50123,0.1784,0.03505,0.94769,False
-iPad,iPad Pro,UR,1_subdevice_provider,iPad | iPad Pro | UR,119,8,exponential,0.49734,0.16842,0.03566,0.87128,False
-iPad,iPad mini,UR,1_subdevice_provider,iPad | iPad mini | UR,42,7,exponential,0.57662,0.19135,0.01816,0.9789,False
-iPad,iPad,iTworld,1_subdevice_provider,iPad | iPad | iTworld,38,8,exponential,0.49426,0.20851,0.023,0.96644,False
-iPad,iPad Air,iTworld,1_subdevice_provider,iPad | iPad Air | iTworld,60,7,exponential,0.50123,0.1784,0.03505,0.94769,False
-iPad,iPad Pro,iTworld,1_subdevice_provider,iPad | iPad Pro | iTworld,119,8,exponential,0.49734,0.16842,0.03566,0.87128,False
-iPad,iPad mini,iTworld,1_subdevice_provider,iPad | iPad mini | iTworld,42,7,exponential,0.57662,0.19135,0.01816,0.9789,False
-iPad,(device-level),CompAsia,2_device_provider,iPad | (device-level) | CompAsia,160,6,power_law,0.78902,0.72079,0.05024,0.825,False
-iPad,(device-level),Machines,2_device_provider,iPad | (device-level) | Machines,159,6,power_law,0.78548,0.71565,0.04989,0.8246,False
-iPad,(device-level),Switch,2_device_provider,iPad | (device-level) | Switch,259,13,exponential,0.50521,0.17844,0.03417,0.93059,False
-iPad,(device-level),U Mobile,2_device_provider,iPad | (device-level) | U Mobile,20,5,exponential,0.54735,0.17051,0.02148,0.78938,False
-iPad,(device-level),UR,2_device_provider,iPad | (device-level) | UR,259,13,exponential,0.50521,0.17844,0.03417,0.93059,False
-iPad,(device-level),iTworld,2_device_provider,iPad | (device-level) | iTworld,259,13,exponential,0.50521,0.17844,0.03417,0.93059,False
-iPad,(pooled),(pooled),3_device_only,"iPad | (pooled, all providers)",1116,13,exponential,0.52792,0.18344,0.04174,0.90617,False
-iPhone,Plus,CompAsia,1_subdevice_provider,iPhone | Plus | CompAsia,20,4,exponential,1.08648,0.40763,0.03481,0.95052,False
-iPhone,Pro,CompAsia,1_subdevice_provider,iPhone | Pro | CompAsia,36,7,exponential,0.76044,0.29642,0.02294,0.9715,False
-iPhone,Pro Max,CompAsia,1_subdevice_provider,iPhone | Pro Max | CompAsia,34,7,exponential,0.74007,0.2721,0.02634,0.96467,False
-iPhone,Standard,CompAsia,1_subdevice_provider,iPhone | Standard | CompAsia,46,9,exponential,0.59603,0.23695,0.06768,0.82623,False
-iPhone,Plus,Machines,1_subdevice_provider,iPhone | Plus | Machines,21,4,exponential,1.07922,0.40278,0.03497,0.94802,False
-iPhone,Pro,Machines,1_subdevice_provider,iPhone | Pro | Machines,37,7,exponential,0.75797,0.29418,0.02325,0.96994,False
-iPhone,Pro Max,Machines,1_subdevice_provider,iPhone | Pro Max | Machines,34,7,exponential,0.74007,0.2721,0.02634,0.96467,False
-iPhone,Standard,Machines,1_subdevice_provider,iPhone | Standard | Machines,46,9,exponential,0.59603,0.23695,0.06768,0.82623,False
-iPhone,Plus,Switch,1_subdevice_provider,iPhone | Plus | Switch,22,7,exponential,1.13707,0.41279,0.01606,0.99207,False
-iPhone,Pro,Switch,1_subdevice_provider,iPhone | Pro | Switch,25,7,exponential,0.75977,0.28438,0.02082,0.98118,False
-iPhone,Pro Max,Switch,1_subdevice_provider,iPhone | Pro Max | Switch,24,7,exponential,0.79117,0.2763,0.01642,0.99037,False
-iPhone,Standard,Switch,1_subdevice_provider,iPhone | Standard | Switch,51,13,exponential,0.64112,0.27126,0.05357,0.89249,False
-iPhone,Plus,U Mobile,1_subdevice_provider,iPhone | Plus | U Mobile,12,4,exponential,1.11978,0.38668,0.01981,0.98692,False
-iPhone,Pro,U Mobile,1_subdevice_provider,iPhone | Pro | U Mobile,24,7,exponential,0.77417,0.2788,0.02579,0.97385,False
-iPhone,Pro Max,U Mobile,1_subdevice_provider,iPhone | Pro Max | U Mobile,24,7,exponential,0.74407,0.25479,0.02606,0.97297,False
-iPhone,Standard,U Mobile,1_subdevice_provider,iPhone | Standard | U Mobile,39,10,exponential,0.55384,0.21789,0.0768,0.80891,False
-iPhone,Plus,UR,1_subdevice_provider,iPhone | Plus | UR,22,7,exponential,1.13707,0.41279,0.01606,0.99207,False
-iPhone,Pro,UR,1_subdevice_provider,iPhone | Pro | UR,25,7,exponential,0.75977,0.28438,0.02082,0.98118,False
-iPhone,Pro Max,UR,1_subdevice_provider,iPhone | Pro Max | UR,24,7,exponential,0.79117,0.2763,0.01642,0.99037,False
-iPhone,Standard,UR,1_subdevice_provider,iPhone | Standard | UR,51,13,exponential,0.64112,0.27126,0.05357,0.89249,False
-iPhone,Plus,iTworld,1_subdevice_provider,iPhone | Plus | iTworld,22,7,exponential,1.13707,0.41279,0.01606,0.99207,False
-iPhone,Pro,iTworld,1_subdevice_provider,iPhone | Pro | iTworld,25,7,exponential,0.75977,0.28438,0.02082,0.98118,False
-iPhone,Pro Max,iTworld,1_subdevice_provider,iPhone | Pro Max | iTworld,24,7,exponential,0.79117,0.2763,0.01642,0.99037,False
-iPhone,Standard,iTworld,1_subdevice_provider,iPhone | Standard | iTworld,51,13,exponential,0.64112,0.27126,0.05357,0.89249,False
-iPhone,(device-level),CompAsia,2_device_provider,iPhone | (device-level) | CompAsia,151,9,exponential,0.69475,0.27277,0.05369,0.87884,False
-iPhone,(device-level),Machines,2_device_provider,iPhone | (device-level) | Machines,153,9,exponential,0.69459,0.27195,0.05356,0.87807,False
-iPhone,(device-level),Switch,2_device_provider,iPhone | (device-level) | Switch,139,13,exponential,0.71878,0.28675,0.0531,0.91014,False
-iPhone,(device-level),U Mobile,2_device_provider,iPhone | (device-level) | U Mobile,111,10,exponential,0.66279,0.24606,0.06547,0.85022,False
-iPhone,(device-level),UR,2_device_provider,iPhone | (device-level) | UR,139,13,exponential,0.71878,0.28675,0.0531,0.91014,False
-iPhone,(device-level),iTworld,2_device_provider,iPhone | (device-level) | iTworld,139,13,exponential,0.71878,0.28675,0.0531,0.91014,False
-iPhone,(pooled),(pooled),3_device_only,"iPhone | (pooled, all providers)",832,14,exponential,0.69928,0.27438,0.05554,0.89481,False
+Device,Sub-device,Provider,Tier,FitGroup,n_rows,n_distinct_ages,form,a,b,rmse,r2,relative_r2,max_observed_retention,a_hit_ceiling
+AirPods,(device-level),Machines,2_device_provider,AirPods | (device-level) | Machines,12,6,power_law,1.08684,1.53506,0.03846,0.88928,0.96018,0.47548,False
+AirPods,(device-level),Switch,2_device_provider,AirPods | (device-level) | Switch,11,5,exponential,0.31988,0.25273,0.0252,0.76863,0.90215,0.21703,False
+AirPods,(device-level),UR,2_device_provider,AirPods | (device-level) | UR,11,5,exponential,0.31988,0.25273,0.0252,0.76863,0.90215,0.21703,False
+AirPods,(device-level),iTworld,2_device_provider,AirPods | (device-level) | iTworld,11,5,exponential,0.31988,0.25273,0.0252,0.76863,0.90215,0.21703,False
+AirPods,(pooled),(pooled),3_device_only,"AirPods | (pooled, all providers)",45,6,power_law,1.12542,1.47991,0.03144,0.8235,0.96653,0.47548,False
+Apple Watch,Watch Series,CompAsia,1_subdevice_provider,Apple Watch | Watch Series | CompAsia,50,7,exponential,0.78303,0.45723,0.06933,0.84482,0.99095,0.73652,False
+Apple Watch,Watch Series,Machines,1_subdevice_provider,Apple Watch | Watch Series | Machines,50,7,exponential,0.78303,0.45723,0.06933,0.84482,0.99095,0.73652,False
+Apple Watch,Watch Series,Switch,1_subdevice_provider,Apple Watch | Watch Series | Switch,44,7,exponential,0.71498,0.40741,0.04091,0.82187,0.99135,0.4169,False
+Apple Watch,Watch Series,UR,1_subdevice_provider,Apple Watch | Watch Series | UR,44,7,exponential,0.71498,0.40741,0.04091,0.82187,0.99135,0.4169,False
+Apple Watch,Watch Series,iTworld,1_subdevice_provider,Apple Watch | Watch Series | iTworld,44,7,exponential,0.71498,0.40741,0.04091,0.82187,0.99135,0.4169,False
+Apple Watch,(device-level),CompAsia,2_device_provider,Apple Watch | (device-level) | CompAsia,68,7,exponential,0.77794,0.45682,0.07786,0.83622,0.99112,0.7388,False
+Apple Watch,(device-level),Machines,2_device_provider,Apple Watch | (device-level) | Machines,68,7,exponential,0.77794,0.45682,0.07786,0.83622,0.99112,0.7388,False
+Apple Watch,(device-level),Switch,2_device_provider,Apple Watch | (device-level) | Switch,54,7,exponential,0.74092,0.41246,0.04199,0.79844,0.99276,0.4169,False
+Apple Watch,(device-level),UR,2_device_provider,Apple Watch | (device-level) | UR,54,7,exponential,0.74092,0.41246,0.04199,0.79844,0.99276,0.4169,False
+Apple Watch,(device-level),iTworld,2_device_provider,Apple Watch | (device-level) | iTworld,54,7,exponential,0.74092,0.41246,0.04199,0.79844,0.99276,0.4169,False
+Apple Watch,(pooled),(pooled),3_device_only,"Apple Watch | (pooled, all providers)",298,8,exponential,0.74163,0.42484,0.06185,0.84009,0.99524,0.7388,False
+Mac,Mac mini,CompAsia,1_subdevice_provider,Mac | Mac mini | CompAsia,58,4,power_law,0.26146,0.80353,0.1375,-0.00338,0.90977,0.41677,False
+Mac,MacBook Air,CompAsia,1_subdevice_provider,Mac | MacBook Air | CompAsia,65,8,exponential,0.71924,0.31933,0.03101,0.96758,0.98911,0.57152,False
+Mac,MacBook Pro,CompAsia,1_subdevice_provider,Mac | MacBook Pro | CompAsia,278,10,exponential,0.65274,0.2805,0.03564,0.92479,0.98928,0.56437,False
+Mac,iMac,CompAsia,1_subdevice_provider,Mac | iMac | CompAsia,47,6,exponential,0.72233,0.34814,0.04256,0.90015,0.97989,0.42565,False
+Mac,Mac mini,Machines,1_subdevice_provider,Mac | Mac mini | Machines,58,4,power_law,0.26146,0.80353,0.1375,-0.00338,0.90977,0.41677,False
+Mac,MacBook Air,Machines,1_subdevice_provider,Mac | MacBook Air | Machines,65,8,exponential,0.71924,0.31933,0.03101,0.96758,0.98911,0.57152,False
+Mac,MacBook Pro,Machines,1_subdevice_provider,Mac | MacBook Pro | Machines,278,10,exponential,0.65274,0.2805,0.03564,0.92479,0.98928,0.56437,False
+Mac,iMac,Machines,1_subdevice_provider,Mac | iMac | Machines,47,6,exponential,0.72233,0.34814,0.04256,0.90015,0.97989,0.42565,False
+Mac,MacBook Air,Switch,1_subdevice_provider,Mac | MacBook Air | Switch,62,8,exponential,0.83806,0.35368,0.02526,0.96193,0.99658,0.45949,False
+Mac,MacBook Pro,Switch,1_subdevice_provider,Mac | MacBook Pro | Switch,265,9,exponential,0.73244,0.30284,0.03414,0.89408,0.98582,0.39497,False
+Mac,MacBook Air,UR,1_subdevice_provider,Mac | MacBook Air | UR,62,8,exponential,0.83806,0.35368,0.02526,0.96193,0.99658,0.45949,False
+Mac,MacBook Pro,UR,1_subdevice_provider,Mac | MacBook Pro | UR,265,9,exponential,0.73244,0.30284,0.03414,0.89408,0.98582,0.39497,False
+Mac,(device-level),CompAsia,2_device_provider,Mac | (device-level) | CompAsia,517,10,power_law,1.5,1.47002,0.08501,0.6438,0.97932,0.57152,True
+Mac,(device-level),Machines,2_device_provider,Mac | (device-level) | Machines,517,10,power_law,1.5,1.47002,0.08501,0.6438,0.97932,0.57152,True
+Mac,(device-level),Switch,2_device_provider,Mac | (device-level) | Switch,336,10,exponential,0.75243,0.31604,0.03386,0.9053,0.99124,0.45949,False
+Mac,(device-level),UR,2_device_provider,Mac | (device-level) | UR,336,10,exponential,0.75243,0.31604,0.03386,0.9053,0.99124,0.45949,False
+Mac,(pooled),(pooled),3_device_only,"Mac | (pooled, all providers)",1707,11,exponential,0.59716,0.29717,0.05972,0.79712,0.99318,0.57152,False
+iPad,iPad,CompAsia,1_subdevice_provider,iPad | iPad | CompAsia,22,5,exponential,0.52855,0.21771,0.04804,0.77224,0.92362,0.38769,False
+iPad,iPad Air,CompAsia,1_subdevice_provider,iPad | iPad Air | CompAsia,40,4,exponential,0.46322,0.12063,0.03076,0.8145,0.95432,0.46807,False
+iPad,iPad Pro,CompAsia,1_subdevice_provider,iPad | iPad Pro | CompAsia,88,5,power_law,0.91084,0.82515,0.04145,0.90756,0.96121,0.59556,False
+iPad,iPad,Machines,1_subdevice_provider,iPad | iPad | Machines,21,5,exponential,0.52348,0.21281,0.04695,0.76486,0.9234,0.38769,False
+iPad,iPad Air,Machines,1_subdevice_provider,iPad | iPad Air | Machines,40,4,exponential,0.46322,0.12063,0.03076,0.8145,0.95432,0.46807,False
+iPad,iPad Pro,Machines,1_subdevice_provider,iPad | iPad Pro | Machines,88,5,power_law,0.91084,0.82515,0.04145,0.90756,0.96121,0.59556,False
+iPad,iPad,Switch,1_subdevice_provider,iPad | iPad | Switch,38,8,exponential,0.51905,0.23345,0.02576,0.95792,0.99331,0.41021,False
+iPad,iPad Air,Switch,1_subdevice_provider,iPad | iPad Air | Switch,60,7,exponential,0.55457,0.20629,0.04038,0.93058,0.99572,0.47448,False
+iPad,iPad Pro,Switch,1_subdevice_provider,iPad | iPad Pro | Switch,119,8,exponential,0.65156,0.24539,0.04933,0.7537,0.98302,0.40776,False
+iPad,iPad mini,Switch,1_subdevice_provider,iPad | iPad mini | Switch,42,7,exponential,0.72205,0.23994,0.03161,0.93608,0.99179,0.40473,False
+iPad,iPad,UR,1_subdevice_provider,iPad | iPad | UR,38,8,exponential,0.51905,0.23345,0.02576,0.95792,0.99331,0.41021,False
+iPad,iPad Air,UR,1_subdevice_provider,iPad | iPad Air | UR,60,7,exponential,0.55457,0.20629,0.04038,0.93058,0.99572,0.47448,False
+iPad,iPad Pro,UR,1_subdevice_provider,iPad | iPad Pro | UR,119,8,exponential,0.65156,0.24539,0.04933,0.7537,0.98302,0.40776,False
+iPad,iPad mini,UR,1_subdevice_provider,iPad | iPad mini | UR,42,7,exponential,0.72205,0.23994,0.03161,0.93608,0.99179,0.40473,False
+iPad,iPad,iTworld,1_subdevice_provider,iPad | iPad | iTworld,38,8,exponential,0.51905,0.23345,0.02576,0.95792,0.99331,0.41021,False
+iPad,iPad Air,iTworld,1_subdevice_provider,iPad | iPad Air | iTworld,60,7,exponential,0.55457,0.20629,0.04038,0.93058,0.99572,0.47448,False
+iPad,iPad Pro,iTworld,1_subdevice_provider,iPad | iPad Pro | iTworld,119,8,exponential,0.65156,0.24539,0.04933,0.7537,0.98302,0.40776,False
+iPad,iPad mini,iTworld,1_subdevice_provider,iPad | iPad mini | iTworld,42,7,exponential,0.72205,0.23994,0.03161,0.93608,0.99179,0.40473,False
+iPad,(device-level),CompAsia,2_device_provider,iPad | (device-level) | CompAsia,160,6,exponential,0.59178,0.23569,0.05859,0.76206,0.95309,0.59556,False
+iPad,(device-level),Machines,2_device_provider,iPad | (device-level) | Machines,159,6,exponential,0.58469,0.23028,0.05798,0.76306,0.9531,0.59556,False
+iPad,(device-level),Switch,2_device_provider,iPad | (device-level) | Switch,259,13,exponential,0.5677,0.22619,0.04132,0.89852,0.99158,0.47448,False
+iPad,(device-level),U Mobile,2_device_provider,iPad | (device-level) | U Mobile,20,5,power_law,1.5,1.05982,0.02207,0.77748,0.95388,0.30478,True
+iPad,(device-level),UR,2_device_provider,iPad | (device-level) | UR,259,13,exponential,0.5677,0.22619,0.04132,0.89852,0.99158,0.47448,False
+iPad,(device-level),iTworld,2_device_provider,iPad | (device-level) | iTworld,259,13,exponential,0.5677,0.22619,0.04132,0.89852,0.99158,0.47448,False
+iPad,(pooled),(pooled),3_device_only,"iPad | (pooled, all providers)",1116,13,exponential,0.57808,0.22815,0.04725,0.87976,0.99208,0.59556,False
+iPhone,Plus,CompAsia,1_subdevice_provider,iPhone | Plus | CompAsia,20,4,exponential,0.98702,0.38362,0.03716,0.9436,0.99963,0.53013,False
+iPhone,Pro,CompAsia,1_subdevice_provider,iPhone | Pro | CompAsia,36,7,exponential,0.76675,0.30451,0.0234,0.97035,0.99738,0.55192,False
+iPhone,Pro Max,CompAsia,1_subdevice_provider,iPhone | Pro Max | CompAsia,34,7,exponential,0.76941,0.28992,0.0275,0.96147,0.99305,0.55009,False
+iPhone,Standard,CompAsia,1_subdevice_provider,iPhone | Standard | CompAsia,46,9,exponential,0.73151,0.33392,0.08015,0.75633,0.99136,0.53411,False
+iPhone,Plus,Machines,1_subdevice_provider,iPhone | Plus | Machines,21,4,exponential,0.99099,0.38407,0.03736,0.94068,0.99961,0.53013,False
+iPhone,Pro,Machines,1_subdevice_provider,iPhone | Pro | Machines,37,7,exponential,0.76924,0.30451,0.02379,0.96853,0.99765,0.55192,False
+iPhone,Pro Max,Machines,1_subdevice_provider,iPhone | Pro Max | Machines,34,7,exponential,0.76941,0.28992,0.0275,0.96147,0.99305,0.55009,False
+iPhone,Standard,Machines,1_subdevice_provider,iPhone | Standard | Machines,46,9,exponential,0.73151,0.33392,0.08015,0.75633,0.99136,0.53411,False
+iPhone,Plus,Switch,1_subdevice_provider,iPhone | Plus | Switch,22,7,exponential,1.4891,0.49793,0.02642,0.97854,0.99979,0.52263,False
+iPhone,Pro,Switch,1_subdevice_provider,iPhone | Pro | Switch,25,7,exponential,0.81298,0.31227,0.02438,0.9742,0.99663,0.58011,False
+iPhone,Pro Max,Switch,1_subdevice_provider,iPhone | Pro Max | Switch,24,7,exponential,0.84158,0.29911,0.02075,0.98462,0.99552,0.60106,False
+iPhone,Standard,Switch,1_subdevice_provider,iPhone | Standard | Switch,51,13,exponential,1.03688,0.49763,0.09072,0.69162,0.99975,0.57264,False
+iPhone,Plus,U Mobile,1_subdevice_provider,iPhone | Plus | U Mobile,12,4,exponential,0.93344,0.33278,0.02813,0.97362,0.99882,0.53013,False
+iPhone,Pro,U Mobile,1_subdevice_provider,iPhone | Pro | U Mobile,24,7,exponential,0.83528,0.3111,0.03015,0.96426,0.99522,0.5501,False
+iPhone,Pro Max,U Mobile,1_subdevice_provider,iPhone | Pro Max | U Mobile,24,7,exponential,0.8158,0.28836,0.03229,0.95849,0.99238,0.55009,False
+iPhone,Standard,U Mobile,1_subdevice_provider,iPhone | Standard | U Mobile,37,9,exponential,0.83802,0.3429,0.06511,0.86429,0.99364,0.55014,False
+iPhone,Plus,UR,1_subdevice_provider,iPhone | Plus | UR,22,7,exponential,1.4891,0.49793,0.02642,0.97854,0.99979,0.52263,False
+iPhone,Pro,UR,1_subdevice_provider,iPhone | Pro | UR,25,7,exponential,0.81298,0.31227,0.02438,0.9742,0.99663,0.58011,False
+iPhone,Pro Max,UR,1_subdevice_provider,iPhone | Pro Max | UR,24,7,exponential,0.84158,0.29911,0.02075,0.98462,0.99552,0.60106,False
+iPhone,Standard,UR,1_subdevice_provider,iPhone | Standard | UR,51,13,exponential,1.03688,0.49763,0.09072,0.69162,0.99975,0.57264,False
+iPhone,Plus,iTworld,1_subdevice_provider,iPhone | Plus | iTworld,22,7,exponential,1.4891,0.49793,0.02642,0.97854,0.99979,0.52263,False
+iPhone,Pro,iTworld,1_subdevice_provider,iPhone | Pro | iTworld,25,7,exponential,0.81298,0.31227,0.02438,0.9742,0.99663,0.58011,False
+iPhone,Pro Max,iTworld,1_subdevice_provider,iPhone | Pro Max | iTworld,24,7,exponential,0.84158,0.29911,0.02075,0.98462,0.99552,0.60106,False
+iPhone,Standard,iTworld,1_subdevice_provider,iPhone | Standard | iTworld,51,13,exponential,1.03688,0.49763,0.09072,0.69162,0.99975,0.57264,False
+iPhone,(device-level),CompAsia,2_device_provider,iPhone | (device-level) | CompAsia,151,9,exponential,0.77567,0.34213,0.06182,0.83936,0.99529,0.55192,False
+iPhone,(device-level),Machines,2_device_provider,iPhone | (device-level) | Machines,153,9,exponential,0.77706,0.34228,0.06196,0.83686,0.99529,0.55192,False
+iPhone,(device-level),Switch,2_device_provider,iPhone | (device-level) | Switch,139,13,exponential,1.09757,0.51737,0.09332,0.72251,0.99967,0.60106,False
+iPhone,(device-level),U Mobile,2_device_provider,iPhone | (device-level) | U Mobile,109,9,exponential,0.85707,0.3445,0.0548,0.8961,0.99562,0.55014,False
+iPhone,(device-level),UR,2_device_provider,iPhone | (device-level) | UR,139,13,exponential,1.09757,0.51737,0.09332,0.72251,0.99967,0.60106,False
+iPhone,(device-level),iTworld,2_device_provider,iPhone | (device-level) | iTworld,139,13,exponential,1.09757,0.51737,0.09332,0.72251,0.99967,0.60106,False
+iPhone,(pooled),(pooled),3_device_only,"iPhone | (pooled, all providers)",830,13,exponential,1.12061,0.51885,0.09876,0.66768,0.99967,0.60106,False

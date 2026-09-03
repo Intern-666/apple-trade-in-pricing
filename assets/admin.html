@@ -1992,8 +1992,9 @@
 
                     if (!recordId) {
 
-                        alert(
-                            "Please select a configuration."
+                        showAdminToast(
+                            "Please select a configuration.",
+                            "warning"
                         );
 
                         return;
@@ -2003,8 +2004,9 @@
 
                     if (!forecastUntil) {
 
-                        alert(
-                            "Please select a forecast year."
+                        showAdminToast(
+                            "Please select a forecast year.",
+                            "warning"
                         );
 
                         return;
@@ -2107,9 +2109,10 @@
                         );
 
 
-                        alert(
+                        showAdminToast(
                             error.message ||
-                            "Unable to generate forecast."
+                            "Unable to generate forecast.",
+                            "error"
                         );
 
                     }
@@ -2805,16 +2808,8 @@
                             );
 
 
-                        // Show success
-
-                        const result =
-                            document.getElementById(
-                                "delete-result"
-                            );
-
-
                         showAdminToast(
-                            "Device added successfully."
+                            "Device deleted successfully."
                         );
 
 
@@ -2829,6 +2824,12 @@
                         console.error(
                             "DELETE ERROR:",
                             error
+                        );
+
+                        showAdminToast(
+                            error.message ||
+                            "Failed to delete record.",
+                            "error"
                         );
 
                     }
@@ -3147,8 +3148,9 @@
                         !model
                     ) {
 
-                        alert(
-                            "Please complete the device, sub-device and model."
+                        showAdminToast(
+                            "Please complete the device, sub-device and model.",
+                            "warning"
                         );
 
                         return;
@@ -3157,8 +3159,9 @@
 
                     if (!msrp) {
 
-                        alert(
-                            "Please enter the MSRP."
+                        showAdminToast(
+                            "Please enter the MSRP.",
+                            "warning"
                         );
 
                         return;
@@ -3168,8 +3171,9 @@
 
                     if (!priceStatus) {
 
-                        alert(
-                            "Please select Yes or No for the trade-in value."
+                        showAdminToast(
+                            "Please select Yes or No for the trade-in value.",
+                            "warning"
                         );
 
                         return;
@@ -3196,8 +3200,9 @@
 
                         if (!price) {
 
-                            alert(
-                                "Please enter the confirmed trade-in value."
+                            showAdminToast(
+                                "Please enter the confirmed trade-in value.",
+                                "warning"
                             );
 
                             return;
@@ -3358,13 +3363,6 @@
                             );
 
                         }
-
-
-                        const result =
-                            document
-                                .getElementById(
-                                    "add-result"
-                                );
 
 
                         showAdminToast(
@@ -3811,9 +3809,11 @@
 
                         if (response.status === 409) {
 
-                            alert(
+                            showAdminToast(
                                 data.detail ||
-                                "The data has changed. Please refresh the records before modifying."
+                                "The data has changed. Please refresh the records before modifying.",
+                                "warning",
+                                5000
                             );
 
                             selectedRecordId = null;
@@ -3833,13 +3833,6 @@
                             );
 
                         }
-
-
-                        const result =
-                            document
-                                .getElementById(
-                                    "modify-result"
-                                );
 
 
                         showAdminToast(
@@ -4266,7 +4259,7 @@
 
             } catch (error) {
                 console.error("Refresh failed:", error);
-                alert(error.message || "Failed to refresh data.");
+                showAdminToast(error.message || "Failed to refresh data.", "error");
             } finally {
                 button.disabled = false;
                 button.textContent = "Refresh Data";

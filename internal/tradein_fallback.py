@@ -1051,14 +1051,42 @@ class TradeInFallback:
 
         # ----------------------------------------------------------
         # Apply retention floor / ceiling
+        #
+        # RETENTION_CEILING (1.0) is a blunt, global sanity bound --
+        # never predict more than 100% of MSRP. group_max_retention
+        # is a tighter, per-group bound: never predict more than the
+        # single highest retention actually observed anywhere in
+        # THIS specific fitted group's real training data, since a
+        # forecast that exceeds every real recorded case for that
+        # exact group is not credible regardless of curve shape.
+        #
+        # Falls back to RETENTION_CEILING alone if this curve's row
+        # predates the max_observed_retention column (older
+        # fitted_curves.csv), so this never breaks on stale data.
         # ----------------------------------------------------------
+
+        group_max_retention = curve_row.get(
+            "max_observed_retention"
+        )
+
+        effective_ceiling = RETENTION_CEILING
+
+        if (
+            group_max_retention is not None
+            and not pd.isna(group_max_retention)
+        ):
+
+            effective_ceiling = min(
+                RETENTION_CEILING,
+                float(group_max_retention),
+            )
 
         retention = min(
             max(
                 raw_retention,
                 RETENTION_FLOOR,
             ),
-            RETENTION_CEILING,
+            effective_ceiling,
         )
 
         predicted_value = round(
