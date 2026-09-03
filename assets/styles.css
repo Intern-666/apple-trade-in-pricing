@@ -533,7 +533,7 @@ select {
   height: 8px;
   border-right: 1.5px solid var(--text-secondary);
   border-bottom: 1.5px solid var(--text-secondary);
-  transform: translateY(-65%) rotate(45deg);
+  transform: translateY(-75%) rotate(45deg);
   pointer-events: none;
 }
 
