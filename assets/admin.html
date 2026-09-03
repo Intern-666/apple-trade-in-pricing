@@ -1256,6 +1256,8 @@
                 document.getElementById("add-chipset").value = "";
                 document.getElementById("add-connectivity").value = "";
                 document.getElementById("add-case-size").value = "";
+                document.getElementById("add-charging-method").value = "";
+                document.getElementById("add-material").value = "";
                 document.getElementById("add-provider").value = "";
 
                 document
@@ -2163,6 +2165,111 @@
                 }
             );
 
+        async function refreshDeleteRecords() {
+
+            const device =
+                document.getElementById("delete-device").value;
+
+            const model =
+                document.getElementById("delete-model").value;
+
+            const container =
+                document.getElementById("delete-records");
+
+            container.innerHTML = "";
+
+            if (!device || !model) {
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    "/admin/records"
+                    + `?device=${encodeURIComponent(device)}`
+                    + `&model=${encodeURIComponent(model)}`
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to load records.");
+                }
+
+                const version =
+                    response.headers.get("X-Data-Version");
+
+                if (version) {
+                    adminDataVersion = version;
+                }
+
+                const records = await response.json();
+
+                if (!records.length) {
+
+                    container.innerHTML = `
+                        <p class="empty-state">
+                            No found device
+                        </p>
+                    `;
+
+                    return;
+                }
+
+                records.forEach(record => {
+
+                    const div = document.createElement("div");
+
+                    div.className = "record";
+
+                    const price =
+                        record.trade_in_value === null
+                            ? "N/A"
+                            : `RM ${Number(
+                                record.trade_in_value
+                            ).toLocaleString()}`;
+
+                    div.innerHTML = `
+                        <div class="record-title">
+                            ${record.model}
+                        </div>
+
+                        <div class="record-details">
+                            Storage:
+                            ${record.storage ?? "N/A"} GB
+
+                            <br>
+
+                            Provider:
+                            ${record.provider ?? "Unknown"}
+
+                            <br>
+
+                            Trade-In Value:
+                            ${price}
+                        </div>
+                    `;
+
+                    div.addEventListener("click", () => {
+                        selectDeleteRecord(record);
+                    });
+
+                    container.appendChild(div);
+
+                });
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to refresh DELETE records:",
+                    error
+                );
+
+                showAdminToast(
+                    "Unable to refresh device records.",
+                    "error"
+                );
+            }
+        }
+
         // ============================================================
         // DELETE — CONFIRM DELETE
         // ============================================================
@@ -2192,6 +2299,14 @@
                     console.log(
                         "Deleting record:",
                         selectedDeleteRecordId
+                    );
+
+                    const deleteButton =
+                        document.getElementById("delete-confirm-button");
+
+                    setActionLoading(
+                        deleteButton,
+                        "Deleting..."
                     );
 
 
@@ -2269,10 +2384,10 @@
                             "Device deleted successfully."
                         );
 
+                        selectedDeleteRecordId = null;
+                        selectedDeleteDataVersion = null;
 
-                        // Refresh model list
-
-                        await loadDeleteModels();
+                        await refreshDeleteRecords();
 
 
                     }
@@ -2291,6 +2406,16 @@
 
                     }
 
+                    finally {
+                        const deleteButton =
+                            document.getElementById(
+                                "delete-confirm-button"
+                            );
+
+                        deleteButton.disabled = false;
+                        deleteButton.innerHTML = "Delete Permanently";
+                    }
+
                 }
             );
 
@@ -2298,11 +2423,10 @@
         // DELETE — CANCEL CONFIRMATION
         // ====================================================
 
-        document.getElementById("delete-cancel-button").addEventListener("click",async()=>{
+        document.getElementById("delete-cancel-button").addEventListener("click", () => {
             document.getElementById("delete-confirm").classList.add("hidden");
-            selectedDeleteRecordId=null;
-            selectedDeleteDataVersion=null;
-            await loadDeleteModels();
+            selectedDeleteRecordId = null;
+            selectedDeleteDataVersion = null;
         });
 
 
@@ -2479,7 +2603,6 @@
 
                 }
             );
-
 
         // ====================================================
         // ADD — SUBMIT
@@ -2775,6 +2898,8 @@
                         payload
                     );
 
+                    const submitButton = document.getElementById("add-submit");
+                    setActionLoading(submitButton, "Adding...");
 
                     try {
 
@@ -2826,7 +2951,10 @@
                             "Device added successfully."
                         );
 
+                        showSection("add");
+
                     }
+
                     catch (error) {
 
                         console.error(
@@ -2851,6 +2979,12 @@
                         result.style.display =
                             "block";
 
+                    }
+
+                    finally {
+                        const submitButton = document.getElementById("add-submit");
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = "Submit";
                     }
 
                 }
@@ -3140,6 +3274,125 @@
                 }
             );
 
+        // ====================================================
+        // MODIFY — REFRESH RECORDS
+        // ====================================================
+
+        async function refreshModifyRecords() {
+
+            const device =
+                document
+                    .getElementById("modify-device")
+                    .value;
+
+            const model =
+                document
+                    .getElementById("modify-model")
+                    .value;
+
+            const container =
+                document
+                    .getElementById("modify-records");
+
+            if (!device || !model) {
+                return;
+            }
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/admin/records"
+                        + `?device=${encodeURIComponent(device)}`
+                        + `&model=${encodeURIComponent(model)}`
+                    );
+
+                if (!response.ok) {
+                    throw new Error("Failed to refresh records.");
+                }
+
+                const version =
+                    response.headers.get("X-Data-Version");
+
+                if (version) {
+                    adminDataVersion = version;
+                }
+
+                const records =
+                    await response.json();
+
+                container.innerHTML = "";
+
+                records.forEach(record => {
+
+                    const div =
+                        document.createElement("div");
+
+                    div.className = "record";
+
+                    const price =
+                        record.trade_in_value;
+
+                    const priceText =
+                        price === null
+                            ? "N/A"
+                            : `RM ${Number(price).toLocaleString()}`;
+
+                    const priceClass =
+                        price === null
+                            ? "price-na"
+                            : "price-confirmed";
+
+                    div.innerHTML = `
+
+                        <div class="record-title">
+                            ${record.model}
+                        </div>
+
+                        <div class="record-details">
+
+                            Storage:
+                            ${record.storage ?? "N/A"}
+                            GB
+
+                            <br>
+
+                            Provider:
+                            ${record.provider ?? "Unknown"}
+
+                            <br>
+
+                            Trade-In Value:
+                            <span class="${priceClass}">
+                                ${priceText}
+                            </span>
+
+                        </div>
+
+                    `;
+
+                    div.addEventListener(
+                        "click",
+                        () => {
+                            openModifyRecord(record);
+                        }
+                    );
+
+                    container.appendChild(div);
+
+                });
+
+            }
+            catch (error) {
+
+                console.error(
+                    "Unable to refresh records:",
+                    error
+                );
+
+            }
+        }
+
 
         // ====================================================
         // MODIFY — OPEN RECORD
@@ -3228,6 +3481,8 @@
                         payload
                     );
 
+                    const saveButton = document.getElementById("modify-save");
+                    setActionLoading(saveButton, "Saving...");
 
                     try {
 
@@ -3296,6 +3551,8 @@
                             "Device modified successfully."
                         );
 
+                        await refreshModifyRecords();
+
                         loadAdminStatus();
 
 
@@ -3327,6 +3584,12 @@
 
                     }
 
+                    finally {
+                        const saveButton = document.getElementById("modify-save");
+                        saveButton.disabled = false;
+                        saveButton.innerHTML = "Save Changes";
+                    }
+
                 }
             );
 
@@ -3356,22 +3619,6 @@
 
                 selectedRecordId = null;
                 selectedRecordDataVersion = null;
-
-                document
-                    .getElementById("modify-device")
-                    .value = "";
-
-                document
-                    .getElementById("modify-model")
-                    .innerHTML = `
-                        <option value="">
-                            Select model
-                        </option>
-                    `;
-
-                document
-                    .getElementById("modify-records")
-                    .innerHTML = "";
 
                 document
                     .getElementById("modify-result")
@@ -3756,6 +4003,16 @@
                     toast.remove();
                 }, 250);
             }, duration);
+        }
+
+        function setActionLoading(button, loadingText) {
+            button.disabled = true;
+            button.innerHTML = `<span class="refresh-spinner"></span> ${loadingText}`;
+        }
+
+        function resetActionButton(button, originalText) {
+            button.disabled = false;
+            button.innerHTML = originalText;
         }
 
     </script>

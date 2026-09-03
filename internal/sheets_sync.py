@@ -340,9 +340,6 @@ class SheetsSync:
                 "Storage Type",
                 "Connectivity",
                 "Market Value (RM)",
-                "Condition Score",
-                "Grade",
-                "Multiplier",
                 "Final Trade-In Value (RM)"
             ]
 
@@ -373,9 +370,6 @@ class SheetsSync:
                 record.get("Storage Type", ""),
                 record.get("Connectivity", ""),
                 record.get("Market Value (RM)", ""),
-                record.get("Condition Score", ""),
-                record.get("Grade", ""),
-                record.get("Multiplier", ""),
                 record.get("Final Trade-In Value (RM)", "")
             ]
 

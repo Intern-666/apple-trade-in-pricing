@@ -1148,6 +1148,240 @@ async function fetchPredictedPrice(
     }
 }
 
+/* =========================================================
+   CONDITION VALIDATION
+========================================================= */
+
+function clearConditionFieldError(input) {
+
+    if (!input) {
+        return;
+    }
+
+    input.classList.remove("customer-input-error");
+
+    const error =
+        document.getElementById(`${input.id}-error`);
+
+    if (error) {
+
+        error.textContent = "";
+        error.classList.remove("visible");
+    }
+}
+
+
+function showConditionFieldError(input, message) {
+
+    if (!input) {
+        return;
+    }
+
+    input.classList.add("customer-input-error");
+
+    let error =
+        document.getElementById(`${input.id}-error`);
+
+    // Create the same error element used by
+    // customer-detail.js if it doesn't already exist.
+    if (!error) {
+
+        error =
+            document.createElement("p");
+
+        error.id =
+            `${input.id}-error`;
+
+        error.className =
+            "customer-field-error";
+
+        error.setAttribute(
+            "aria-live",
+            "polite"
+        );
+
+        input.parentElement.appendChild(error);
+    }
+
+    error.textContent = message;
+    error.classList.add("visible");
+}
+
+
+function validateConditionSelections() {
+
+    const selectedDevice =
+        deviceSelect.value;
+
+    const selectedSub =
+        subDeviceSelect.value;
+
+    let requiredFields = [];
+
+
+    /* =========================
+       iPhone
+    ========================= */
+
+    if (selectedDevice === "iPhone") {
+
+        requiredFields = [
+            ["iphoneScreen", "screen condition"],
+            ["iphoneBody", "body & frame condition"],
+            ["iphoneBattery", "battery health"]
+        ];
+    }
+
+
+    /* =========================
+       iPad
+    ========================= */
+
+    else if (selectedDevice === "iPad") {
+
+        requiredFields = [
+            ["ipadScreen", "screen condition"],
+            ["ipadBody", "body condition"],
+            ["ipadBattery", "battery health"]
+        ];
+    }
+
+
+    /* =========================
+       Apple Watch
+    ========================= */
+
+    else if (selectedDevice === "Apple Watch") {
+
+        requiredFields = [
+            ["watchScreen", "screen condition"],
+            ["watchBody", "case condition"],
+            ["watchBattery", "battery health"]
+        ];
+    }
+
+
+    /* =========================
+       AirPods
+    ========================= */
+
+    else if (selectedDevice === "AirPods") {
+
+        requiredFields = [
+            ["airpodsCase", "charging case condition"],
+            ["airpodsBuds", "earbuds condition"],
+            ["airpodsBattery", "battery condition"]
+        ];
+    }
+
+
+    /* =========================
+       Mac
+    ========================= */
+
+    else if (selectedDevice === "Mac") {
+
+        const subLower =
+            selectedSub.toLowerCase();
+
+
+        // Mac mini / Mac Studio / Mac Pro
+        // have no screen or battery condition.
+        if (
+            subLower.includes("mini") ||
+            subLower.includes("studio") ||
+            subLower.includes("pro desktop")
+        ) {
+
+            requiredFields = [
+                ["desktopBody", "body condition"]
+            ];
+        }
+
+
+        // iMac has a screen and body,
+        // but no battery field.
+        else if (subLower.includes("imac")) {
+
+            requiredFields = [
+                ["desktopScreen", "screen condition"],
+                ["desktopBody", "body condition"]
+            ];
+        }
+
+
+        // MacBook / laptop
+        else {
+
+            requiredFields = [
+                ["laptopScreen", "screen condition"],
+                ["laptopBody", "body condition"],
+                ["laptopBattery", "battery health"]
+            ];
+        }
+    }
+
+
+    // Clear previous condition errors first.
+    requiredFields.forEach(([id]) => {
+
+        clearConditionFieldError(
+            document.getElementById(id)
+        );
+    });
+
+
+    // Find fields that have not been selected.
+    const missingFields =
+        requiredFields.filter(([id]) => {
+
+            const field =
+                document.getElementById(id);
+
+            return !field || !field.value;
+        });
+
+
+    if (missingFields.length === 0) {
+        return true;
+    }
+
+
+    // Show an error for every missing condition.
+    missingFields.forEach(([id, label]) => {
+
+        const field =
+            document.getElementById(id);
+
+        if (field) {
+
+            showConditionFieldError(
+                field,
+                `Please select your ${label}.`
+            );
+        }
+    });
+
+
+    // Focus the first missing field.
+    const firstMissingField =
+        document.getElementById(
+            missingFields[0][0]
+        );
+
+    if (firstMissingField) {
+
+        firstMissingField.focus();
+
+        firstMissingField.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
+
+    return false;
+}
+
 
 /* =========================================================
    SUBMIT
@@ -1158,6 +1392,10 @@ tradeInForm.addEventListener(
     async function (event) {
 
         event.preventDefault();
+
+        if (!validateConditionSelections()) {
+            return;
+        }
 
         const device =
             deviceSelect.value;

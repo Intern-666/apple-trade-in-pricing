@@ -966,8 +966,8 @@ def save_customer_trade_in(
         "Sub-device": sub_device,
         "Model": model_name,
         "Storage (GB)": device.get("storage"),
-        "Storage Type": device.get("storageType"),
-        "Connectivity": device.get("connectivity"),
+        "Storage Type": device.get("storageType") or "N/A",
+        "Connectivity": device.get("connectivity") or "N/A",
 
         "Market Value (RM)": market_value,
         "Final Trade-In Value (RM)": final_value
@@ -1899,100 +1899,98 @@ def admin_records(
     ]
 
     if sub_device:
-
         matches = matches[
             matches["Sub-device"] == sub_device
         ]
 
+    # ----------------------------------------------------
+    # HELPERS
+    # ----------------------------------------------------
+
+    def clean_value(column, row):
+
+        if column not in row.index:
+            return None
+
+        value = row[column]
+
+        if pd.isna(value):
+            return None
+
+        return str(value).strip()
+
+
+    def safe_numeric(value):
+
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            value = value.strip()
+
+            if value == "":
+                return None
+
+        try:
+            number = float(value)
+
+        except (TypeError, ValueError):
+            return None
+
+        return int(number) if number.is_integer() else number
+
+
+    def clean_json_value(value):
+
+        if isinstance(value, float) and np.isnan(value):
+            return None
+
+        if isinstance(value, dict):
+            return {
+                key: clean_json_value(val)
+                for key, val in value.items()
+            }
+
+        if isinstance(value, list):
+            return [
+                clean_json_value(item)
+                for item in value
+            ]
+
+        return value
+
 
     records = []
-
 
     for index, row in matches.iterrows():
 
         record_id = int(cast(int, index))
 
-
-        # ----------------------------------------------------
+        # ------------------------------------------------
         # TRADE-IN VALUE
-        # ----------------------------------------------------
+        # ------------------------------------------------
 
         value = row["Max. Trade-In Value (RM)"]
 
         if pd.isna(value):
             value = None
-
         else:
             value = float(value)
 
-
-        # ----------------------------------------------------
+        # ------------------------------------------------
         # STORAGE
-        # ----------------------------------------------------
+        # ------------------------------------------------
 
         storage = row["Storage (GB)"]
 
         if pd.isna(storage):
             storage = None
-
         else:
             storage = float(storage)
 
-
-        # ----------------------------------------------------
-        # HELPER
-        # ----------------------------------------------------
-
-        def clean_value(column):
-
-            if column not in row.index:
-                return None
-
-            value = row[column]
-
-            if pd.isna(value):
-                return None
-
-            return str(value).strip()
-
-        def safe_numeric(value):
-            if value is None:
-                return None
-
-            if isinstance(value, str):
-                value = value.strip()
-                if value == "":
-                    return None
-
-            try:
-                number = float(value)
-            except (TypeError, ValueError):
-                return None
-
-            return int(number) if number.is_integer() else number
-
-        def clean_json_value(value):
-            if isinstance(value, float) and np.isnan(value):
-                return None
-
-            if isinstance(value, dict):
-                return {
-                    key: clean_json_value(val)
-                    for key, val in value.items()
-                }
-
-            if isinstance(value, list):
-                return [
-                    clean_json_value(item)
-                    for item in value
-                ]
-
-            return value
-
-
-        # ----------------------------------------------------
+        # ------------------------------------------------
         # BUILD RECORD
-        # ----------------------------------------------------
+        # ------------------------------------------------
 
         records.append({
 
@@ -2001,12 +1999,14 @@ def admin_records(
 
             "model":
                 clean_value(
-                    "Standardized Model"
+                    "Standardized Model",
+                    row
                 ),
 
             "sub_device":
                 clean_value(
-                    "Sub-device"
+                    "Sub-device",
+                    row
                 ),
 
             "storage":
@@ -2014,39 +2014,49 @@ def admin_records(
 
             "storage_type":
                 clean_value(
-                    "Storage Type"
+                    "Storage Type",
+                    row
                 ),
 
             "connectivity":
                 clean_value(
-                    "Connectivity"
+                    "Connectivity",
+                    row
                 ),
 
             "specification":
                 clean_value(
-                    "Specification"
+                    "Specification",
+                    row
                 ),
 
             "material":
                 clean_value(
-                    "Material"
+                    "Material",
+                    row
                 ),
 
-            "ram": safe_numeric(row["RAM Min (GB)"]),
+            "ram":
+                safe_numeric(
+                    row["RAM Min (GB)"]
+                ),
 
             "chipset":
                 clean_value(
-                    "Chipset"
+                    "Chipset",
+                    row
                 ),
 
             "mac_generation":
                 clean_value(
-                    "Mac Generation"
+                    "Mac Generation",
+                    row
                 ),
 
             "provider":
                 clean_value(
-                    "Provider"
+                    "Provider",
+                    row
                 ),
 
             "msrp":
@@ -2061,12 +2071,13 @@ def admin_records(
 
         })
 
-
     records = clean_json_value(records)
 
     return JSONResponse(
         content=records,
-        headers={"X-Data-Version": _data_version}
+        headers={
+            "X-Data-Version": _data_version
+        }
     )
 
 # ============================================================
