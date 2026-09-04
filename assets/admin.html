@@ -229,18 +229,6 @@
 
             </div>
 
-            <!-- Add inside the <section id="add-section">, below Sub-device -->
-            <div class="form-group">
-                <label for="add-model-number">
-                    Model Number
-                </label>
-                <input
-                    id="add-model-number"
-                    type="text"
-                    placeholder="e.g. A2890"
-                >
-            </div>
-
 
             <div class="form-group">
 
@@ -977,22 +965,6 @@
                             <!-- Model Tabs appear here -->
                         </div>
 
-                        <div class="forecast-chart-header">
-                            <p class="forecast-drag-hint">
-                                Drag the red dots to adjust forecast values.
-                            </p>
-
-                            <button
-                                type="button"
-                                id="reset-forecast"
-                                class="forecast-reset-btn"
-                                title="Reset forecast values"
-                                aria-label="Reset forecast values"
-                            >
-                                ↻
-                            </button>
-                        </div>
-
                         <div class="forecast-chart-wrapper">
                             <canvas id="forecast-chart"></canvas>
                         </div>
@@ -1275,7 +1247,6 @@
                         Select sub-device
                     </option>
                 `;
-                document.getElementById("add-model-number").value = ""; // <--- New line
 
                 document.getElementById("add-model").value = "";
                 document.getElementById("add-year").value = "";
@@ -1840,147 +1811,72 @@
             });
         }
 
- 
         function drawForecastGraph(index) {
             const data = forecastResultsCache[index];
+            if (forecastChart) { forecastChart.destroy(); }
+            const ctx = document.getElementById("forecast-chart").getContext("2d");
 
-            if (forecastChart) {
-                forecastChart.destroy();
-            }
-
-            const canvas = document.getElementById("forecast-chart");
-            const ctx = canvas.getContext("2d");
-
-            // Use adjusted value if the user has manually moved the point.
-            const getPointValue = pt =>
-                pt.adjusted_trade_in ?? pt.estimated_trade_in;
-
-            // ------------------------------------------------------------
-            // POINT STYLING
-            // ------------------------------------------------------------
-
-            const bgColors = [];
-            const borders = [];
-            const radiuses = [];
-            const styles = [];
-
+            // Mapping styles based on data_point_type
+            const bgColors = [], borders = [], radiuses = [], styles = [];
             data.results.forEach(pt => {
-
                 if (pt.data_point_type === "msrp_baseline") {
-
-                    bgColors.push("#9a9aa0");
-                    borders.push("#9a9aa0");
-                    radiuses.push(5);
-                    styles.push("rect");
-
+                    bgColors.push("#9a9aa0"); borders.push("#9a9aa0"); radiuses.push(5); styles.push("rect");
                 } else if (pt.data_point_type === "actual_observation") {
-
-                    bgColors.push("#34c759");
-                    borders.push("#248a3d");
-                    radiuses.push(6);
-                    styles.push("circle");
-
+                    bgColors.push("#34c759"); borders.push("#248a3d"); radiuses.push(6); styles.push("circle");
                 } else {
-
-                    bgColors.push("#d32f2f");
-                    borders.push("#d32f2f");
-                    radiuses.push(4);
-                    styles.push("circle");
+                    bgColors.push("#d32f2f"); borders.push("#d32f2f"); radiuses.push(4); styles.push("circle");
                 }
             });
 
-            // ------------------------------------------------------------
-            // CREATE CHART
-            // ------------------------------------------------------------
-
             forecastChart = new Chart(ctx, {
                 type: "line",
-
                 data: {
                     labels: data.results.map(r => r.year),
-
                     datasets: [{
                         label: data._label,
-
-                        data: data.results.map(getPointValue),
-
-                        tension: 0.4,
-
+                        data: data.results.map(r => r.estimated_trade_in),
+                        tension: 0.3,
                         pointBackgroundColor: bgColors,
                         pointBorderColor: borders,
                         pointRadius: radiuses,
                         pointStyle: styles,
-
-                        borderColor: "#d32f2f",
+                        borderColor: '#d32f2f',
                         borderWidth: 2,
-
                         fill: false
                     }]
                 },
-
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-
+                    responsive: true, maintainAspectRatio: false,
                     plugins: {
-
-                        legend: {
-                            display: false
-                        },
-
+                        legend: { display: false },
                         tooltip: {
                             mode: "nearest",
                             intersect: false,
-
                             callbacks: {
-
                                 title: function(context) {
                                     return `Year: ${context[0].label}`;
                                 },
-
                                 label: function(context) {
-
                                     const rawPt = data.results[context.dataIndex];
-                                    const value = getPointValue(rawPt);
-
                                     let prefix = "Predicted value";
-
-                                    if (rawPt.data_point_type === "msrp_baseline") {
-                                        prefix = "MSRP Baseline";
-                                    }
-
-                                    if (rawPt.data_point_type === "actual_observation") {
-                                        prefix = "Observed value";
-                                    }
-
-                                    return `${prefix}: RM ${Number(value).toLocaleString()}`;
+                                    if (rawPt.data_point_type === "msrp_baseline") prefix = "MSRP Baseline";
+                                    if (rawPt.data_point_type === "actual_observation") prefix = "Observed value";
+                                    return `${prefix}: RM ${context.raw.toLocaleString()}`;
                                 }
                             }
                         }
                     },
-
                     interaction: {
                         mode: "nearest",
                         intersect: false
                     },
-
                     scales: {
-
                         x: {
-                            title: {
-                                display: true,
-                                text: "Year"
-                            }
+                            title: { display: true, text: "Year" }
                         },
-
                         y: {
                             beginAtZero: true,
-
-                            title: {
-                                display: true,
-                                text: "Estimated Trade-In Value (RM)"
-                            },
-
+                            title: { display: true, text: "Estimated Trade-In Value (RM)" },
                             ticks: {
                                 callback: function(value) {
                                     return "RM " + Number(value).toLocaleString();
@@ -1990,230 +1886,7 @@
                     }
                 }
             });
-
-            // ============================================================
-            // DRAGGING
-            // ============================================================
-
-            let draggingPointIndex = null;
-
-            // Prevent browser scrolling/dragging while interacting
-            // with the chart.
-            canvas.style.touchAction = "none";
-
-            // ------------------------------------------------------------
-            // POINTER DOWN
-            // ------------------------------------------------------------
-
-            canvas.onpointerdown = function(event) {
-
-                if (!forecastChart) return;
-
-                const points = forecastChart.getElementsAtEventForMode(
-                    event,
-                    "nearest",
-                    {
-                        intersect: true
-                    },
-                    false
-                );
-
-                if (!points.length) return;
-
-                const pointIndex = points[0].index;
-                const pt = data.results[pointIndex];
-
-                // MSRP + actual observations are locked.
-                const selectedUntilYear =
-                    Number(document.getElementById("forecast-until").value);
-
-                const isMsrp =
-                    pt.data_point_type === "msrp_baseline";
-
-                const isObserved =
-                    pt.data_point_type === "actual_observation";
-
-                const isFinalForecastPoint =
-                    pt.year === selectedUntilYear;
-
-                // Locked points
-                if (
-                    isMsrp ||
-                    isObserved ||
-                    isFinalForecastPoint
-                ) {
-                    return;
-                }
-
-                draggingPointIndex = pointIndex;
-
-                canvas.style.cursor = "grabbing";
-
-                // Keep receiving pointer events even if pointer
-                // leaves the canvas during dragging.
-                if (canvas.setPointerCapture) {
-                    canvas.setPointerCapture(event.pointerId);
-                }
-
-                event.preventDefault();
-            };
-
-            // ------------------------------------------------------------
-            // POINTER MOVE
-            // ------------------------------------------------------------
-
-            canvas.onpointermove = function(event) {
-
-                if (!forecastChart) return;
-
-                // Nothing is being dragged.
-                if (draggingPointIndex === null) {
-
-                    const points = forecastChart.getElementsAtEventForMode(
-                        event,
-                        "nearest",
-                        {
-                            intersect: true
-                        },
-                        false
-                    );
-
-                    const selectedUntilYear =
-                        Number(document.getElementById("forecast-until").value);
-
-                    const pt = data.results[points[0].index];
-
-                    if (
-                        pt.data_point_type !== "msrp_baseline" &&
-                        pt.data_point_type !== "actual_observation" &&
-                        pt.year !== selectedUntilYear
-                    ) {
-                        canvas.style.cursor = "grab";
-                    } else {
-                        canvas.style.cursor = "default";
-                    }
-
-                    return;
-                }
-
-                // --------------------------------------------------------
-                // GET Y VALUE FROM POINTER POSITION
-                // --------------------------------------------------------
-
-                const yScale = forecastChart.scales.y;
-
-                let newValue = yScale.getValueForPixel(event.offsetY);
-
-                // Prevent negative trade-in values.
-                newValue = Math.max(0, newValue);
-
-                // Snap to nearest RM10.
-                newValue = Math.round(newValue / 10) * 10;
-
-                // --------------------------------------------------------
-                // SAVE MANUAL VALUE
-                // --------------------------------------------------------
-
-                const pt = data.results[draggingPointIndex];
-
-                pt.adjusted_trade_in = newValue;
-
-                // --------------------------------------------------------
-                // UPDATE GRAPH
-                // --------------------------------------------------------
-
-                forecastChart.data.datasets[0].data[draggingPointIndex] =
-                    newValue;
-
-                forecastChart.update("none");
-
-                // --------------------------------------------------------
-                // UPDATE TABLE
-                // --------------------------------------------------------
-
-                renderUnifiedTable();
-
-                event.preventDefault();
-            };
-
-            // ------------------------------------------------------------
-            // POINTER UP
-            // ------------------------------------------------------------
-
-            canvas.onpointerup = function(event) {
-
-                if (draggingPointIndex !== null) {
-
-                    draggingPointIndex = null;
-
-                    canvas.style.cursor = "default";
-
-                    if (canvas.releasePointerCapture) {
-                        try {
-                            canvas.releasePointerCapture(event.pointerId);
-                        } catch (e) {
-                            // Pointer capture may already have been released.
-                        }
-                    }
-                }
-            };
-
-            // ------------------------------------------------------------
-            // POINTER CANCEL
-            // ------------------------------------------------------------
-
-            canvas.onpointercancel = function(event) {
-
-                draggingPointIndex = null;
-
-                canvas.style.cursor = "default";
-
-                if (canvas.releasePointerCapture) {
-                    try {
-                        canvas.releasePointerCapture(event.pointerId);
-                    } catch (e) {}
-                }
-            };
-
-            // ------------------------------------------------------------
-            // POINTER LEAVE
-            // ------------------------------------------------------------
-
-            canvas.onpointerleave = function() {
-
-                if (draggingPointIndex === null) {
-                    canvas.style.cursor = "default";
-                }
-            };
         }
-
-        document.getElementById("reset-forecast").addEventListener("click", function() {
-
-            if (!forecastChart) return;
-
-            const activeIndex = forecastResultsCache.findIndex(
-                d => d._label === forecastChart.data.datasets[0].label
-            );
-
-            if (activeIndex === -1) return;
-
-            const data = forecastResultsCache[activeIndex];
-
-            // Remove all manual adjustments.
-            data.results.forEach(pt => {
-                delete pt.adjusted_trade_in;
-            });
-
-            // Restore original formula values.
-            forecastChart.data.datasets[0].data =
-                data.results.map(pt => pt.estimated_trade_in);
-
-            forecastChart.update();
-
-            // Update table.
-            renderUnifiedTable();
-        });
-
 
         function renderUnifiedTable() {
             // Find all unique years across all cached results
@@ -2234,12 +1907,7 @@
                 years.forEach(y => {
                     const pt = d.results.find(p => p.year === y);
                     if (pt) {
-                        const displayValue =
-                            pt.adjusted_trade_in ?? pt.estimated_trade_in;
-
-                        bodyHTML += `<td>RM ${Number(displayValue).toLocaleString(undefined, {
-                            minimumFractionDigits: 0
-                        })}</td>`;
+                        bodyHTML += `<td>RM ${Number(pt.estimated_trade_in).toLocaleString(undefined, {minimumFractionDigits: 0})}</td>`;
                     } else {
                         bodyHTML += `<td style="color:#c7c7cc;">—</td>`;
                     }
@@ -2963,8 +2631,6 @@
                             )
                             .value;
 
-                    const modelNumber = document.getElementById("add-model-number").value.trim();
-
 
                     const model =
                         document
@@ -3065,9 +2731,19 @@
                             );
 
 
-                    if (!device || !subDevice || !modelNumber || !model) {
-                        showAdminToast("Please complete the device, sub-device, model number, and model.", "warning");
+                    if (
+                        !device ||
+                        !subDevice ||
+                        !model
+                    ) {
+
+                        showAdminToast(
+                            "Please complete the device, sub-device and model.",
+                            "warning"
+                        );
+
                         return;
+
                     }
 
                     if (!msrp) {
@@ -3245,8 +2921,6 @@
 
                         SubDevice:
                             subDevice,
-
-                        ModelNumber: modelNumber,
 
                         Model:
                             model,

@@ -134,7 +134,6 @@ def storage_to_gb(value):
 TEXT_COLUMNS = [
     "Device",
     "Sub-device",
-    "Model Number",
     "Standardized Model",
     "Provider",
     "Storage Type",
@@ -266,39 +265,6 @@ def build_device_maps(cleaned_df):
 
     return model_map, config_map
 
-def build_model_number_map(model_number_df):
-    model_number_map = {}
-
-    for (
-        device,
-        sub_device,
-        model_number,
-        model_name
-    ), group in model_number_df.groupby(
-        [
-            "Device",
-            "Sub-device",
-            "Model Number",
-            "Standardized Model"
-        ]
-    ):
-        if pd.isna(model_number) or not str(model_number).strip():
-            continue
-
-        device = str(device).strip()
-        sub_device = str(sub_device).strip()
-        model_number = str(model_number).strip()
-        model_name = str(model_name).strip()
-
-        model_number_map.setdefault(device, {})
-        model_number_map[device].setdefault(sub_device, {})
-        model_number_map[device][sub_device].setdefault(model_number, [])
-
-        if model_name not in model_number_map[device][sub_device][model_number]:
-            model_number_map[device][sub_device][model_number].append(model_name)
-
-    return model_number_map
-
 
 # ============================================================
 # LOAD DATA (INITIAL, FROM LOCAL CSV)
@@ -312,9 +278,6 @@ df = pd.read_csv(DATA_FILE)
 
 print(f"Rows loaded: {len(df)}")
 print(f"Master dataset: {DATA_FILE.name}")
-
-device_model_map, device_config_map = build_device_maps(df)
-model_number_map = build_model_number_map(df)
 
 # ============================================================
 # LOAD DEPRECIATION FALLBACK
@@ -474,7 +437,7 @@ def write_csv_atomically(raw_df, destination_path):
 
 def refresh_data_if_stale():
 
-    global df, device_model_map, device_config_map, model_number_map, _last_refresh_at
+    global df, device_model_map, device_config_map, _last_refresh_at
 
     seconds_since_refresh = (
         datetime.now() - _last_refresh_at
@@ -512,7 +475,6 @@ def refresh_data_if_stale():
         refreshed_model_map, refreshed_config_map = (
             build_device_maps(refreshed_df)
         )
-        refreshed_model_number_map = build_model_number_map(refreshed_df)
 
     except Exception as exc:
 
@@ -529,7 +491,6 @@ def refresh_data_if_stale():
     df = refreshed_df
     device_model_map = refreshed_model_map
     device_config_map = refreshed_config_map
-    model_number_map = refreshed_model_number_map
 
     bump_data_version()
 
@@ -585,7 +546,7 @@ def force_refresh_from_sheets():
     Updates the backend dataframe and data version only when
     the Sheet contents actually differ from the current dataframe.
     """
-    global df, device_model_map, device_config_map, model_number_map, _last_refresh_at
+    global df, device_model_map, device_config_map, _last_refresh_at
 
     if not sheets_sync.is_available:
         print("Admin force refresh failed: Google Sheets sync is not available.")
@@ -613,13 +574,11 @@ def force_refresh_from_sheets():
         # Build the refreshed maps locally first.
         # Global state is only updated after all refreshed data is ready.
         refreshed_model_map, refreshed_config_map = build_device_maps(refreshed_df)
-        refreshed_model_number_map = build_model_number_map(refreshed_df)
 
         # Apply the refreshed state atomically.
         df = refreshed_df
         device_model_map = refreshed_model_map
         device_config_map = refreshed_config_map
-        model_number_map = refreshed_model_number_map
         _last_refresh_at = datetime.now()
 
         if data_changed:
@@ -687,10 +646,6 @@ def get_models():
     refresh_data_if_stale()
 
     return device_model_map
-
-@app.get("/model-numbers")
-def get_model_numbers():
-    return model_number_map
 
 
 # ============================================================
@@ -1009,7 +964,6 @@ def save_customer_trade_in(
 
         "Device": device_name,
         "Sub-device": sub_device,
-        "Model Number": device.get("modelNumber") or "N/A",
         "Model": model_name,
         "Storage (GB)": device.get("storage"),
         "Storage Type": device.get("storageType") or "N/A",
@@ -1078,7 +1032,6 @@ class AdminAddDevice(BaseModel):
 
     Device: str
     SubDevice: str
-    ModelNumber: str
     Model: str
 
     Provider: Optional[str] = None
@@ -1135,7 +1088,6 @@ def admin_add_device(item: AdminAddDevice):
 
     device = item.Device.strip()
     sub_device = item.SubDevice.strip()
-    model_number = item.ModelNumber.strip()
     model_name = item.Model.strip()
 
     if not device:
@@ -1148,12 +1100,6 @@ def admin_add_device(item: AdminAddDevice):
         raise HTTPException(
             status_code=400,
             detail="Sub-device is required.",
-        )
-
-    if not model_number:
-        raise HTTPException(
-            status_code=400,
-            detail="Model number is required.",
         )
 
     if not model_name:
@@ -1431,8 +1377,6 @@ def admin_add_device(item: AdminAddDevice):
 
         "Sub-device":
             sub_device,
-
-        "Model Number": model_number,
 
         "Standardized Model":
             model_name,
@@ -2117,8 +2061,6 @@ def admin_records(
                     "Sub-device",
                     row
                 ),
-
-            "model_number": clean_value("Model Number", row),
 
             "storage":
                 storage,

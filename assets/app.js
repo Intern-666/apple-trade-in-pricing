@@ -1,19 +1,6 @@
 let deviceData = {};
 let configData = {};
 
-const modelNumberInput = document.getElementById("modelNumberInput");
-const modelNumberList = document.getElementById("modelNumberList");
-let modelNumberData = {};
-
-// Hide the autocomplete dropdown if the user clicks anywhere else on the page
-document.addEventListener("click", function (e) {
-    if (modelNumberInput && modelNumberList) {
-        if (!modelNumberInput.contains(e.target) && !modelNumberList.contains(e.target)) {
-            modelNumberList.classList.add("hidden");
-        }
-    }
-});
-
 /* =========================================================
    CUSTOMER DETAILS
 ========================================================= */
@@ -267,11 +254,6 @@ function unlockStep(step) {
    and Condition. */
 function resetFromStep(step) {
 
-    if (step < 3) {
-        modelNumberInput.value = "";
-        modelNumberInput.disabled = true;
-    }
-
     if (step < 4) {
 
         storageTypeSelect.innerHTML =
@@ -390,10 +372,9 @@ window.addEventListener("DOMContentLoaded", async function () {
 
     try {
 
-        const [modelsResponse, configResponse, numbersResponse] = await Promise.all([
+        const [modelsResponse, configResponse] = await Promise.all([
             fetch("/available-models"),
-            fetch("/model-configuration"),
-            fetch("/model-numbers")
+            fetch("/model-configuration")
         ]);
 
         if (!modelsResponse.ok) {
@@ -411,7 +392,6 @@ window.addEventListener("DOMContentLoaded", async function () {
         configData = configResponse.ok
             ? await configResponse.json()
             : {};
-        modelNumberData = numbersResponse.ok ? await numbersResponse.json() : {};
 
         deviceSelect.innerHTML =
             '<option value="" disabled selected>Select a device...</option>';
@@ -625,152 +605,51 @@ deviceSelect.addEventListener("change", function (event) {
 ========================================================= */
 
 subDeviceSelect.addEventListener("change", function (event) {
-    const selectedDevice = deviceSelect.value;
-    const selectedSub = event.target.value;
-    const modelsObj = deviceData[selectedDevice][selectedSub] || {};
 
-    updateDeviceImagePreview(selectedDevice, selectedSub);
+    const selectedDevice =
+        deviceSelect.value;
 
-    modelSelect.innerHTML = '<option value="" disabled selected>Select a model...</option>';
-    Object.keys(modelsObj).sort().forEach(model => {
-        const option = document.createElement("option");
-        option.value = model;
-        option.textContent = model;
-        modelSelect.appendChild(option);
-    });
+    const selectedSub =
+        event.target.value;
+
+    const modelsObj =
+        deviceData[selectedDevice][selectedSub] || {};
+
+    updateDeviceImagePreview(
+        selectedDevice,
+        selectedSub
+    );
+
+    modelSelect.innerHTML =
+        '<option value="" disabled selected>Select a model...</option>';
+
+    Object.keys(modelsObj)
+        .sort()
+        .forEach(model => {
+
+            const option =
+                document.createElement("option");
+
+            option.value = model;
+            option.textContent = model;
+
+            modelSelect.appendChild(option);
+        });
 
     modelSelect.disabled = false;
 
     resultCard.classList.add("hidden");
     tradeInCard.classList.remove("result-shown");
 
-    // Changing Product Line invalidates Model, Configuration, Condition.
+    // Changing Product Line invalidates Model, Configuration,
+    // and Condition.
     resetFromStep(2);
     unlockStep(3);
 
-    const subDeviceNumbers = (modelNumberData[selectedDevice] && modelNumberData[selectedDevice][selectedSub]) 
-        ? modelNumberData[selectedDevice][selectedSub] 
-        : {};
-
-    // Populate the search bar datalist with available model numbers
-    modelNumberList.innerHTML = "";
-    const availableNumbers = Object.keys(subDeviceNumbers).sort();
-    
-    availableNumbers.forEach(num => {
-        const option = document.createElement("option");
-        option.value = num;
-        modelNumberList.appendChild(option);
-    });
-
-    // Reset and enable inputs
-    // (Keep the existing code above this point where you populate the datalist)
-    
-    // Reset and enable inputs
-    modelNumberInput.value = "";
-    modelNumberList.innerHTML = "";
-    modelNumberList.classList.add("hidden");
-    
-    if (availableNumbers.length === 0) {
-        // If NO model numbers exist for this product, skip the search and just show all models
-        modelNumberInput.disabled = true;
-        modelNumberInput.placeholder = "Not available for this product";
-        
-        modelSelect.innerHTML = '<option value="" disabled selected>Select a model...</option>';
-        Object.keys(modelsObj).sort().forEach(model => {
-            const option = document.createElement("option");
-            option.value = model;
-            option.textContent = model;
-            modelSelect.appendChild(option);
-        });
-        modelSelect.disabled = false;
-    } else {
-        // Model numbers exist: Enable search bar, strictly LOCK the model dropdown
-        modelNumberInput.disabled = false;
-        modelNumberInput.placeholder = "Search model number (e.g. A2890)...";
-        
-        modelSelect.innerHTML = '<option value="" disabled selected>Select a valid Model Number first...</option>';
-        modelSelect.disabled = true;
-    }
-
     updateProgress();
+
     goToStep(3, "forward");
 });
-
-// 5. Add a brand new event listener for the Model Number filtering:
-function handleAutocompleteAndFiltering() {
-    const selectedDevice = deviceSelect.value;
-    const selectedSub = subDeviceSelect.value;
-    if (!selectedDevice || !selectedSub) return;
-
-    const subDeviceNumbers = (modelNumberData[selectedDevice] && modelNumberData[selectedDevice][selectedSub]) 
-        ? modelNumberData[selectedDevice][selectedSub] 
-        : {};
-    
-    const filterText = modelNumberInput.value.trim().toUpperCase();
-    const availableNumbers = Object.keys(subDeviceNumbers).sort();
-
-    // 1. Build Custom Autocomplete List
-    modelNumberList.innerHTML = "";
-    let hasVisibleOptions = false;
-
-    availableNumbers.forEach(num => {
-        if (num.toUpperCase().includes(filterText) || filterText === "") {
-            hasVisibleOptions = true;
-            const li = document.createElement("li");
-            li.textContent = num;
-            
-            // When a user clicks a model number from the dropdown list
-            li.addEventListener("click", function() {
-                modelNumberInput.value = num;
-                modelNumberList.classList.add("hidden");
-                // Manually trigger the input event to lock in the match
-                modelNumberInput.dispatchEvent(new Event('input'));
-            });
-            
-            modelNumberList.appendChild(li);
-        }
-    });
-
-    if (hasVisibleOptions) {
-        modelNumberList.classList.remove("hidden");
-    } else {
-        modelNumberList.classList.add("hidden");
-    }
-
-    // 2. Validate Exact Match & Lock/Unlock Model Dropdown
-    if (filterText === "") {
-        modelSelect.innerHTML = '<option value="" disabled selected>Select a valid Model Number first...</option>';
-        modelSelect.disabled = true;
-        resetFromStep(3);
-        return;
-    }
-
-    const exactMatchKey = availableNumbers.find(k => k.toUpperCase() === filterText);
-
-    if (exactMatchKey) {
-        // EXACT MATCH: Hide list, unlock Model Dropdown
-        modelNumberList.classList.add("hidden");
-        const validModels = subDeviceNumbers[exactMatchKey].sort();
-        
-        modelSelect.innerHTML = '<option value="" disabled selected>Select a model...</option>';
-        validModels.forEach(model => {
-            const option = document.createElement("option");
-            option.value = model;
-            option.textContent = model;
-            modelSelect.appendChild(option);
-        });
-        modelSelect.disabled = false;
-    } else {
-        // STILL SEARCHING: Keep Model Dropdown locked
-        modelSelect.innerHTML = '<option value="" disabled selected>Select a valid Model Number first...</option>';
-        modelSelect.disabled = true;
-        resetFromStep(3);
-    }
-}
-
-// Bind the function so the list appears when they click into the box OR type
-modelNumberInput.addEventListener("input", handleAutocompleteAndFiltering);
-modelNumberInput.addEventListener("focus", handleAutocompleteAndFiltering);
 
 
 /* =========================================================
@@ -1968,7 +1847,6 @@ tradeInForm.addEventListener(
             device: {
                 device: device,
                 subDevice: subDevice,
-                modelNumber: modelNumberInput.value.trim(),
                 model: model,
                 storage: storage || null,
                 storageType: storageType || null,
@@ -2068,9 +1946,6 @@ startOverBtn.addEventListener(
                 box.classList.remove("selected");
                 box.setAttribute("aria-selected", "false");
             });
-
-        modelNumberInput.value = "";
-        modelNumberInput.disabled = true;
 
         modelSelect.innerHTML =
             '<option value="" disabled selected>Select a model...</option>';

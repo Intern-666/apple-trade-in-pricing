@@ -1817,62 +1817,6 @@ STATUS PAGE RESPONSIVE
     margin: 0 0 24px 0; /* Reset margins from single-column version */
 }
 
-.forecast-drag-hint {
-    margin: 0 0 8px;
-    font-size: 12px;
-    color: #6e6e73;
-    text-align: center;
-}
-
-.forecast-chart-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    margin-bottom: 8px;
-}
-
-.forecast-drag-hint {
-    margin: 0;
-    font-size: 12px;
-    color: #6e6e73;
-    text-align: center;
-}
-
-.forecast-reset-btn {
-    position: absolute;
-    right: 0;
-
-    width: 30px;
-    height: 30px;
-
-    border: none;
-    background: transparent;
-
-    font-size: 20px;
-    line-height: 1;
-
-    color: #6e6e73;
-
-    cursor: pointer;
-
-    border-radius: 50%;
-
-    transition:
-        background 0.15s ease,
-        color 0.15s ease,
-        transform 0.15s ease;
-}
-
-.forecast-reset-btn:hover {
-    background: #f2f2f7;
-    color: #1d1d1f;
-}
-
-.forecast-reset-btn:active {
-    transform: rotate(-45deg);
-}
-
 @media (max-width: 900px) {
     .forecast-grid {
         grid-template-columns: 1fr;
