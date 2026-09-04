@@ -370,6 +370,129 @@ ipad_model_numbers = {
         "A3360, A3361, A3362",
 }
 
+# ------------------------------------------------------------
+# Apple Watch model number mapping
+# ------------------------------------------------------------
+
+apple_watch_model_numbers = {
+
+    # --------------------------------------------------------
+    # Apple Watch SE
+    # --------------------------------------------------------
+
+    "Watch SE (2020)":
+        "A2351, A2352, A2353, A2354, A2355, A2356",
+
+    "Watch SE (2022)":
+        "A2722, A2723, A2724, A2725, A2726, A2727, A2855, A2856",
+
+    "Watch SE 3":
+        "A3324, A3325, A3326, A3327, A3328, A3329, A3391, A3392",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 4
+    # --------------------------------------------------------
+
+    "Watch Series 4":
+        "A1975, A1976, A1977, A1978, A2007, A2008",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 5
+    # --------------------------------------------------------
+
+    "Watch Series 5":
+        "A2092, A2093, A2094, A2095, A2156, A2157",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 6
+    # --------------------------------------------------------
+
+    "Watch Series 6":
+        "A2291, A2292, A2293, A2294, A2375, A2376",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 7
+    # --------------------------------------------------------
+
+    "Watch Series 7":
+        "A2473, A2474, A2475, A2476, A2477, A2478",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 8
+    # --------------------------------------------------------
+
+    "Watch Series 8":
+        "A2770, A2771, A2772, A2773, A2774, A2775, A2857, A2858",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 9
+    # --------------------------------------------------------
+
+    "Watch Series 9":
+        "A2978, A2980, A2982, A2983, A2984, A2985",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 10
+    # --------------------------------------------------------
+
+    "Watch Series 10":
+        "A2997, A2998, A2999, A3000, A3001, A3002, A3003, A3206",
+
+    "Watch Series 10 Hermes":
+        "A3001, A3002, A3003, A3206",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Series 11
+    # --------------------------------------------------------
+
+    "Watch Series 11":
+        "A3331, A3333, A3335, A3337, A3450, A3451, A3452, A3453",
+
+    "Watch Series 11 Hermes":
+        "A3335, A3337, A3452, A3453",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Ultra
+    # --------------------------------------------------------
+
+    "Watch Ultra":
+        "A2622, A2684, A2859",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Ultra 2
+    # --------------------------------------------------------
+
+    "Watch Ultra 2 (2023)":
+        "A2986, A2987",
+
+    "Watch Ultra 2 (2024)":
+        "A2986, A2987",
+
+    "Watch Ultra 2 Hermes":
+        "A2986, A2987",
+
+
+    # --------------------------------------------------------
+    # Apple Watch Ultra 3
+    # --------------------------------------------------------
+
+    "Watch Ultra 3":
+        "A3281, A3282",
+
+    "Watch Ultra 3 Hermes":
+        "A3281, A3282",
+}
+
 
 # ------------------------------------------------------------
 # Load CSV
@@ -421,6 +544,22 @@ df.loc[ipad_mask, "Model Number"] = (
     .map(ipad_model_numbers)
 )
 
+# ------------------------------------------------------------
+# Apple Watch
+# ------------------------------------------------------------
+
+watch_mask = (
+    df["Device"]
+    .astype(str)
+    .str.strip()
+    .eq("Apple Watch")
+)
+
+df.loc[watch_mask, "Model Number"] = (
+    model_column[watch_mask]
+    .map(apple_watch_model_numbers)
+)
+
 
 # ------------------------------------------------------------
 # Preserve fictional test models as blank
@@ -463,6 +602,39 @@ mapped = iphone_models[
 unmapped = iphone_models[
     ~iphone_models.isin(iphone_model_numbers.keys())
 ]
+
+watch_models = (
+    df.loc[
+        watch_mask,
+        "Standardized Model"
+    ]
+    .dropna()
+    .astype(str)
+    .str.strip()
+    .drop_duplicates()
+    .sort_values()
+)
+
+mapped_watch = watch_models[
+    watch_models.isin(apple_watch_model_numbers.keys())
+]
+
+unmapped_watch = watch_models[
+    ~watch_models.isin(apple_watch_model_numbers.keys())
+]
+
+print("=" * 60)
+print("APPLE WATCH MODEL NUMBER MAPPING")
+print("=" * 60)
+
+print(f"Unique Apple Watch models found : {len(watch_models)}")
+print(f"Mapped models                   : {len(mapped_watch)}")
+print(f"Unmapped models                 : {len(unmapped_watch)}")
+
+if len(unmapped_watch) > 0:
+    print("\nUNMAPPED APPLE WATCH MODELS:")
+    for model in unmapped_watch:
+        print(f"  - {model}")
 
 print("=" * 60)
 print("iPHONE MODEL NUMBER MAPPING")
