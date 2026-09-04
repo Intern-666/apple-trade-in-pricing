@@ -1072,8 +1072,6 @@ def admin_add_device(item: AdminAddDevice):
 
     global df
 
-    print("!!!! NEW ADD CODE IS RUNNING !!!!")   # temporary — remove after confirming
-
     print("\n" + "=" * 70)
     print("ADMIN — ADD DEVICE")
     print("=" * 70)
