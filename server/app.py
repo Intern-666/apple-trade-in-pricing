@@ -1072,6 +1072,8 @@ def admin_add_device(item: AdminAddDevice):
 
     global df
 
+    print("!!!! NEW ADD CODE IS RUNNING !!!!")   # temporary — remove after confirming
+
     print("\n" + "=" * 70)
     print("ADMIN — ADD DEVICE")
     print("=" * 70)
@@ -1081,16 +1083,6 @@ def admin_add_device(item: AdminAddDevice):
             status_code=503,
             detail="Unable to refresh data from Google Sheets. Operation cancelled.",
         )
-
-    VALID_CHARGING_METHODS = [
-        "Wired",
-        "Wireless",
-        "Lightning",
-        "USB-C",
-        "MagSafe",
-        "MagSafe + Lightning",
-        "MagSafe + USB-C"
-    ]
 
     # ========================================================
     # BASIC VALIDATION
@@ -1126,13 +1118,12 @@ def admin_add_device(item: AdminAddDevice):
 
     if (
         device == "AirPods"
-        and not pd.isna(charging_method)
-        and charging_method not in VALID_CHARGING_METHODS
+        and pd.isna(charging_method)
     ):
-        
+
         raise HTTPException(
             status_code=400,
-            detail="Invalid charging method.",
+            detail="Charging method is required.",
         )
 
     # ========================================================
@@ -1191,6 +1182,26 @@ def admin_add_device(item: AdminAddDevice):
         else np.nan
     )
 
+    if (
+        device != "AirPods"
+        and storage is None
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Storage is required.",
+        )
+
+    if (
+        device == "Mac"
+        and pd.isna(storage_type)
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Storage type is required.",
+        )
+
     # AirPods do not have storage
 
     if device == "AirPods":
@@ -1208,11 +1219,31 @@ def admin_add_device(item: AdminAddDevice):
         else np.nan
     )
 
+    if (
+        device in ("iPhone", "iPad", "Mac")
+        and pd.isna(chipset)
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Chipset is required.",
+        )
+
     connectivity = (
         item.Connectivity.strip()
         if item.Connectivity
         else np.nan
     )
+
+    if (
+        device in ("iPad", "Apple Watch")
+        and pd.isna(connectivity)
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Connectivity is required.",
+        )
 
     specification = (
         item.Specification.strip()
@@ -1232,11 +1263,31 @@ def admin_add_device(item: AdminAddDevice):
         else np.nan
     )
 
+    if (
+        device == "Apple Watch"
+        and pd.isna(material)
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Material is required.",
+        )
+
     case_size = (
         int(item.CaseSize)
         if item.CaseSize is not None
         else np.nan
     )
+
+    if (
+        device == "Apple Watch"
+        and item.CaseSize is None
+    ):
+
+        raise HTTPException(
+            status_code=400,
+            detail="Case size is required.",
+        )
 
     charging_method = (
         item.ChargingMethod.strip()
@@ -1300,14 +1351,19 @@ def admin_add_device(item: AdminAddDevice):
 
     model_year = item.ModelYear
 
-    if model_year is not None:
+    if model_year is None:
 
-        if model_year < 1976:
+        raise HTTPException(
+            status_code=400,
+            detail="Model year is required.",
+        )
 
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid Apple model year.",
-            )
+    if model_year < 1976:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid Apple model year.",
+        )
 
     # ========================================================
     # CREATE NEW ROW
