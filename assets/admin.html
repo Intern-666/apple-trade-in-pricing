@@ -2715,6 +2715,15 @@
                             .value;
 
 
+                    const material =
+                        document
+                            .getElementById(
+                                "add-material"
+                            )
+                            .value
+                            .trim();
+
+
                     const priceStatus =
                         document
                             .querySelector(
@@ -2741,6 +2750,115 @@
 
                         showAdminToast(
                             "Please enter the MSRP.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (!year) {
+
+                        showAdminToast(
+                            "Please enter the model year.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        device !== "AirPods" &&
+                        !storage
+                    ) {
+
+                        showAdminToast(
+                            "Please enter the storage.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        device === "Mac" &&
+                        !storageType
+                    ) {
+
+                        showAdminToast(
+                            "Please enter the storage type.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        ["iPhone", "iPad", "Mac"].includes(device) &&
+                        !chipset
+                    ) {
+
+                        showAdminToast(
+                            "Please enter the chipset.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        ["iPad", "Apple Watch"].includes(device) &&
+                        !connectivity
+                    ) {
+
+                        showAdminToast(
+                            "Please select the connectivity.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        device === "Apple Watch" &&
+                        !caseSize
+                    ) {
+
+                        showAdminToast(
+                            "Please enter the case size.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        device === "AirPods" &&
+                        !chargingMethod
+                    ) {
+
+                        showAdminToast(
+                            "Please select the charging method.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        device === "Apple Watch" &&
+                        !material
+                    ) {
+
+                        showAdminToast(
+                            "Please enter the material.",
                             "warning"
                         );
 
