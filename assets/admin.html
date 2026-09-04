@@ -2940,6 +2940,7 @@
                         if (!response.ok) {
 
                             throw new Error(
+                                data.detail ||
                                 data.message ||
                                 "Failed to add device."
                             );

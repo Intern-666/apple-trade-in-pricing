@@ -1101,22 +1101,22 @@ def admin_add_device(item: AdminAddDevice):
     model_name = item.Model.strip()
 
     if not device:
-        return {
-            "status": "error",
-            "message": "Device is required."
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="Device is required.",
+        )
 
     if not sub_device:
-        return {
-            "status": "error",
-            "message": "Sub-device is required."
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="Sub-device is required.",
+        )
 
     if not model_name:
-        return {
-            "status": "error",
-            "message": "Model is required."
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="Model is required.",
+        )
 
     charging_method = (
     item.ChargingMethod.strip()
@@ -1130,10 +1130,10 @@ def admin_add_device(item: AdminAddDevice):
         and charging_method not in VALID_CHARGING_METHODS
     ):
         
-        return {
-            "status": "error",
-            "message": "Invalid charging method."
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid charging method.",
+        )
 
     # ========================================================
     # MSRP
@@ -1141,10 +1141,10 @@ def admin_add_device(item: AdminAddDevice):
 
     if item.MSRP < 0:
 
-        return {
-            "status": "error",
-            "message": "MSRP cannot be negative."
-        }
+        raise HTTPException(
+            status_code=400,
+            detail="MSRP cannot be negative.",
+        )
 
     msrp = float(item.MSRP)
 
@@ -1171,11 +1171,10 @@ def admin_add_device(item: AdminAddDevice):
 
         if item.TradeInValue < 0:
 
-            return {
-                "status": "error",
-                "message":
-                    "Trade-in value cannot be negative."
-            }
+            raise HTTPException(
+                status_code=400,
+                detail="Trade-in value cannot be negative.",
+            )
 
         trade_in_value = float(item.TradeInValue)
         price_status = "confirmed"
@@ -1267,10 +1266,10 @@ def admin_add_device(item: AdminAddDevice):
             and item.RAMMin < 0
         ):
 
-            return {
-                "status": "error",
-                "message": "RAM cannot be negative."
-            }
+            raise HTTPException(
+                status_code=400,
+                detail="RAM cannot be negative.",
+            )
 
         ram_min = item.RAMMin
 
@@ -1305,10 +1304,10 @@ def admin_add_device(item: AdminAddDevice):
 
         if model_year < 1976:
 
-            return {
-                "status": "error",
-                "message": "Invalid Apple model year."
-            }
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid Apple model year.",
+            )
 
     # ========================================================
     # CREATE NEW ROW
@@ -2431,15 +2430,14 @@ def admin_delete_device(
         and submitted_version != _data_version
     ):
 
-        return {
-            "status": "error",
-            "message": (
+        raise HTTPException(
+            status_code=409,
+            detail=(
                 "The underlying data has changed since you "
                 "loaded this record. Please reload and try "
                 "again to avoid deleting the wrong record."
             ),
-            "stale": True
-        }
+        )
 
 
     # --------------------------------------------------------
