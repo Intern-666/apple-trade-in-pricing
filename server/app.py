@@ -2139,15 +2139,14 @@ def admin_modify_device(
         and item.dataVersion != _data_version
     ):
 
-        return {
-            "status": "error",
-            "message": (
+        raise HTTPException(
+            status_code=409,
+            detail=(
                 "The underlying data has changed since you "
                 "loaded this record. Please reload and try "
                 "again to avoid editing the wrong record."
             ),
-            "stale": True
-        }
+        )
 
     # ========================================================
     # VALIDATE MSRP
