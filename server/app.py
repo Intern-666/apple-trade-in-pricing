@@ -1661,10 +1661,39 @@ def admin_delete_customers(item: CustomerDeleteRequest):
     deleted_count = len(result.deleted_rows)
     skipped_count = len(result.skipped_rows)
 
+    # --------------------------------------------------------
+    # ALL SELECTED ROWS WERE STALE
+    #
+    # Nothing was deleted -- the same "data changed since you
+    # loaded it" situation /admin/delete signals with a 409, so
+    # it's signaled the same way here rather than as a 200 with
+    # status: error, which this codebase reserves for bad input.
+    # --------------------------------------------------------
+
+    if skipped_count and not deleted_count:
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "The selected record(s) changed since the list was "
+                "loaded -- please refresh and try again."
+            ),
+        )
+
+    # --------------------------------------------------------
+    # PARTIAL SUCCESS
+    #
+    # Some rows were deleted, some were stale. /admin/delete has
+    # no analog for this -- it only ever touches one record, so
+    # it's always all-or-nothing. Here real mutation did happen,
+    # so this can't collapse into a single exception; it stays a
+    # 200 with its own "partial" status.
+    # --------------------------------------------------------
+
     if skipped_count:
 
         return {
-            "status": "partial" if deleted_count else "error",
+            "status": "partial",
             "message": (
                 f"{deleted_count} record(s) deleted. {skipped_count} record(s) "
                 "were skipped because their data changed since the list was "

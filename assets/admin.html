@@ -2070,24 +2070,36 @@
 					})
 				});
 				const data = await response.json();
+				// Same 409 convention as the Delete/Modify device
+				// flows: all selected records were stale, nothing
+				// was deleted -- refresh and let the admin retry.
+				if (response.status === 409) {
+					showAdminToast(data.detail || "The selected record(s) changed just before deleting -- reloading the latest list.", "warning", 5000);
+					customerDeleteTargets = [];
+					selectedCustomerRows.clear();
+					document.getElementById("customer-delete-confirm").classList.add("hidden");
+					await loadCustomers();
+					return;
+				}
 				if (!response.ok) {
 					throw new Error(data.detail || data.message || "Delete failed.");
 				}
 				document.getElementById("customer-delete-confirm").classList.add("hidden");
 				customerDeleteTargets = [];
 				selectedCustomerRows.clear();
-				if (data.skipped_rows && data.skipped_rows.length) {
-					// Some or all selected rows had changed since the
-					// list was loaded -- same "data changed elsewhere"
-					// situation as the 409 conflicts in Modify/Delete,
-					// so it gets the same warning treatment, not error.
+				if (data.status === "partial") {
+					// Some rows were deleted, some were stale -- real
+					// mutation happened, so this isn't a hard failure,
+					// but the admin still needs to know and retry the
+					// rest, same warning treatment as other conflicts.
 					showAdminToast(data.message, "warning", 5000);
 				} else if (data.status === "success") {
 					showAdminToast(data.message || "Customer record(s) deleted.");
 				} else {
 					// e.g. nothing was selected -- a validation-style
-					// message, not a real failure, so it matches the
-					// "warning" toasts used for validation elsewhere.
+					// message, not a real failure, matching the
+					// "warning" toasts used for validation elsewhere
+					// (see the Add form's required-field checks).
 					showAdminToast(data.message || "Nothing was deleted.", "warning");
 				}
 				// Refresh so the list reflects what's actually left
