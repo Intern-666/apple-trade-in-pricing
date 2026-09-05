@@ -1,736 +1,593 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f5f5f7" />
-  <link rel="icon" type="image/png" href="/assets/imycom.png">
-  <title>Apple Trade-In Valuation</title>
-  <link rel="stylesheet" href="/assets/styles.css" />
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="theme-color" content="#f5f5f7" />
+	<link rel="icon" type="image/png" href="/assets/imycom.png">
+	<title>Apple Trade-In Valuation</title>
+	<link rel="stylesheet" href="/assets/styles.css" />
 </head>
 
 <body>
-  <main class="page-shell">
-
-    <!-- Header -->
-    <header class="hero hero-left">
-      <div class="brand-mark">
-        <img src="/assets/imycom.png" alt="iMyCom logo">
-      </div>
-      <div class="hero-text">
-        <p class="eyebrow">TRADE-IN ESTIMATE</p>
-        <h1>What is your Apple device worth?</h1>
-        <p class="hero-copy">
-          Select your device and tell us about its condition to get an estimated trade-in value.
-        </p>
-      </div>
-    </header>
-
-  <!-- Valuation Layout -->
-  <div class="valuation-layout">
-
-    <!-- Main Form -->
-    <section class="trade-in-card">
-
-      <!-- Step Indicator -->
-      <div class="step-indicator-header">
-        <ol id="stepIndicator" class="step-indicator" role="list">
-          <li class="step-indicator-item" data-step="1">
-            <button type="button" class="step-indicator-button" data-goto-step="1">
-              <span class="step-indicator-dot">1</span>
-              <span class="step-indicator-label">Device</span>
-            </button>
-          </li>
-          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
-          <li class="step-indicator-item" data-step="2">
-            <button type="button" class="step-indicator-button" data-goto-step="2">
-              <span class="step-indicator-dot">2</span>
-              <span class="step-indicator-label">Product Line</span>
-            </button>
-          </li>
-          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
-          <li class="step-indicator-item" data-step="3">
-            <button type="button" class="step-indicator-button" data-goto-step="3">
-              <span class="step-indicator-dot">3</span>
-              <span class="step-indicator-label">Model</span>
-            </button>
-          </li>
-          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
-          <li class="step-indicator-item" data-step="4">
-            <button type="button" class="step-indicator-button" data-goto-step="4">
-              <span class="step-indicator-dot">4</span>
-              <span class="step-indicator-label">Configuration</span>
-            </button>
-          </li>
-          <li class="step-indicator-sep" aria-hidden="true">&gt;</li>
-          <li class="step-indicator-item" data-step="5">
-            <button type="button" class="step-indicator-button" data-goto-step="5">
-              <span class="step-indicator-dot">5</span>
-              <span class="step-indicator-label">Condition</span>
-            </button>
-          </li>
-        </ol>
-      </div>
-
-      <div id="stepViewport" class="step-viewport">
-      <form id="tradeInForm">
-
-        <!-- Device Selection -->
-        <section class="form-section step-panel" data-step="1">
-          <div class="section-heading">
-            <span class="step-number">01</span>
-            <div>
-              <h2>Choose your device</h2>
-              <p>Start by selecting the type of Apple device you're trading in.</p>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label id="deviceSelectLabel">Device type</label>
-
-            <div id="deviceBoxGrid" class="device-box-grid" role="listbox" aria-labelledby="deviceSelectLabel">
-              <!-- Boxes injected by app.js from deviceData -->
-            </div>
-
-            <div class="select-wrapper sr-only-select">
-              <select id="deviceSelect" required aria-hidden="true" tabindex="-1">
-                <option value="" disabled selected>Select a device...</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <!-- Product Line -->
-        <section class="form-section step-panel" id="productLineSection" data-step="2">
-          <div class="section-heading">
-            <span class="step-number">02</span>
-            <div>
-              <h2>Choose the product line</h2>
-              <p>Select the family your device belongs to.</p>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label id="subDeviceSelectLabel">Product line</label>
-
-            <div id="subDeviceBoxGrid" class="subdevice-box-grid disabled" role="listbox" aria-labelledby="subDeviceSelectLabel">
-              <!-- Boxes injected by app.js from deviceData -->
-            </div>
-
-            <div class="select-wrapper sr-only-select">
-              <select id="subDeviceSelect" disabled required aria-hidden="true" tabindex="-1">
-                <option value="" disabled selected>Select a product line...</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <!-- Model -->
-        <section class="form-section step-panel" id="modelSection" data-step="3">
-          <div class="section-heading">
-            <span class="step-number">03</span>
-            <div>
-              <h2>Select your model</h2>
-              <p>Choose the exact model of your device.</p>
-            </div>
-          </div>
-
-          <div id="deviceImagePreview" class="device-image-preview hidden">
-            <img id="deviceImagePreviewImg" src="" alt="">
-          </div>
-
-          <!-- Model Number search bar with custom autocomplete -->
-          <div class="form-group relative-group">
-            <div class="label-with-help">
-              <label for="modelNumberInput">Model Number</label>
-
-              <button
-                type="button"
-                id="modelNumberHelpBtn"
-                class="field-help-button"
-                aria-label="Where to find your model number"
-                aria-expanded="false"
-                aria-controls="modelNumberHelp"
-              >
-                ?
-              </button>
-            </div>
-
-            <div
-              id="modelNumberHelp"
-              class="model-number-help hidden"
-              role="dialog"
-              aria-label="Where to find your model number"
-            >
-              <p id="modelNumberHelpText">
-                Need help finding your model number?
-              </p>
-
-              <a
-                id="modelNumberHelpLink"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Apple Support guide →
-              </a>
-            </div>
-
-            <input
-              type="text"
-              id="modelNumberInput"
-              placeholder="Search model number (e.g. A2890)..."
-              autocomplete="off"
-              disabled
-            >
-            <ul id="modelNumberList" class="custom-autocomplete hidden"></ul>
-          </div>
-
-          <div class="form-group">
-            <label for="modelSelect">Model</label>
-            <div class="select-wrapper">
-              <select id="modelSelect" disabled required>
-                <option value="" disabled selected>Select a model...</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <!-- Configuration -->
-        <section class="form-section step-panel" id="configurationSection" data-step="4">
-          <div class="section-heading">
-            <span class="step-number">04</span>
-            <div>
-              <h2>Configuration</h2>
-              <p>Tell us the specifics of your device.</p>
-            </div>
-          </div>
-
-          <div class="form-group" id="storageGroup">
-            <label for="storageSelect">Storage capacity</label>
-            <div class="select-wrapper">
-              <select id="storageSelect" disabled required>
-                <option value="" disabled selected>Select storage...</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group hidden" id="storageTypeGroup">
-            <label for="storageTypeSelect">Storage type</label>
-            <div class="select-wrapper">
-              <select id="storageTypeSelect">
-                <option value="" disabled selected>Select storage type...</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group hidden" id="connectivityGroup">
-            <label for="connectivitySelect">Connectivity</label>
-            <div class="select-wrapper">
-              <select id="connectivitySelect">
-                <option value="" disabled selected>Select connectivity...</option>
-              </select>
-            </div>
-          </div>
-        </section>
-
-        <!-- Condition -->
-
-        <section id="conditionSection" class="form-section step-panel condition-section" data-step="5">
-
-          <div class="section-heading">
-            <span class="step-number">05</span>
-            <div>
-              <h2>Tell us about its condition</h2>
-              <p>Be honest about the condition for a more realistic estimate.</p>
-            </div>
-          </div>
-
-          <!-- iPhone -->
-
-          <div id="profileIPhone" class="device-profile hidden">
-
-        <div class="condition-group">
-          <label for="iphoneScreen">Screen condition</label>
-          <div class="select-wrapper">
-            <select id="iphoneScreen">
-              <option value="" selected disabled>Select screen condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches</option>
-              <option value="-15">Deep scratches or noticeable damage</option>
-              <option value="-35">Cracked or shattered</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="iphoneBody">Body &amp; frame condition</label>
-          <div class="select-wrapper">
-            <select id="iphoneBody">
-              <option value="" selected disabled>Select body &amp; frame condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-3">Minor scratches or scuffs</option>
-              <option value="-10">Noticeable dents or chipped areas</option>
-              <option value="-25">Bent or severely damaged</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="iphoneBattery">Battery health</label>
-          <div class="select-wrapper">
-            <select id="iphoneBattery">
-              <option value="" selected disabled>Select battery health...</option>
-              <option value="0">90% or higher</option>
-              <option value="-5">80%–89%</option>
-              <option value="-15">Below 80%</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label>Functionality issues</label>
-          <p class="field-help">Select all that apply.</p>
-
-          <div class="checkbox-list">
-            <label class="checkbox-option">
-              <input type="checkbox" name="iphoneDefect" value="-20">
-              <span>Camera not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="iphoneDefect" value="-25">
-              <span>Face ID / Touch ID not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="iphoneDefect" value="-15">
-              <span>Buttons not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="iphoneDefect" value="-30">
-              <span>Charging port not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="iphoneDefect" value="-20">
-              <span>Cellular / mobile network not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="iphoneDefect" value="-15">
-              <span>Wi-Fi or Bluetooth not working properly</span>
-            </label>
-          </div>
-        </div>
-
-          </div>
-
-          <!-- iPad -->
-
-          <div id="profileIPad" class="device-profile hidden">
-
-        <div class="condition-group">
-          <label for="ipadScreen">Screen condition</label>
-          <div class="select-wrapper">
-            <select id="ipadScreen">
-              <option value="" selected disabled>Select screen condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches</option>
-              <option value="-15">Deep scratches or noticeable damage</option>
-              <option value="-40">Cracked or shattered / Touch not working properly</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="ipadBody">Body &amp; frame condition</label>
-          <div class="select-wrapper">
-            <select id="ipadBody">
-              <option value="" selected disabled>Select body &amp; frame condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches or scuffs</option>
-              <option value="-15">Noticeable dents or chipped areas</option>
-              <option value="-30">Bent or severely damaged</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="ipadBattery">Battery health / performance</label>
-          <div class="select-wrapper">
-            <select id="ipadBattery">
-              <option value="" selected disabled>Select battery condition...</option>
-              <option value="0">Holds normal charge</option>
-              <option value="-15">Drains quickly</option>
-              <option value="-30">Does not hold charge / Shuts down unexpectedly</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label>Functionality issues</label>
-          <p class="field-help">Select all that apply.</p>
-
-          <div class="checkbox-list">
-            <label class="checkbox-option">
-              <input type="checkbox" name="ipadDefect" value="-20">
-              <span>Camera not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="ipadDefect" value="-20">
-              <span>Face ID / Touch ID not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="ipadDefect" value="-15">
-              <span>Buttons not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="ipadDefect" value="-25">
-              <span>Charging port not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="ipadDefect" value="-15">
-              <span>Smart Connector not working properly</span>
-            </label>
-          </div>
-        </div>
-
-          </div>
-
-          <!-- Apple Watch -->
-
-          <div id="profileAppleWatch" class="device-profile hidden">
-        
-        <div class="condition-group">
-          <label for="watchScreen">Screen / crystal condition</label>
-          <div class="select-wrapper">
-            <select id="watchScreen">
-              <option value="" selected disabled>Select screen condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-10">Minor scratches</option>
-              <option value="-20">Deep scratches or noticeable damage</option>
-              <option value="-40">Cracked or shattered</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="watchBody">Case &amp; frame condition</label>
-          <div class="select-wrapper">
-            <select id="watchBody">
-              <option value="" selected disabled>Select case &amp; frame condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches or scuffs</option>
-              <option value="-15">Noticeable dents or chipped areas</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="watchBattery">Battery health</label>
-          <div class="select-wrapper">
-            <select id="watchBattery">
-              <option value="" selected disabled>Select battery health...</option>
-              <option value="0">90% or higher</option>
-              <option value="-10">80%–89%</option>
-              <option value="-25">Below 80%</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label>Functionality issues</label>
-          <p class="field-help">Select all that apply.</p>
-
-          <div class="checkbox-list">
-            <label class="checkbox-option">
-              <input type="checkbox" name="watchDefect" value="-25">
-              <span>Digital Crown or side button not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="watchDefect" value="-25">
-              <span>Touchscreen not responding properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="watchDefect" value="-20">
-              <span>Heart rate or health sensors not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="watchDefect" value="-15">
-              <span>Speaker or microphone not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="watchDefect" value="-10">
-              <span>Vibration / haptic feedback not working</span>
-            </label>
-          </div>
-        </div>
-
-          </div>
-
-          <!-- Mac Laptop -->
-
-          <div id="profileMacLaptop" class="device-profile hidden">
-
-        <div class="condition-group">
-          <label for="laptopScreen">Screen / display condition</label>
-          <div class="select-wrapper">
-            <select id="laptopScreen">
-              <option value="" selected disabled>Select screen condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-10">Minor scratches or marks</option>
-              <option value="-25">Deep scratches or noticeable display issues</option>
-              <option value="-50">Cracked or damaged display / Display not working</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="laptopBody">Body &amp; chassis condition</label>
-          <div class="select-wrapper">
-            <select id="laptopBody">
-              <option value="" selected disabled>Select body &amp; chassis condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches or scuffs</option>
-              <option value="-15">Noticeable dents or chipped areas</option>
-              <option value="-30">Bent or severely damaged</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="laptopBattery">Battery health</label>
-          <div class="select-wrapper">
-            <select id="laptopBattery">
-              <option value="" selected disabled>Select battery condition...</option>
-              <option value="0">Normal / Good battery life</option>
-              <option value="-15">Service recommended</option>
-              <option value="-30">Does not hold charge / Shuts down unexpectedly</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label>Functionality issues</label>
-          <p class="field-help">Select all that apply.</p>
-
-          <div class="checkbox-list">
-            <label class="checkbox-option">
-              <input type="checkbox" name="laptopDefect" value="-20">
-              <span>Keyboard keys not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="laptopDefect" value="-20">
-              <span>Trackpad not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="laptopDefect" value="-25">
-              <span>USB-C / Thunderbolt ports not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="laptopDefect" value="-20">
-              <span>Touch ID not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="laptopDefect" value="-15">
-              <span>Wi-Fi / Bluetooth not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="laptopDefect" value="-15">
-              <span>Speakers / Microphone not working properly</span>
-            </label>
-          </div>
-        </div>
-
-          </div>
-
-          <!-- Mac Desktop -->
-
-          <div id="profileMacDesktop" class="device-profile hidden">
-
-        <div class="condition-group hidden" id="desktopScreenGroup">
-          <label for="desktopScreen">Screen / display condition</label>
-          <div class="select-wrapper">
-            <select id="desktopScreen">
-              <option value="" selected disabled>Select screen condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-10">Minor scratches or marks</option>
-              <option value="-25">Deep scratches or noticeable display issues</option>
-              <option value="-50">Cracked or damaged display / Display not working</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="desktopBody">Housing / chassis condition</label>
-          <div class="select-wrapper">
-            <select id="desktopBody">
-              <option value="" selected disabled>Select housing / chassis condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches or scuffs</option>
-              <option value="-20">Noticeable dents or impact damage</option>
-              <option value="-30">Bent or severely damaged</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label>Functionality issues</label>
-          <p class="field-help">Select all that apply.</p>
-
-          <div class="checkbox-list">
-            <label class="checkbox-option">
-              <input type="checkbox" name="desktopDefect" value="-25">
-              <span>USB / HDMI / Ethernet / Thunderbolt ports not working</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="desktopDefect" value="-30">
-              <span>Power or cooling system not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="desktopDefect" value="-15">
-              <span>Wi-Fi / Bluetooth not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="desktopDefect" value="-15">
-              <span>Speakers / Audio not working properly</span>
-            </label>
-          </div>
-        </div>
-
-          </div>
-
-          <!-- AirPods -->
-
-          <div id="profileAirPods" class="device-profile hidden">
-
-        <div class="condition-group">
-          <label for="airpodsCase">Charging case condition</label>
-          <div class="select-wrapper">
-            <select id="airpodsCase">
-              <option value="" selected disabled>Select charging case condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches or scuffs</option>
-              <option value="-15">Deep scratches or noticeable damage</option>
-              <option value="-30">Cracked or broken</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="airpodsBuds">Earbuds condition</label>
-          <div class="select-wrapper">
-            <select id="airpodsBuds">
-              <option value="" selected disabled>Select earbuds condition...</option>
-              <option value="0">No visible damage</option>
-              <option value="-5">Minor scratches or scuffs</option>
-              <option value="-15">Deep scratches or noticeable damage</option>
-              <option value="-25">Cracked or physically damaged</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label for="airpodsBattery">Battery / charging</label>
-          <div class="select-wrapper">
-            <select id="airpodsBattery">
-              <option value="" selected disabled>Select battery / charging condition...</option>
-              <option value="0">Holds charge normally</option>
-              <option value="-20">Battery drains noticeably quickly</option>
-              <option value="-40">Does not hold charge / Battery not working</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="condition-group">
-          <label>Functionality issues</label>
-          <p class="field-help">Select all that apply.</p>
-
-          <div class="checkbox-list">
-            <label class="checkbox-option">
-              <input type="checkbox" name="airpodsDefect" value="-25">
-              <span>Audio not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="airpodsDefect" value="-20">
-              <span>ANC / Transparency mode not working properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="airpodsDefect" value="-25">
-              <span>Charging case not charging properly</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="airpodsDefect" value="-15">
-              <span>Connectivity / pairing issues</span>
-            </label>
-
-            <label class="checkbox-option">
-              <input type="checkbox" name="airpodsDefect" value="-15">
-              <span>Microphone not working properly</span>
-            </label>
-          </div>
-        </div>
-
-          </div>
-
-          <button type="submit" id="submitBtn" class="primary-button">
-            <span class="button-text">Get my valuation</span>
-            <span class="button-arrow">→</span>
-          </button>
-
-        </section>
-
-
-      </form>
-      </div>
-
-    </section>
-
-    <!-- Result -->
-          </section>
-
-      <!-- Result -->
-      <div id="resultCard" class="result-card hidden" aria-live="polite">
-        <div class="result-icon">✓</div>
-        <p class="result-eyebrow">ESTIMATED TRADE-IN VALUE</p>
-        <h3 id="resultValue">RM 0</h3>
-        <p class="result-note">
-          Your estimate is based on current market trade-in data and the condition you've provided.
-        </p>
-        <button type="button" id="startOverBtn" class="secondary-button">
-          Start over
-        </button>
-      </div>
-
-    </div>
-
-    <footer class="footer">
-      <p>Estimated value only. Final trade-in value may vary after physical inspection.</p>
-    </footer>
-
-  </main>
-
-  <script src="/assets/app.js"></script>
+	<main class="page-shell">
+		<!-- Header -->
+		<header class="hero hero-left">
+			<div class="brand-mark">
+				<img src="/assets/imycom.png" alt="iMyCom logo">
+			</div>
+			<div class="hero-text">
+				<p class="eyebrow">TRADE-IN ESTIMATE</p>
+				<h1>What is your Apple device worth?</h1>
+				<p class="hero-copy"> Select your device and tell us about its condition to get an estimated trade-in value. </p>
+			</div>
+		</header>
+		<!-- Valuation Layout -->
+		<div class="valuation-layout">
+			<!-- Main Form -->
+			<section class="trade-in-card">
+				<!-- Step Indicator -->
+				<div class="step-indicator-header">
+					<ol id="stepIndicator" class="step-indicator" role="list">
+						<li class="step-indicator-item" data-step="1">
+							<button type="button" class="step-indicator-button" data-goto-step="1">
+								<span class="step-indicator-dot">1</span>
+								<span class="step-indicator-label">Device</span>
+							</button>
+						</li>
+						<li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+						<li class="step-indicator-item" data-step="2">
+							<button type="button" class="step-indicator-button" data-goto-step="2">
+								<span class="step-indicator-dot">2</span>
+								<span class="step-indicator-label">Product Line</span>
+							</button>
+						</li>
+						<li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+						<li class="step-indicator-item" data-step="3">
+							<button type="button" class="step-indicator-button" data-goto-step="3">
+								<span class="step-indicator-dot">3</span>
+								<span class="step-indicator-label">Model</span>
+							</button>
+						</li>
+						<li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+						<li class="step-indicator-item" data-step="4">
+							<button type="button" class="step-indicator-button" data-goto-step="4">
+								<span class="step-indicator-dot">4</span>
+								<span class="step-indicator-label">Configuration</span>
+							</button>
+						</li>
+						<li class="step-indicator-sep" aria-hidden="true">&gt;</li>
+						<li class="step-indicator-item" data-step="5">
+							<button type="button" class="step-indicator-button" data-goto-step="5">
+								<span class="step-indicator-dot">5</span>
+								<span class="step-indicator-label">Condition</span>
+							</button>
+						</li>
+					</ol>
+				</div>
+				<div id="stepViewport" class="step-viewport">
+					<form id="tradeInForm">
+						<!-- Device Selection -->
+						<section class="form-section step-panel" data-step="1">
+							<div class="section-heading">
+								<span class="step-number">01</span>
+								<div>
+									<h2>Choose your device</h2>
+									<p>Start by selecting the type of Apple device you're trading in.</p>
+								</div>
+							</div>
+							<div class="form-group">
+								<label id="deviceSelectLabel">Device type</label>
+								<div id="deviceBoxGrid" class="device-box-grid" role="listbox" aria-labelledby="deviceSelectLabel">
+									<!-- Boxes injected by app.js from deviceData -->
+								</div>
+								<div class="select-wrapper sr-only-select">
+									<select id="deviceSelect" required aria-hidden="true" tabindex="-1">
+										<option value="" disabled selected>Select a device...</option>
+									</select>
+								</div>
+							</div>
+						</section>
+						<!-- Product Line -->
+						<section class="form-section step-panel" id="productLineSection" data-step="2">
+							<div class="section-heading">
+								<span class="step-number">02</span>
+								<div>
+									<h2>Choose the product line</h2>
+									<p>Select the family your device belongs to.</p>
+								</div>
+							</div>
+							<div class="form-group">
+								<label id="subDeviceSelectLabel">Product line</label>
+								<div id="subDeviceBoxGrid" class="subdevice-box-grid disabled" role="listbox" aria-labelledby="subDeviceSelectLabel">
+									<!-- Boxes injected by app.js from deviceData -->
+								</div>
+								<div class="select-wrapper sr-only-select">
+									<select id="subDeviceSelect" disabled required aria-hidden="true" tabindex="-1">
+										<option value="" disabled selected>Select a product line...</option>
+									</select>
+								</div>
+							</div>
+						</section>
+						<!-- Model -->
+						<section class="form-section step-panel" id="modelSection" data-step="3">
+							<div class="section-heading">
+								<span class="step-number">03</span>
+								<div>
+									<h2>Select your model</h2>
+									<p>Choose the exact model of your device.</p>
+								</div>
+							</div>
+							<div id="deviceImagePreview" class="device-image-preview hidden">
+								<img id="deviceImagePreviewImg" src="" alt="">
+							</div>
+							<!-- Model Number search bar with custom autocomplete -->
+							<div class="form-group relative-group">
+								<div class="label-with-help">
+									<label for="modelNumberInput">Model Number</label>
+									<button type="button" id="modelNumberHelpBtn" class="field-help-button" aria-label="Where to find your model number"
+										aria-expanded="false" aria-controls="modelNumberHelp"> ? </button>
+								</div>
+								<div id="modelNumberHelp" class="model-number-help hidden" role="dialog" aria-label="Where to find your model number">
+									<p id="modelNumberHelpText"> Need help finding your model number? </p>
+									<a id="modelNumberHelpLink" href="#" target="_blank" rel="noopener noreferrer"> View Apple Support guide → </a>
+								</div>
+								<input type="text" id="modelNumberInput" placeholder="Search model number (e.g. A2890)..." autocomplete="off" disabled>
+								<ul id="modelNumberList" class="custom-autocomplete hidden"></ul>
+							</div>
+							<div class="form-group">
+								<label for="modelSelect">Model</label>
+								<div class="select-wrapper">
+									<select id="modelSelect" disabled required>
+										<option value="" disabled selected>Select a model...</option>
+									</select>
+								</div>
+							</div>
+						</section>
+						<!-- Configuration -->
+						<section class="form-section step-panel" id="configurationSection" data-step="4">
+							<div class="section-heading">
+								<span class="step-number">04</span>
+								<div>
+									<h2>Configuration</h2>
+									<p>Tell us the specifics of your device.</p>
+								</div>
+							</div>
+							<div class="form-group" id="storageGroup">
+								<label for="storageSelect">Storage capacity</label>
+								<div class="select-wrapper">
+									<select id="storageSelect" disabled required>
+										<option value="" disabled selected>Select storage...</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-group hidden" id="storageTypeGroup">
+								<label for="storageTypeSelect">Storage type</label>
+								<div class="select-wrapper">
+									<select id="storageTypeSelect">
+										<option value="" disabled selected>Select storage type...</option>
+									</select>
+								</div>
+							</div>
+							<div class="form-group hidden" id="connectivityGroup">
+								<label for="connectivitySelect">Connectivity</label>
+								<div class="select-wrapper">
+									<select id="connectivitySelect">
+										<option value="" disabled selected>Select connectivity...</option>
+									</select>
+								</div>
+							</div>
+						</section>
+						<!-- Condition -->
+						<section id="conditionSection" class="form-section step-panel condition-section" data-step="5">
+							<div class="section-heading">
+								<span class="step-number">05</span>
+								<div>
+									<h2>Tell us about its condition</h2>
+									<p>Be honest about the condition for a more realistic estimate.</p>
+								</div>
+							</div>
+							<!-- iPhone -->
+							<div id="profileIPhone" class="device-profile hidden">
+								<div class="condition-group">
+									<label for="iphoneScreen">Screen condition</label>
+									<div class="select-wrapper">
+										<select id="iphoneScreen">
+											<option value="" selected disabled>Select screen condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches</option>
+											<option value="-15">Deep scratches or noticeable damage</option>
+											<option value="-35">Cracked or shattered</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="iphoneBody">Body &amp; frame condition</label>
+									<div class="select-wrapper">
+										<select id="iphoneBody">
+											<option value="" selected disabled>Select body &amp; frame condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-3">Minor scratches or scuffs</option>
+											<option value="-10">Noticeable dents or chipped areas</option>
+											<option value="-25">Bent or severely damaged</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="iphoneBattery">Battery health</label>
+									<div class="select-wrapper">
+										<select id="iphoneBattery">
+											<option value="" selected disabled>Select battery health...</option>
+											<option value="0">90% or higher</option>
+											<option value="-5">80%–89%</option>
+											<option value="-15">Below 80%</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label>Functionality issues</label>
+									<p class="field-help">Select all that apply.</p>
+									<div class="checkbox-list">
+										<label class="checkbox-option">
+											<input type="checkbox" name="iphoneDefect" value="-20">
+											<span>Camera not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="iphoneDefect" value="-25">
+											<span>Face ID / Touch ID not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="iphoneDefect" value="-15">
+											<span>Buttons not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="iphoneDefect" value="-30">
+											<span>Charging port not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="iphoneDefect" value="-20">
+											<span>Cellular / mobile network not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="iphoneDefect" value="-15">
+											<span>Wi-Fi or Bluetooth not working properly</span>
+										</label>
+									</div>
+								</div>
+							</div>
+							<!-- iPad -->
+							<div id="profileIPad" class="device-profile hidden">
+								<div class="condition-group">
+									<label for="ipadScreen">Screen condition</label>
+									<div class="select-wrapper">
+										<select id="ipadScreen">
+											<option value="" selected disabled>Select screen condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches</option>
+											<option value="-15">Deep scratches or noticeable damage</option>
+											<option value="-40">Cracked or shattered / Touch not working properly</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="ipadBody">Body &amp; frame condition</label>
+									<div class="select-wrapper">
+										<select id="ipadBody">
+											<option value="" selected disabled>Select body &amp; frame condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches or scuffs</option>
+											<option value="-15">Noticeable dents or chipped areas</option>
+											<option value="-30">Bent or severely damaged</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="ipadBattery">Battery health / performance</label>
+									<div class="select-wrapper">
+										<select id="ipadBattery">
+											<option value="" selected disabled>Select battery condition...</option>
+											<option value="0">Holds normal charge</option>
+											<option value="-15">Drains quickly</option>
+											<option value="-30">Does not hold charge / Shuts down unexpectedly</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label>Functionality issues</label>
+									<p class="field-help">Select all that apply.</p>
+									<div class="checkbox-list">
+										<label class="checkbox-option">
+											<input type="checkbox" name="ipadDefect" value="-20">
+											<span>Camera not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="ipadDefect" value="-20">
+											<span>Face ID / Touch ID not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="ipadDefect" value="-15">
+											<span>Buttons not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="ipadDefect" value="-25">
+											<span>Charging port not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="ipadDefect" value="-15">
+											<span>Smart Connector not working properly</span>
+										</label>
+									</div>
+								</div>
+							</div>
+							<!-- Apple Watch -->
+							<div id="profileAppleWatch" class="device-profile hidden">
+								<div class="condition-group">
+									<label for="watchScreen">Screen / crystal condition</label>
+									<div class="select-wrapper">
+										<select id="watchScreen">
+											<option value="" selected disabled>Select screen condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-10">Minor scratches</option>
+											<option value="-20">Deep scratches or noticeable damage</option>
+											<option value="-40">Cracked or shattered</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="watchBody">Case &amp; frame condition</label>
+									<div class="select-wrapper">
+										<select id="watchBody">
+											<option value="" selected disabled>Select case &amp; frame condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches or scuffs</option>
+											<option value="-15">Noticeable dents or chipped areas</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="watchBattery">Battery health</label>
+									<div class="select-wrapper">
+										<select id="watchBattery">
+											<option value="" selected disabled>Select battery health...</option>
+											<option value="0">90% or higher</option>
+											<option value="-10">80%–89%</option>
+											<option value="-25">Below 80%</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label>Functionality issues</label>
+									<p class="field-help">Select all that apply.</p>
+									<div class="checkbox-list">
+										<label class="checkbox-option">
+											<input type="checkbox" name="watchDefect" value="-25">
+											<span>Digital Crown or side button not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="watchDefect" value="-25">
+											<span>Touchscreen not responding properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="watchDefect" value="-20">
+											<span>Heart rate or health sensors not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="watchDefect" value="-15">
+											<span>Speaker or microphone not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="watchDefect" value="-10">
+											<span>Vibration / haptic feedback not working</span>
+										</label>
+									</div>
+								</div>
+							</div>
+							<!-- Mac Laptop -->
+							<div id="profileMacLaptop" class="device-profile hidden">
+								<div class="condition-group">
+									<label for="laptopScreen">Screen / display condition</label>
+									<div class="select-wrapper">
+										<select id="laptopScreen">
+											<option value="" selected disabled>Select screen condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-10">Minor scratches or marks</option>
+											<option value="-25">Deep scratches or noticeable display issues</option>
+											<option value="-50">Cracked or damaged display / Display not working</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="laptopBody">Body &amp; chassis condition</label>
+									<div class="select-wrapper">
+										<select id="laptopBody">
+											<option value="" selected disabled>Select body &amp; chassis condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches or scuffs</option>
+											<option value="-15">Noticeable dents or chipped areas</option>
+											<option value="-30">Bent or severely damaged</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="laptopBattery">Battery health</label>
+									<div class="select-wrapper">
+										<select id="laptopBattery">
+											<option value="" selected disabled>Select battery condition...</option>
+											<option value="0">Normal / Good battery life</option>
+											<option value="-15">Service recommended</option>
+											<option value="-30">Does not hold charge / Shuts down unexpectedly</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label>Functionality issues</label>
+									<p class="field-help">Select all that apply.</p>
+									<div class="checkbox-list">
+										<label class="checkbox-option">
+											<input type="checkbox" name="laptopDefect" value="-20">
+											<span>Keyboard keys not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="laptopDefect" value="-20">
+											<span>Trackpad not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="laptopDefect" value="-25">
+											<span>USB-C / Thunderbolt ports not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="laptopDefect" value="-20">
+											<span>Touch ID not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="laptopDefect" value="-15">
+											<span>Wi-Fi / Bluetooth not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="laptopDefect" value="-15">
+											<span>Speakers / Microphone not working properly</span>
+										</label>
+									</div>
+								</div>
+							</div>
+							<!-- Mac Desktop -->
+							<div id="profileMacDesktop" class="device-profile hidden">
+								<div class="condition-group hidden" id="desktopScreenGroup">
+									<label for="desktopScreen">Screen / display condition</label>
+									<div class="select-wrapper">
+										<select id="desktopScreen">
+											<option value="" selected disabled>Select screen condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-10">Minor scratches or marks</option>
+											<option value="-25">Deep scratches or noticeable display issues</option>
+											<option value="-50">Cracked or damaged display / Display not working</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="desktopBody">Housing / chassis condition</label>
+									<div class="select-wrapper">
+										<select id="desktopBody">
+											<option value="" selected disabled>Select housing / chassis condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches or scuffs</option>
+											<option value="-20">Noticeable dents or impact damage</option>
+											<option value="-30">Bent or severely damaged</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label>Functionality issues</label>
+									<p class="field-help">Select all that apply.</p>
+									<div class="checkbox-list">
+										<label class="checkbox-option">
+											<input type="checkbox" name="desktopDefect" value="-25">
+											<span>USB / HDMI / Ethernet / Thunderbolt ports not working</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="desktopDefect" value="-30">
+											<span>Power or cooling system not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="desktopDefect" value="-15">
+											<span>Wi-Fi / Bluetooth not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="desktopDefect" value="-15">
+											<span>Speakers / Audio not working properly</span>
+										</label>
+									</div>
+								</div>
+							</div>
+							<!-- AirPods -->
+							<div id="profileAirPods" class="device-profile hidden">
+								<div class="condition-group">
+									<label for="airpodsCase">Charging case condition</label>
+									<div class="select-wrapper">
+										<select id="airpodsCase">
+											<option value="" selected disabled>Select charging case condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches or scuffs</option>
+											<option value="-15">Deep scratches or noticeable damage</option>
+											<option value="-30">Cracked or broken</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="airpodsBuds">Earbuds condition</label>
+									<div class="select-wrapper">
+										<select id="airpodsBuds">
+											<option value="" selected disabled>Select earbuds condition...</option>
+											<option value="0">No visible damage</option>
+											<option value="-5">Minor scratches or scuffs</option>
+											<option value="-15">Deep scratches or noticeable damage</option>
+											<option value="-25">Cracked or physically damaged</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label for="airpodsBattery">Battery / charging</label>
+									<div class="select-wrapper">
+										<select id="airpodsBattery">
+											<option value="" selected disabled>Select battery / charging condition...</option>
+											<option value="0">Holds charge normally</option>
+											<option value="-20">Battery drains noticeably quickly</option>
+											<option value="-40">Does not hold charge / Battery not working</option>
+										</select>
+									</div>
+								</div>
+								<div class="condition-group">
+									<label>Functionality issues</label>
+									<p class="field-help">Select all that apply.</p>
+									<div class="checkbox-list">
+										<label class="checkbox-option">
+											<input type="checkbox" name="airpodsDefect" value="-25">
+											<span>Audio not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="airpodsDefect" value="-20">
+											<span>ANC / Transparency mode not working properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="airpodsDefect" value="-25">
+											<span>Charging case not charging properly</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="airpodsDefect" value="-15">
+											<span>Connectivity / pairing issues</span>
+										</label>
+										<label class="checkbox-option">
+											<input type="checkbox" name="airpodsDefect" value="-15">
+											<span>Microphone not working properly</span>
+										</label>
+									</div>
+								</div>
+							</div>
+							<button type="submit" id="submitBtn" class="primary-button">
+								<span class="button-text">Get my valuation</span>
+								<span class="button-arrow">→</span>
+							</button>
+						</section>
+					</form>
+				</div>
+			</section>
+			<!-- Result -->
+			</section>
+			<!-- Result -->
+			<div id="resultCard" class="result-card hidden" aria-live="polite">
+				<div class="result-icon">✓</div>
+				<p class="result-eyebrow">ESTIMATED TRADE-IN VALUE</p>
+				<h3 id="resultValue">RM 0</h3>
+				<p class="result-note"> Your estimate is based on current market trade-in data and the condition you've provided. </p>
+				<button type="button" id="startOverBtn" class="secondary-button"> Start over </button>
+			</div>
+		</div>
+		<footer class="footer">
+			<p>Estimated value only. Final trade-in value may vary after physical inspection.</p>
+		</footer>
+	</main>
+	<script src="/assets/app.js"></script>
 </body>
+
 </html>

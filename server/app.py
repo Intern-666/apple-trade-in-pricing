@@ -46,20 +46,11 @@ FITTED_CURVES_FILE = BASE_DIR / "data" / "fitted_curves.csv"
 # still runs normally against the local CSV (see SheetsSync).
 # ------------------------------------------------------------
 
-SHEETS_SERVICE_ACCOUNT_FILE = (
-    os.getenv(
-        "GOOGLE_SERVICE_ACCOUNT_FILE",
-        str(BASE_DIR / "internal" / "service_account.json")
-    )
-)
+SHEETS_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", str(BASE_DIR / "internal" / "service_account.json"))
 
-SHEETS_SERVICE_ACCOUNT_JSON = os.getenv(
-    "GOOGLE_SERVICE_ACCOUNT_JSON"
-)
+SHEETS_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
 
-SHEETS_SPREADSHEET_ID = (
-    "1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs"
-)
+SHEETS_SPREADSHEET_ID = "1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs"
 
 SHEETS_WORKSHEET_NAME = "Cleaned Master"
 
@@ -70,23 +61,12 @@ CUSTOMER_SHEETS_WORKSHEET_NAME = "Customer Data"
 # FASTAPI
 # ============================================================
 
-app = FastAPI(
-    title="Apple Trade-In Valuation API"
-)
+app = FastAPI(title="Apple Trade-In Valuation API")
 
-app.mount(
-    "/assets",
-    StaticFiles(directory=ASSETS_DIR),
-    name="assets",
-)
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
 # ============================================================
@@ -98,6 +78,7 @@ app.add_middleware(
 # two possible sources.
 # ============================================================
 
+
 def storage_to_gb(value):
 
     if pd.isna(value):
@@ -107,20 +88,14 @@ def storage_to_gb(value):
 
     if "tb" in value:
 
-        numbers = [
-            x for x in value.replace(",", "").split()
-            if x.replace(".", "", 1).isdigit()
-        ]
+        numbers = [x for x in value.replace(",", "").split() if x.replace(".", "", 1).isdigit()]
 
         if numbers:
             return float(numbers[0]) * 1024
 
     if "gb" in value:
 
-        numbers = [
-            x for x in value.replace(",", "").split()
-            if x.replace(".", "", 1).isdigit()
-        ]
+        numbers = [x for x in value.replace(",", "").split() if x.replace(".", "", 1).isdigit()]
 
         if numbers:
             return float(numbers[0])
@@ -132,15 +107,7 @@ def storage_to_gb(value):
         return np.nan
 
 
-TEXT_COLUMNS = [
-    "Device",
-    "Sub-device",
-    "Standardized Model",
-    "Provider",
-    "Storage Type",
-    "Connectivity",
-    "Chipset",
-]
+TEXT_COLUMNS = ["Device", "Sub-device", "Standardized Model", "Provider", "Storage Type", "Connectivity", "Chipset"]
 
 
 def clean_dataset(raw_df):
@@ -163,20 +130,14 @@ def clean_dataset(raw_df):
     # ------------------------------------------------------------
 
     if "Storage (GB)" in cleaned.columns:
-        cleaned["Storage (GB)"] = (
-            cleaned["Storage (GB)"]
-            .apply(storage_to_gb)
-        )
+        cleaned["Storage (GB)"] = cleaned["Storage (GB)"].apply(storage_to_gb)
 
     # ------------------------------------------------------------
     # TRADE-IN VALUE
     # ------------------------------------------------------------
 
     if "Max. Trade-In Value (RM)" in cleaned.columns:
-        cleaned["Max. Trade-In Value (RM)"] = pd.to_numeric(
-            cleaned["Max. Trade-In Value (RM)"],
-            errors="coerce"
-        )
+        cleaned["Max. Trade-In Value (RM)"] = pd.to_numeric(cleaned["Max. Trade-In Value (RM)"], errors="coerce")
 
     # ------------------------------------------------------------
     # TEXT NORMALIZATION
@@ -184,12 +145,7 @@ def clean_dataset(raw_df):
 
     for col in TEXT_COLUMNS:
         if col in cleaned.columns:
-            cleaned[col] = (
-                cleaned[col]
-                .fillna("Unknown")
-                .astype(str)
-                .str.strip()
-            )
+            cleaned[col] = cleaned[col].fillna("Unknown").astype(str).str.strip()
 
     return cleaned
 
@@ -211,17 +167,7 @@ def build_device_maps(cleaned_df):
     model_map = {}
     config_map = {}
 
-    for (
-        device,
-        sub_device,
-        model_name
-    ), group in cleaned_df.groupby(
-        [
-            "Device",
-            "Sub-device",
-            "Standardized Model"
-        ]
-    ):
+    for (device, sub_device, model_name), group in cleaned_df.groupby(["Device", "Sub-device", "Standardized Model"]):
 
         model_map.setdefault(device, {})
         model_map[device].setdefault(sub_device, {})
@@ -230,27 +176,13 @@ def build_device_maps(cleaned_df):
         # STORAGE OPTIONS
         # --------------------------------------------------------
 
-        storages = (
-            group["Storage (GB)"]
-            .dropna()
-            .unique()
-            .tolist()
-        )
+        storages = group["Storage (GB)"].dropna().unique().tolist()
 
         storages = sorted(storages)
 
-        clean_storages = [
-            int(x) if float(x).is_integer() else float(x)
-            for x in storages
-        ]
+        clean_storages = [int(x) if float(x).is_integer() else float(x) for x in storages]
 
-        model_map[
-            device
-        ][
-            sub_device
-        ][
-            model_name
-        ] = clean_storages
+        model_map[device][sub_device][model_name] = clean_storages
 
         # --------------------------------------------------------
         # CONFIGURATION OPTIONS
@@ -262,31 +194,14 @@ def build_device_maps(cleaned_df):
         storage_types = []
 
         if "Storage Type" in group.columns:
-            storage_types = sorted(
-                t
-                for t in group["Storage Type"].dropna().unique().tolist()
-                if t and t != "Unknown"
-            )
+            storage_types = sorted(t for t in group["Storage Type"].dropna().unique().tolist() if t and t != "Unknown")
 
         connectivity_options = []
 
         if "Connectivity" in group.columns:
-            connectivity_options = sorted(
-                c
-                for c in group["Connectivity"].dropna().unique().tolist()
-                if c and c != "Unknown"
-            )
+            connectivity_options = sorted(c for c in group["Connectivity"].dropna().unique().tolist() if c and c != "Unknown")
 
-        config_map[
-            device
-        ][
-            sub_device
-        ][
-            model_name
-        ] = {
-            "storageTypes": storage_types,
-            "connectivity": connectivity_options,
-        }
+        config_map[device][sub_device][model_name] = {"storageTypes": storage_types, "connectivity": connectivity_options}
 
     return model_map, config_map
 
@@ -303,19 +218,7 @@ def build_model_number_map(model_number_df):
 
     model_number_map = {}
 
-    for (
-        device,
-        sub_device,
-        model_number,
-        model_name
-    ), group in model_number_df.groupby(
-        [
-            "Device",
-            "Sub-device",
-            "Model Number",
-            "Standardized Model"
-        ]
-    ):
+    for (device, sub_device, model_number, model_name), group in model_number_df.groupby(["Device", "Sub-device", "Model Number", "Standardized Model"]):
 
         if pd.isna(model_number):
             continue
@@ -333,20 +236,8 @@ def build_model_number_map(model_number_df):
         model_number_map[device].setdefault(sub_device, {})
         model_number_map[device][sub_device].setdefault(model_number, [])
 
-        if model_name not in model_number_map[
-            device
-        ][
-            sub_device
-        ][
-            model_number
-        ]:
-            model_number_map[
-                device
-            ][
-                sub_device
-            ][
-                model_number
-            ].append(model_name)
+        if model_name not in model_number_map[device][sub_device][model_number]:
+            model_number_map[device][sub_device][model_number].append(model_name)
 
     return model_number_map
 
@@ -373,69 +264,39 @@ model_number_map = build_model_number_map(df)
 # LOAD DEPRECIATION FALLBACK
 # ============================================================
 
-fallback = TradeInFallback(
-    str(FITTED_CURVES_FILE),
-    raw_data_path=str(DATA_FILE),
-)
+fallback = TradeInFallback(str(FITTED_CURVES_FILE), raw_data_path=str(DATA_FILE))
 
-print(
-    f"Depreciation curves loaded: "
-    f"{FITTED_CURVES_FILE.name}"
-)
+print(f"Depreciation curves loaded: " f"{FITTED_CURVES_FILE.name}")
 
 # ============================================================
 # GOOGLE SHEETS SYNC
 # ============================================================
 
-sheets_sync = SheetsSync(
-    service_account_file=str(SHEETS_SERVICE_ACCOUNT_FILE),
-    service_account_json=SHEETS_SERVICE_ACCOUNT_JSON,
-    spreadsheet_id=SHEETS_SPREADSHEET_ID,
-    worksheet_name=SHEETS_WORKSHEET_NAME,
-)
+sheets_sync = SheetsSync(service_account_file=str(SHEETS_SERVICE_ACCOUNT_FILE), service_account_json=SHEETS_SERVICE_ACCOUNT_JSON, spreadsheet_id=SHEETS_SPREADSHEET_ID, worksheet_name=SHEETS_WORKSHEET_NAME)
 
 if sheets_sync.is_available:
 
-    print(
-        "Google Sheets sync ready -> "
-        f"worksheet '{SHEETS_WORKSHEET_NAME}'"
-    )
+    print("Google Sheets sync ready -> " f"worksheet '{SHEETS_WORKSHEET_NAME}'")
 
 else:
 
-    print(
-        "Google Sheets sync UNAVAILABLE -- admin writes will "
-        "still save to the local CSV, but will not be mirrored "
-        "to Google Sheets until this is resolved."
-    )
+    print("Google Sheets sync UNAVAILABLE -- admin writes will " "still save to the local CSV, but will not be mirrored " "to Google Sheets until this is resolved.")
 
 # ============================================================
 # CUSTOMER GOOGLE SHEETS SYNC
 # ============================================================
 
-customer_sheets_sync = SheetsSync(
-    service_account_file=str(SHEETS_SERVICE_ACCOUNT_FILE),
-    service_account_json=SHEETS_SERVICE_ACCOUNT_JSON,
-    spreadsheet_id=SHEETS_SPREADSHEET_ID,
-    worksheet_name=CUSTOMER_SHEETS_WORKSHEET_NAME,
-)
+customer_sheets_sync = SheetsSync(service_account_file=str(SHEETS_SERVICE_ACCOUNT_FILE), service_account_json=SHEETS_SERVICE_ACCOUNT_JSON, spreadsheet_id=SHEETS_SPREADSHEET_ID, worksheet_name=CUSTOMER_SHEETS_WORKSHEET_NAME)
 
 if customer_sheets_sync.is_available:
 
-    print(
-        "Customer Google Sheets sync ready -> "
-        f"worksheet '{CUSTOMER_SHEETS_WORKSHEET_NAME}'"
-    )
+    print("Customer Google Sheets sync ready -> " f"worksheet '{CUSTOMER_SHEETS_WORKSHEET_NAME}'")
 
 else:
 
-    print(
-        "Customer Google Sheets sync UNAVAILABLE."
-    )
+    print("Customer Google Sheets sync UNAVAILABLE.")
 
-print(
-    f"Devices available: {len(device_model_map)}"
-)
+print(f"Devices available: {len(device_model_map)}")
 
 print("=" * 70)
 
@@ -463,10 +324,7 @@ REFRESH_INTERVAL_SECONDS = 10 * 60
 # server startup always counts as stale and checks Sheets right
 # away -- a restart should reflect the latest Sheets state
 # immediately, not after waiting a full 10 minutes.
-_last_refresh_at = (
-    datetime.now()
-    - timedelta(seconds=REFRESH_INTERVAL_SECONDS + 1)
-)
+_last_refresh_at = datetime.now() - timedelta(seconds=REFRESH_INTERVAL_SECONDS + 1)
 
 
 def write_csv_atomically(raw_df, destination_path):
@@ -483,9 +341,7 @@ def write_csv_atomically(raw_df, destination_path):
     already succeeded by the time this is called).
     """
 
-    temp_path = destination_path.with_suffix(
-        destination_path.suffix + ".tmp"
-    )
+    temp_path = destination_path.with_suffix(destination_path.suffix + ".tmp")
 
     try:
 
@@ -497,11 +353,7 @@ def write_csv_atomically(raw_df, destination_path):
 
     except Exception as exc:
 
-        print(
-            "WARNING: Failed to write refreshed data back to "
-            f"{destination_path.name}, local fallback file is "
-            f"now stale until the next successful refresh: {exc}"
-        )
+        print("WARNING: Failed to write refreshed data back to " f"{destination_path.name}, local fallback file is " f"now stale until the next successful refresh: {exc}")
 
         # Best-effort cleanup of the temp file if it was created
         # but the rename itself failed.
@@ -520,9 +372,7 @@ def refresh_data_if_stale():
 
     global df, device_model_map, device_config_map, model_number_map, _last_refresh_at
 
-    seconds_since_refresh = (
-        datetime.now() - _last_refresh_at
-    ).total_seconds()
+    seconds_since_refresh = (datetime.now() - _last_refresh_at).total_seconds()
 
     if seconds_since_refresh < REFRESH_INTERVAL_SECONDS:
         return
@@ -540,36 +390,23 @@ def refresh_data_if_stale():
 
     if not fetch_result.success:
 
-        print(
-            "WARNING: Sheets refresh failed, keeping existing "
-            f"in-memory data: {fetch_result.error}"
-        )
+        print("WARNING: Sheets refresh failed, keeping existing " f"in-memory data: {fetch_result.error}")
 
         return
 
     try:
 
-        refreshed_df = clean_dataset(
-            fetch_result.dataframe
-        )
+        refreshed_df = clean_dataset(fetch_result.dataframe)
 
-        refreshed_model_map, refreshed_config_map = (
-            build_device_maps(refreshed_df)
-        )
+        refreshed_model_map, refreshed_config_map = build_device_maps(refreshed_df)
 
-        refreshed_model_number_map = build_model_number_map(
-            refreshed_df
-        )
+        refreshed_model_number_map = build_model_number_map(refreshed_df)
 
     except Exception as exc:
 
         # A malformed Sheet (missing column, bad header, etc.)
         # must not corrupt the currently-working in-memory data.
-        print(
-            "WARNING: Sheets refresh fetched data but it failed "
-            f"to clean/build correctly, keeping existing "
-            f"in-memory data: {exc}"
-        )
+        print("WARNING: Sheets refresh fetched data but it failed " f"to clean/build correctly, keeping existing " f"in-memory data: {exc}")
 
         return
 
@@ -598,16 +435,10 @@ def refresh_data_if_stale():
     # successful refresh tries again.
     # ----------------------------------------------------------
 
-    write_csv_atomically(
-        fetch_result.dataframe,
-        DATA_FILE,
-    )
+    write_csv_atomically(fetch_result.dataframe, DATA_FILE)
 
-    print(
-        "Sheets refresh applied -- "
-        f"{fetch_result.rows_fetched} rows, "
-        f"{len(device_model_map)} devices"
-    )
+    print("Sheets refresh applied -- " f"{fetch_result.rows_fetched} rows, " f"{len(device_model_map)} devices")
+
 
 # ------------------------------------------------------------
 # DATA VERSION STAMP
@@ -624,6 +455,7 @@ def refresh_data_if_stale():
 # ------------------------------------------------------------
 
 _data_version = datetime.now().isoformat()
+
 
 def force_refresh_from_sheets():
     """
@@ -671,26 +503,18 @@ def force_refresh_from_sheets():
 
         if data_changed:
             bump_data_version()
-            print(
-                f"Admin force refresh detected a data change: "
-                f"{len(df)} rows loaded."
-            )
+            print(f"Admin force refresh detected a data change: " f"{len(df)} rows loaded.")
         else:
-            print(
-                f"Admin force refresh: no data changes detected "
-                f"({len(df)} rows)."
-            )
+            print(f"Admin force refresh: no data changes detected " f"({len(df)} rows).")
 
-        try:
-            fetch_result.dataframe.to_csv(DATA_FILE, index=False)
-        except Exception as exc:
-            print(f"Warning: failed to update local CSV cache: {exc}")
+        write_csv_atomically(fetch_result.dataframe, DATA_FILE)
 
         return True
 
     except Exception as exc:
         print(f"Admin force refresh error: {exc}")
         return False
+
 
 def bump_data_version():
 
@@ -728,6 +552,7 @@ refresh_data_if_stale()
 # AVAILABLE MODELS
 # ============================================================
 
+
 @app.get("/available-models")
 def get_models():
 
@@ -741,6 +566,7 @@ def get_models():
 # (Storage Type + Connectivity, additive -- does not change
 # the /available-models response shape above)
 # ============================================================
+
 
 @app.get("/model-configuration")
 def get_model_configuration():
@@ -756,6 +582,7 @@ def get_model_configuration():
 # Does not change how the map is built.)
 # ============================================================
 
+
 @app.get("/model-numbers")
 def get_model_numbers():
 
@@ -767,6 +594,7 @@ def get_model_numbers():
 # ============================================================
 # REQUEST MODEL
 # ============================================================
+
 
 class DeviceInput(BaseModel):
     Device: str
@@ -780,6 +608,7 @@ class DeviceInput(BaseModel):
 # ============================================================
 # EXACT DEVICE MEDIAN VALUATION
 # ============================================================
+
 
 @app.post("/predict")
 def predict_price(item: DeviceInput):
@@ -797,7 +626,6 @@ def predict_price(item: DeviceInput):
     print(f"StorageType: {item.StorageType}")
     print(f"Connectivity: {item.Connectivity}")
 
-
     # ========================================================
     # AIRPODS
     # AirPods do not have storage
@@ -805,14 +633,7 @@ def predict_price(item: DeviceInput):
 
     if item.Device == "AirPods":
 
-        matches = df[
-            (df["Device"] == item.Device)
-            &
-            (df["Sub-device"] == item.SubDevice)
-            &
-            (df["Standardized Model"] == item.Model)
-        ].copy()
-
+        matches = df[(df["Device"] == item.Device) & (df["Sub-device"] == item.SubDevice) & (df["Standardized Model"] == item.Model)].copy()
 
     # ========================================================
     # ALL OTHER DEVICES
@@ -825,30 +646,9 @@ def predict_price(item: DeviceInput):
 
             print("Storage is required for this device.")
 
-            return {
-                "status": "unresolved",
-                "estimated_value": None,
-                "message": (
-                    "Storage is required for this device."
-                )
-            }
+            return {"status": "unresolved", "estimated_value": None, "message": ("Storage is required for this device.")}
 
-
-        matches = df[
-            (df["Device"] == item.Device)
-            &
-            (df["Sub-device"] == item.SubDevice)
-            &
-            (df["Standardized Model"] == item.Model)
-            &
-            (
-                np.isclose(
-                    df["Storage (GB)"],
-                    item.Storage,
-                    equal_nan=False
-                )
-            )
-        ].copy()
+        matches = df[(df["Device"] == item.Device) & (df["Sub-device"] == item.SubDevice) & (df["Standardized Model"] == item.Model) & (np.isclose(df["Storage (GB)"], item.Storage, equal_nan=False))].copy()
 
         # ----------------------------------------------------
         # OPTIONAL CONFIGURATION FILTERS
@@ -861,16 +661,11 @@ def predict_price(item: DeviceInput):
 
         if item.StorageType:
 
-            matches = matches[
-                matches["Storage Type"] == item.StorageType
-            ]
+            matches = matches[matches["Storage Type"] == item.StorageType]
 
         if item.Connectivity:
 
-            matches = matches[
-                matches["Connectivity"] == item.Connectivity
-            ]
-
+            matches = matches[matches["Connectivity"] == item.Connectivity]
 
     # ========================================================
     # NO MATCH
@@ -880,74 +675,45 @@ def predict_price(item: DeviceInput):
 
         print("No exact database match.")
 
-        return {
-            "status": "unresolved",
-            "estimated_value": None,
-            "message": (
-                "This exact device configuration "
-                "is not available in the database."
-            )
-        }
-
+        return {"status": "unresolved", "estimated_value": None, "message": ("This exact device configuration " "is not available in the database.")}
 
     # ========================================================
     # MEDIAN TRADE-IN VALUE
     # ========================================================
 
-    median_price = (
-        matches["Max. Trade-In Value (RM)"]
-        .median()
-    )
+    median_price = matches["Max. Trade-In Value (RM)"].median()
 
+    if pd.isna(median_price):
+
+        print("No trade-in values recorded for matching " "records -- treating as unresolved.")
+
+        return {"status": "unresolved", "estimated_value": None, "message": ("This exact device configuration does not " "have a trade-in value on record yet.")}
 
     # ========================================================
     # SUPPORTING INFORMATION
     # ========================================================
 
-    provider_count = (
-        matches["Provider"]
-        .nunique()
-    )
+    provider_count = matches["Provider"].nunique()
 
     record_count = len(matches)
 
+    print(f"Matching records : {record_count}")
 
-    print(
-        f"Matching records : {record_count}"
-    )
+    print(f"Providers         : {provider_count}")
 
-    print(
-        f"Providers         : {provider_count}"
-    )
-
-    print(
-        f"Median value      : RM {median_price:,.2f}"
-    )
-
+    print(f"Median value      : RM {median_price:,.2f}")
 
     # ========================================================
     # RETURN
     # ========================================================
 
-    return {
+    return {"status": "resolved", "estimated_value": round(float(median_price), 2), "method": "exact_configuration_median", "matching_records": record_count, "provider_count": provider_count}
 
-        "status": "resolved",
-
-        "estimated_value": round(
-            float(median_price),
-            2
-        ),
-
-        "method": "exact_configuration_median",
-
-        "matching_records": record_count,
-
-        "provider_count": provider_count
-    }
 
 # ============================================================
 # CUSTOMER TRADE-IN RECORD
 # ============================================================
+
 
 class CustomerTradeInRecord(BaseModel):
 
@@ -959,14 +725,14 @@ class CustomerTradeInRecord(BaseModel):
 
     createdAt: str
 
+
 # ============================================================
 # CUSTOMER — SAVE TRADE-IN RECORD
 # ============================================================
 
+
 @app.post("/customer/trade-in")
-def save_customer_trade_in(
-    item: CustomerTradeInRecord
-):
+def save_customer_trade_in(item: CustomerTradeInRecord):
 
     print("\n" + "=" * 70)
     print("CUSTOMER — TRADE-IN RECORD")
@@ -980,45 +746,25 @@ def save_customer_trade_in(
     # CUSTOMER DETAILS
     # --------------------------------------------------------
 
-    customer_name = str(
-        customer.get("name", "")
-    ).strip()
+    customer_name = str(customer.get("name", "")).strip()
 
-    customer_phone = str(
-        customer.get("phone", "")
-    ).strip()
+    customer_phone = str(customer.get("phone", "")).strip()
 
-    customer_email = str(
-        customer.get("email", "")
-    ).strip()
+    customer_email = str(customer.get("email", "")).strip()
 
-    preferred_contact = str(
-        customer.get("preferredContact", "")
-    ).strip()
+    preferred_contact = str(customer.get("preferredContact", "")).strip()
 
     if not customer_name:
-        return {
-            "status": "error",
-            "message": "Customer name is required."
-        }
+        return {"status": "error", "message": "Customer name is required."}
 
     if not customer_phone:
-        return {
-            "status": "error",
-            "message": "Customer phone is required."
-        }
+        return {"status": "error", "message": "Customer phone is required."}
 
     if not customer_email:
-        return {
-            "status": "error",
-            "message": "Customer email is required."
-        }
+        return {"status": "error", "message": "Customer email is required."}
 
     if not preferred_contact:
-        return {
-            "status": "error",
-            "message": "Preferred contact method is required."
-        }
+        return {"status": "error", "message": "Preferred contact method is required."}
 
     # --------------------------------------------------------
     # DEVICE DETAILS
@@ -1029,22 +775,13 @@ def save_customer_trade_in(
     model_name = device.get("model")
 
     if not device_name:
-        return {
-            "status": "error",
-            "message": "Device is required."
-        }
+        return {"status": "error", "message": "Device is required."}
 
     if not sub_device:
-        return {
-            "status": "error",
-            "message": "Sub-device is required."
-        }
+        return {"status": "error", "message": "Sub-device is required."}
 
     if not model_name:
-        return {
-            "status": "error",
-            "message": "Model is required."
-        }
+        return {"status": "error", "message": "Model is required."}
 
     # --------------------------------------------------------
     # VALUATION DETAILS
@@ -1057,32 +794,13 @@ def save_customer_trade_in(
     # GOOGLE SHEETS ROW
     # --------------------------------------------------------
 
-    customer_record = {
-        "Timestamp": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%d %b %Y, %I:%M %p"),
-        "Customer Name": customer_name,
-        "Phone": customer_phone,
-        "Email": customer_email,
-        "Preferred Contact": preferred_contact,
-
-        "Device": device_name,
-        "Sub-device": sub_device,
-        "Model": model_name,
-        "Model Number": device.get("modelNumber") or "N/A",
-        "Storage (GB)": device.get("storage"),
-        "Storage Type": device.get("storageType") or "N/A",
-        "Connectivity": device.get("connectivity") or "N/A",
-
-        "Market Value (RM)": market_value,
-        "Final Trade-In Value (RM)": final_value
-    }
+    customer_record = {"Timestamp": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%d %b %Y, %I:%M %p"), "Customer Name": customer_name, "Phone": customer_phone, "Email": customer_email, "Preferred Contact": preferred_contact, "Device": device_name, "Sub-device": sub_device, "Model": model_name, "Model Number": device.get("modelNumber") or "N/A", "Storage (GB)": device.get("storage"), "Storage Type": device.get("storageType") or "N/A", "Connectivity": device.get("connectivity") or "N/A", "Market Value (RM)": market_value, "Final Trade-In Value (RM)": final_value}
 
     # --------------------------------------------------------
     # SAVE TO CUSTOMER SHEET
     # --------------------------------------------------------
 
-    sync_result = customer_sheets_sync.append_record(
-        customer_record
-    )
+    sync_result = customer_sheets_sync.append_record(customer_record)
 
     # --------------------------------------------------------
     # LOG RESULT
@@ -1093,25 +811,14 @@ def save_customer_trade_in(
     print(f"Model    : {model_name}")
 
     if final_value is not None:
-        print(
-            f"Final    : RM {final_value:,.2f}"
-        )
+        print(f"Final    : RM {final_value:,.2f}")
     else:
         print("Final    : N/A")
 
-    print(
-        "Sheets   : "
-        + (
-            "SAVED"
-            if sync_result.success
-            else "FAILED"
-        )
-    )
+    print("Sheets   : " + ("SAVED" if sync_result.success else "FAILED"))
 
     if sync_result.error:
-        print(
-            f"Sheets error: {sync_result.error}"
-        )
+        print(f"Sheets error: {sync_result.error}")
 
     print("=" * 70)
 
@@ -1119,17 +826,17 @@ def save_customer_trade_in(
     # RESPONSE
     # --------------------------------------------------------
 
-    return {
-        "status": "success",
-        "message": "Trade-in record received successfully.",
-        "customer": customer_name,
-        "model": model_name,
-        "sheets": sync_result.as_dict()
-    }
+    if not sync_result.success:
+
+        return {"status": "error", "message": ("Your trade-in details could not be saved. " "Please try again."), "customer": customer_name, "model": model_name, "sheets": sync_result.as_dict()}
+
+    return {"status": "success", "message": "Trade-in record received successfully.", "customer": customer_name, "model": model_name, "sheets": sync_result.as_dict()}
+
 
 # ============================================================
 # ADMIN ADD REQUEST
 # ============================================================
+
 
 class AdminAddDevice(BaseModel):
 
@@ -1158,9 +865,11 @@ class AdminAddDevice(BaseModel):
 
     ChargingMethod: Optional[str] = None
 
+
 # ============================================================
 # ADMIN — ADD DEVICE
 # ============================================================
+
 
 @app.post("/admin/add")
 def admin_add_device(item: AdminAddDevice):
@@ -1172,10 +881,7 @@ def admin_add_device(item: AdminAddDevice):
     print("=" * 70)
 
     if not force_refresh_from_sheets():
-        raise HTTPException(
-            status_code=503,
-            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
-        )
+        raise HTTPException(status_code=503, detail="Unable to refresh data from Google Sheets. Operation cancelled.")
 
     # ========================================================
     # BASIC VALIDATION
@@ -1185,45 +891,22 @@ def admin_add_device(item: AdminAddDevice):
     sub_device = item.SubDevice.strip()
     model_name = item.Model.strip()
 
-    model_number = (
-        item.ModelNumber.strip()
-        if item.ModelNumber
-        else np.nan
-    )
+    model_number = item.ModelNumber.strip() if item.ModelNumber else np.nan
 
     if not device:
-        raise HTTPException(
-            status_code=400,
-            detail="Device is required.",
-        )
+        raise HTTPException(status_code=400, detail="Device is required.")
 
     if not sub_device:
-        raise HTTPException(
-            status_code=400,
-            detail="Sub-device is required.",
-        )
+        raise HTTPException(status_code=400, detail="Sub-device is required.")
 
     if not model_name:
-        raise HTTPException(
-            status_code=400,
-            detail="Model is required.",
-        )
+        raise HTTPException(status_code=400, detail="Model is required.")
 
-    charging_method = (
-    item.ChargingMethod.strip()
-    if item.ChargingMethod
-    else np.nan
-    )
+    charging_method = item.ChargingMethod.strip() if item.ChargingMethod else np.nan
 
-    if (
-        device == "AirPods"
-        and pd.isna(charging_method)
-    ):
+    if device == "AirPods" and pd.isna(charging_method):
 
-        raise HTTPException(
-            status_code=400,
-            detail="Charging method is required.",
-        )
+        raise HTTPException(status_code=400, detail="Charging method is required.")
 
     # ========================================================
     # Retail Price (MSRP)
@@ -1231,10 +914,7 @@ def admin_add_device(item: AdminAddDevice):
 
     if item.MSRP < 0:
 
-        raise HTTPException(
-            status_code=400,
-            detail="Retail price cannot be negative.",
-        )
+        raise HTTPException(status_code=400, detail="Retail price cannot be negative.")
 
     msrp = float(item.MSRP)
 
@@ -1242,11 +922,7 @@ def admin_add_device(item: AdminAddDevice):
     # PROVIDER
     # ========================================================
 
-    provider = (
-        item.Provider.strip()
-        if item.Provider
-        else "Unknown"
-    )
+    provider = item.Provider.strip() if item.Provider else "Unknown"
 
     # ========================================================
     # TRADE-IN VALUE
@@ -1261,10 +937,7 @@ def admin_add_device(item: AdminAddDevice):
 
         if item.TradeInValue < 0:
 
-            raise HTTPException(
-                status_code=400,
-                detail="Trade-in value cannot be negative.",
-            )
+            raise HTTPException(status_code=400, detail="Trade-in value cannot be negative.")
 
         trade_in_value = float(item.TradeInValue)
         price_status = "confirmed"
@@ -1275,31 +948,15 @@ def admin_add_device(item: AdminAddDevice):
 
     storage = item.Storage
 
-    storage_type = (
-        item.StorageType.strip()
-        if item.StorageType
-        else np.nan
-    )
+    storage_type = item.StorageType.strip() if item.StorageType else np.nan
 
-    if (
-        device != "AirPods"
-        and storage is None
-    ):
+    if device != "AirPods" and storage is None:
 
-        raise HTTPException(
-            status_code=400,
-            detail="Storage is required.",
-        )
+        raise HTTPException(status_code=400, detail="Storage is required.")
 
-    if (
-        device == "Mac"
-        and pd.isna(storage_type)
-    ):
+    if device == "Mac" and pd.isna(storage_type):
 
-        raise HTTPException(
-            status_code=400,
-            detail="Storage type is required.",
-        )
+        raise HTTPException(status_code=400, detail="Storage type is required.")
 
     # AirPods do not have storage
 
@@ -1312,75 +969,31 @@ def admin_add_device(item: AdminAddDevice):
     # DEVICE-SPECIFIC VALUES
     # ========================================================
 
-    chipset = (
-        item.Chipset.strip()
-        if item.Chipset
-        else np.nan
-    )
+    chipset = item.Chipset.strip() if item.Chipset else np.nan
 
-    if (
-        device in ("iPhone", "iPad", "Mac")
-        and pd.isna(chipset)
-    ):
+    if device in ("iPhone", "iPad", "Mac") and pd.isna(chipset):
 
-        raise HTTPException(
-            status_code=400,
-            detail="Chipset is required.",
-        )
+        raise HTTPException(status_code=400, detail="Chipset is required.")
 
-    connectivity = (
-        item.Connectivity.strip()
-        if item.Connectivity
-        else np.nan
-    )
+    connectivity = item.Connectivity.strip() if item.Connectivity else np.nan
 
-    if (
-        device in ("iPad", "Apple Watch")
-        and pd.isna(connectivity)
-    ):
+    if device in ("iPad", "Apple Watch") and pd.isna(connectivity):
 
-        raise HTTPException(
-            status_code=400,
-            detail="Connectivity is required.",
-        )
+        raise HTTPException(status_code=400, detail="Connectivity is required.")
 
-    material = (
-        item.Material.strip()
-        if item.Material
-        else np.nan
-    )
+    material = item.Material.strip() if item.Material else np.nan
 
-    if (
-        device == "Apple Watch"
-        and pd.isna(material)
-    ):
+    if device == "Apple Watch" and pd.isna(material):
 
-        raise HTTPException(
-            status_code=400,
-            detail="Material is required.",
-        )
+        raise HTTPException(status_code=400, detail="Material is required.")
 
-    case_size = (
-        int(item.CaseSize)
-        if item.CaseSize is not None
-        else np.nan
-    )
+    case_size = int(item.CaseSize) if item.CaseSize is not None else np.nan
 
-    if (
-        device == "Apple Watch"
-        and item.CaseSize is None
-    ):
+    if device == "Apple Watch" and item.CaseSize is None:
 
-        raise HTTPException(
-            status_code=400,
-            detail="Case size is required.",
-        )
+        raise HTTPException(status_code=400, detail="Case size is required.")
 
-    charging_method = (
-        item.ChargingMethod.strip()
-        if item.ChargingMethod
-        else np.nan
-    )
+    charging_method = item.ChargingMethod.strip() if item.ChargingMethod else np.nan
 
     # ========================================================
     # MODEL YEAR
@@ -1390,91 +1003,26 @@ def admin_add_device(item: AdminAddDevice):
 
     if model_year is None:
 
-        raise HTTPException(
-            status_code=400,
-            detail="Model year is required.",
-        )
+        raise HTTPException(status_code=400, detail="Model year is required.")
 
     if model_year < 1976:
 
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid Apple model year.",
-        )
+        raise HTTPException(status_code=400, detail="Invalid Apple model year.")
 
     # ========================================================
     # CREATE NEW ROW
     # ========================================================
 
-    new_row = {
-
-        "Provider":
-            provider,
-
-        "Device":
-            device,
-
-        "Sub-device":
-            sub_device,
-
-        "Standardized Model":
-            model_name,
-
-        "Model Number":
-            model_number,
-
-        "Retail Price":
-            msrp,
-
-        "Storage (GB)":
-            storage,
-
-        "Storage Type":
-            storage_type,
-
-        "Connectivity":
-            connectivity,
-
-        "Material":
-            (
-                item.Material.strip()
-                if item.Material
-                else np.nan
-            ),
-
-        "Max. Trade-In Value (RM)":
-            trade_in_value,
-
-        "Model_Year":
-            model_year,
-
-        "Chipset":
-            chipset,
-
-        "Case Size":
-            case_size,
-
-        "Charging Method":
-            charging_method,
-    }
+    new_row = {"Provider": provider, "Device": device, "Sub-device": sub_device, "Standardized Model": model_name, "Model Number": model_number, "Retail Price": msrp, "Storage (GB)": storage, "Storage Type": storage_type, "Connectivity": connectivity, "Material": (item.Material.strip() if item.Material else np.nan), "Max. Trade-In Value (RM)": trade_in_value, "Model_Year": model_year, "Chipset": chipset, "Case Size": case_size, "Charging Method": charging_method}
 
     # ========================================================
     # APPEND TO DATAFRAME
     # ========================================================
 
-    df = pd.concat(
-        [
-            df,
-            pd.DataFrame([new_row])
-        ],
-        ignore_index=True
-    )
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
     # Save updated master dataset
-    df.to_csv(
-        DATA_FILE,
-        index=False
-    )
+    df.to_csv(DATA_FILE, index=False)
 
     # ========================================================
     # SYNC TO GOOGLE SHEETS (best-effort, non-blocking)
@@ -1486,82 +1034,39 @@ def admin_add_device(item: AdminAddDevice):
 
     if not sync_result.success:
 
-        print(
-            "WARNING: Google Sheets sync failed after ADD: "
-            f"{sync_result.error}"
-        )
+        print("WARNING: Google Sheets sync failed after ADD: " f"{sync_result.error}")
 
     # ========================================================
     # LOG
     # ========================================================
 
-    print(
-        f"Device       : {device}"
-    )
+    print(f"Device       : {device}")
 
-    print(
-        f"Sub-device   : {sub_device}"
-    )
+    print(f"Sub-device   : {sub_device}")
 
-    print(
-        f"Model        : {model_name}"
-    )
+    print(f"Model        : {model_name}")
 
-    print(
-        f"Provider     : {provider}"
-    )
+    print(f"Provider     : {provider}")
 
-    print(
-        f"Retail Price : RM {msrp:,.2f}"
-    )
+    print(f"Retail Price : RM {msrp:,.2f}")
 
-    print(
-        f"Trade-in     : "
-        f"{'N/A' if pd.isna(trade_in_value) else f'RM {trade_in_value:,.2f}'}"
-    )
+    print(f"Trade-in     : " f"{'N/A' if pd.isna(trade_in_value) else f'RM {trade_in_value:,.2f}'}")
 
-    print(
-        "Device added successfully."
-    )
+    print("Device added successfully.")
 
     print("=" * 70)
-    
+
     # ========================================================
     # RESPONSE
     # ========================================================
 
-    return {
+    return {"status": "success", "message": "Device added successfully.", "price_status": price_status, "model": model_name, "msrp": msrp, "trade_in_value": (None if pd.isna(trade_in_value) else trade_in_value), "sheets_sync": sync_result.as_dict()}
 
-        "status":
-            "success",
-
-        "message":
-            "Device added successfully.",
-
-        "price_status":
-            price_status,
-
-        "model":
-            model_name,
-
-        "msrp":
-            msrp,
-
-        "trade_in_value":
-            (
-                None
-                if pd.isna(trade_in_value)
-                else trade_in_value
-            ),
-
-        "sheets_sync":
-            sync_result.as_dict()
-
-    }
 
 # ============================================================
 # ADMIN — DATA STATUS
 # ============================================================
+
 
 @app.get("/admin/status")
 def admin_status():
@@ -1572,69 +1077,13 @@ def admin_status():
     # DEVICE-SPECIFIC INTENTIONAL MISSING FIELDS
     # --------------------------------------------------------
 
-    excluded_fields = {
-
-        "iPhone": {
-            "Connectivity",
-            "Material",
-            "Case Size",
-            "Charging Method",
-            "Storage Type"
-        },
-
-        "iPad": {
-            "Storage Type",
-            "Material",
-            "Case Size",
-            "Charging Method"
-        },
-
-        "Mac": {
-            "Connectivity",
-            "Material",
-            "Case Size",
-            "Charging Method"
-        },
-
-        "Apple Watch": {
-            "Storage Type",
-            "Charging Method"
-        },
-
-        "AirPods": {
-            "Storage (GB)",
-            "Storage Type",
-            "Connectivity",
-            "Material",
-            "Case Size"
-        }
-
-    }
-
+    excluded_fields = {"iPhone": {"Connectivity", "Material", "Case Size", "Charging Method", "Storage Type"}, "iPad": {"Storage Type", "Material", "Case Size", "Charging Method"}, "Mac": {"Connectivity", "Material", "Case Size", "Charging Method"}, "Apple Watch": {"Storage Type", "Charging Method"}, "AirPods": {"Storage (GB)", "Storage Type", "Connectivity", "Material", "Case Size"}}
 
     # --------------------------------------------------------
     # COLUMNS ACTUALLY USED BY THE APPLICATION
     # --------------------------------------------------------
 
-    fields = [
-
-        "Provider",
-        "Device",
-        "Sub-device",
-        "Standardized Model",
-        "Retail Price",
-        "Storage (GB)",
-        "Storage Type",
-        "Connectivity",
-        "Material",
-        "Max. Trade-In Value (RM)",
-        "Model_Year",
-        "Chipset",
-        "Case Size",
-        "Charging Method"
-
-    ]
-
+    fields = ["Provider", "Device", "Sub-device", "Standardized Model", "Retail Price", "Storage (GB)", "Storage Type", "Connectivity", "Material", "Max. Trade-In Value (RM)", "Model_Year", "Chipset", "Case Size", "Charging Method"]
 
     # --------------------------------------------------------
     # MISSING VALUE CHECK
@@ -1649,20 +1098,11 @@ def admin_status():
 
             value = value.strip().lower()
 
-            return value in {
-                "",
-                "n/a",
-                "na",
-                "Unknown",
-                "none",
-                "nan"
-            }
+            return value in {"", "n/a", "na", "Unknown", "none", "nan"}
 
         return False
 
-
     categories = []
-
 
     # --------------------------------------------------------
     # CHECK EACH COLUMN
@@ -1673,31 +1113,19 @@ def admin_status():
         if field not in df.columns:
             continue
 
-
         affected_records = []
-
 
         for index, row in df.iterrows():
 
-            device = (
-                None
-                if pd.isna(row["Device"])
-                else str(row["Device"]).strip()
-            )
-
+            device = None if pd.isna(row["Device"]) else str(row["Device"]).strip()
 
             # ------------------------------------------------
             # SKIP INTENTIONALLY MISSING FIELDS
             # ------------------------------------------------
 
-            if (
-                device in excluded_fields
-                and
-                field in excluded_fields[device]
-            ):
+            if device in excluded_fields and field in excluded_fields[device]:
 
                 continue
-
 
             # ------------------------------------------------
             # CHECK VALUE
@@ -1707,141 +1135,25 @@ def admin_status():
                 continue
 
             if field == "Charging Method":
-                print(
-                    "CHARGING METHOD MISSING:",
-                    device,
-                    "|",
-                    row["Charging Method"]
-                )
+                print("CHARGING METHOD MISSING:", device, "|", row["Charging Method"])
 
-
-            affected_records.append({
-
-                "id":
-                    int(cast(int, index)),
-
-                "device":
-                    device,
-
-                "sub_device":
-                    (
-                        None
-                        if pd.isna(row["Sub-device"])
-                        else str(
-                            row["Sub-device"]
-                        ).strip()
-                    ),
-
-                "model":
-                    (
-                        None
-                        if pd.isna(
-                            row["Standardized Model"]
-                        )
-                        else str(
-                            row["Standardized Model"]
-                        ).strip()
-                    ),
-
-                "provider":
-                    (
-                        None
-                        if pd.isna(row["Provider"])
-                        else str(
-                            row["Provider"]
-                        ).strip()
-                    ),
-
-                "storage":
-                    (
-                        None
-                        if pd.isna(
-                            row["Storage (GB)"]
-                        )
-                        else float(
-                            row["Storage (GB)"]
-                        )
-                    ),
-
-                "storage_type":
-                    (
-                        None
-                        if pd.isna(
-                            row["Storage Type"]
-                        )
-                        else str(
-                            row["Storage Type"]
-                        ).strip()
-                    ),
-
-                "connectivity":
-                    (
-                        None
-                        if pd.isna(
-                            row["Connectivity"]
-                        )
-                        else str(
-                            row["Connectivity"]
-                        ).strip()
-                    ),
-
-                "material":
-                    (
-                        None
-                        if pd.isna(row["Material"])
-                        else str(
-                            row["Material"]
-                        ).strip()
-                    ),
-
-                "chipset":
-                    (
-                        None
-                        if pd.isna(row["Chipset"])
-                        else str(
-                            row["Chipset"]
-                        ).strip()
-                    ),
-
-                "case_size":
-                    (
-                        None
-                        if pd.isna(
-                            row["Case Size"]
-                        )
-                        else str(
-                            row["Case Size"]
-                        ).strip()
-                    ),
-
-                "charging_method":
-                    (
-                        None
-                        if pd.isna(
-                            row["Charging Method"]
-                        )
-                        else str(
-                            row["Charging Method"]
-                        ).strip()
-                    ),
-
-                "trade_in_value":
-                    (
-                        None
-                        if pd.isna(
-                            row[
-                                "Max. Trade-In Value (RM)"
-                            ]
-                        )
-                        else float(
-                            row[
-                                "Max. Trade-In Value (RM)"
-                            ]
-                        )
-                    )
-
-            })
-
+            affected_records.append(
+                {
+                    "id": int(cast(int, index)),
+                    "device": device,
+                    "sub_device": (None if pd.isna(row["Sub-device"]) else str(row["Sub-device"]).strip()),
+                    "model": (None if pd.isna(row["Standardized Model"]) else str(row["Standardized Model"]).strip()),
+                    "provider": (None if pd.isna(row["Provider"]) else str(row["Provider"]).strip()),
+                    "storage": (None if pd.isna(row["Storage (GB)"]) else float(row["Storage (GB)"])),
+                    "storage_type": (None if pd.isna(row["Storage Type"]) else str(row["Storage Type"]).strip()),
+                    "connectivity": (None if pd.isna(row["Connectivity"]) else str(row["Connectivity"]).strip()),
+                    "material": (None if pd.isna(row["Material"]) else str(row["Material"]).strip()),
+                    "chipset": (None if pd.isna(row["Chipset"]) else str(row["Chipset"]).strip()),
+                    "case_size": (None if pd.isna(row["Case Size"]) else str(row["Case Size"]).strip()),
+                    "charging_method": (None if pd.isna(row["Charging Method"]) else str(row["Charging Method"]).strip()),
+                    "trade_in_value": (None if pd.isna(row["Max. Trade-In Value (RM)"]) else float(row["Max. Trade-In Value (RM)"])),
+                }
+            )
 
         # ----------------------------------------------------
         # ONLY CREATE CATEGORY IF SOMETHING IS MISSING
@@ -1849,42 +1161,16 @@ def admin_status():
 
         if affected_records:
 
-            categories.append({
-
-                "field":
-                    field,
-
-                "count":
-                    len(affected_records),
-
-                "records":
-                    affected_records
-
-            })
-
+            categories.append({"field": field, "count": len(affected_records), "records": affected_records})
 
     # --------------------------------------------------------
     # SUMMARY
     # --------------------------------------------------------
 
-    total_missing = sum(
-        category["count"]
-        for category in categories
-    )
+    total_missing = sum(category["count"] for category in categories)
 
+    return {"total_records": int(len(df)), "categories": categories, "total_missing": int(total_missing)}
 
-    return {
-
-        "total_records":
-            int(len(df)),
-
-        "categories":
-            categories,
-
-        "total_missing":
-            int(total_missing)
-
-    }
 
 # ============================================================
 # ADMIN — DATA VERSION (lightweight staleness check)
@@ -1901,15 +1187,18 @@ def admin_status():
 # then reports the current stamp. Cheap enough to poll frequently.
 # ============================================================
 
+
 @app.get("/admin/data-version")
 def admin_data_version():
     refresh_data_if_stale()
 
     return {"dataVersion": _data_version}
 
+
 # ============================================================
 # ADMIN — AVAILABLE MODELS
 # ============================================================
+
 
 @app.get("/admin/models")
 def admin_models():
@@ -1919,21 +1208,17 @@ def admin_models():
 
     for device, group in df.groupby("Device"):
 
-        values = (
-            group["Standardized Model"]
-            .dropna()
-            .astype(str)
-            .unique()
-            .tolist()
-        )
+        values = group["Standardized Model"].dropna().astype(str).unique().tolist()
 
         models[device] = sorted(values)
 
     return models
 
+
 # ============================================================
 # ADMIN — FORECAST MODEL HIERARCHY
 # ============================================================
+
 
 @app.get("/admin/forecast-models")
 def admin_forecast_models():
@@ -1953,9 +1238,7 @@ def admin_forecast_models():
 
     hierarchy = {}
 
-    for (device, sub_device), group in df.groupby(
-        ["Device", "Sub-device"]
-    ):
+    for (device, sub_device), group in df.groupby(["Device", "Sub-device"]):
         if pd.isna(device) or pd.isna(sub_device):
             continue
 
@@ -1965,41 +1248,27 @@ def admin_forecast_models():
         if device_str not in hierarchy:
             hierarchy[device_str] = {}
 
-        models = (
-            group["Standardized Model"]
-            .dropna()
-            .astype(str)
-            .unique()
-            .tolist()
-        )
+        models = group["Standardized Model"].dropna().astype(str).unique().tolist()
 
         hierarchy[device_str][sub_device_str] = sorted(models)
 
     return hierarchy
 
+
 # ============================================================
 # ADMIN — FIND RECORDS
 # ============================================================
 
+
 @app.get("/admin/records")
-def admin_records(
-    device: str,
-    model: str,
-    sub_device: Optional[str] = None
-):
+def admin_records(device: str, model: str, sub_device: Optional[str] = None):
 
     refresh_data_if_stale()
 
-    matches = df[
-        (df["Device"] == device)
-        &
-        (df["Standardized Model"] == model)
-    ]
+    matches = df[(df["Device"] == device) & (df["Standardized Model"] == model)]
 
     if sub_device:
-        matches = matches[
-            matches["Sub-device"] == sub_device
-        ]
+        matches = matches[matches["Sub-device"] == sub_device]
 
     # ----------------------------------------------------
     # HELPERS
@@ -2017,46 +1286,18 @@ def admin_records(
 
         return str(value).strip()
 
-
-    def safe_numeric(value):
-
-        if value is None:
-            return None
-
-        if isinstance(value, str):
-            value = value.strip()
-
-            if value == "":
-                return None
-
-        try:
-            number = float(value)
-
-        except (TypeError, ValueError):
-            return None
-
-        return int(number) if number.is_integer() else number
-
-
     def clean_json_value(value):
 
         if isinstance(value, float) and np.isnan(value):
             return None
 
         if isinstance(value, dict):
-            return {
-                key: clean_json_value(val)
-                for key, val in value.items()
-            }
+            return {key: clean_json_value(val) for key, val in value.items()}
 
         if isinstance(value, list):
-            return [
-                clean_json_value(item)
-                for item in value
-            ]
+            return [clean_json_value(item) for item in value]
 
         return value
-
 
     records = []
 
@@ -2090,80 +1331,17 @@ def admin_records(
         # BUILD RECORD
         # ------------------------------------------------
 
-        records.append({
-
-            "id":
-                record_id,
-
-            "model":
-                clean_value(
-                    "Standardized Model",
-                    row
-                ),
-
-            "sub_device":
-                clean_value(
-                    "Sub-device",
-                    row
-                ),
-
-            "storage":
-                storage,
-
-            "storage_type":
-                clean_value(
-                    "Storage Type",
-                    row
-                ),
-
-            "connectivity":
-                clean_value(
-                    "Connectivity",
-                    row
-                ),
-
-            "material":
-                clean_value(
-                    "Material",
-                    row
-                ),
-
-            "chipset":
-                clean_value(
-                    "Chipset",
-                    row
-                ),
-
-            "provider":
-                clean_value(
-                    "Provider",
-                    row
-                ),
-
-            "msrp":
-                (
-                    None
-                    if pd.isna(row["Retail Price"])
-                    else float(row["Retail Price"])
-                ),
-
-            "trade_in_value":
-                value
-
-        })
+        records.append({"id": record_id, "model": clean_value("Standardized Model", row), "sub_device": clean_value("Sub-device", row), "storage": storage, "storage_type": clean_value("Storage Type", row), "connectivity": clean_value("Connectivity", row), "material": clean_value("Material", row), "chipset": clean_value("Chipset", row), "provider": clean_value("Provider", row), "msrp": (None if pd.isna(row["Retail Price"]) else float(row["Retail Price"])), "trade_in_value": value})
 
     records = clean_json_value(records)
 
-    return JSONResponse(
-        content=records,
-        headers={
-            "X-Data-Version": _data_version
-        }
-    )
+    return JSONResponse(content=records, headers={"X-Data-Version": _data_version})
+
 
 # ============================================================
 # ADMIN MODIFY REQUEST
 # ============================================================
+
 
 class AdminModifyDevice(BaseModel):
 
@@ -2177,10 +1355,9 @@ class AdminModifyDevice(BaseModel):
 
     TradeInValue: Optional[float] = None
 
+
 @app.post("/admin/modify")
-def admin_modify_device(
-    item: AdminModifyDevice
-):
+def admin_modify_device(item: AdminModifyDevice):
 
     global df
 
@@ -2189,10 +1366,7 @@ def admin_modify_device(
     print("=" * 70)
 
     if not force_refresh_from_sheets():
-        raise HTTPException(
-            status_code=503,
-            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
-        )
+        raise HTTPException(status_code=503, detail="Unable to refresh data from Google Sheets. Operation cancelled.")
 
     # ========================================================
     # CHECK RECORD
@@ -2200,10 +1374,7 @@ def admin_modify_device(
 
     if item.id < 0 or item.id >= len(df):
 
-        return {
-            "status": "error",
-            "message": "Record not found."
-        }
+        return {"status": "error", "message": "Record not found."}
 
     # ========================================================
     # CHECK DATA VERSION
@@ -2215,47 +1386,25 @@ def admin_modify_device(
     # record. Reject rather than silently write to the wrong row.
     # ========================================================
 
-    if (
-        item.dataVersion is not None
-        and item.dataVersion != _data_version
-    ):
+    if item.dataVersion is not None and item.dataVersion != _data_version:
 
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "The underlying data has changed since you "
-                "loaded this record. Reloading..."
-            ),
-        )
+        raise HTTPException(status_code=409, detail=("The underlying data has changed since you " "loaded this record. Reloading..."))
 
     # ========================================================
     # VALIDATE RETAIL PRICE (MSRP)
     # ========================================================
 
-    if (
-        item.MSRP is not None
-        and item.MSRP < 0
-    ):
+    if item.MSRP is not None and item.MSRP < 0:
 
-        return {
-            "status": "error",
-            "message": "Retail price cannot be negative."
-        }
+        return {"status": "error", "message": "Retail price cannot be negative."}
 
     # ========================================================
     # VALIDATE TRADE-IN VALUE
     # ========================================================
 
-    if (
-        item.TradeInValue is not None
-        and item.TradeInValue < 0
-    ):
+    if item.TradeInValue is not None and item.TradeInValue < 0:
 
-        return {
-            "status": "error",
-            "message":
-                "Trade-in value cannot be negative."
-        }
+        return {"status": "error", "message": "Trade-in value cannot be negative."}
 
     # ========================================================
     # PROVIDER
@@ -2267,25 +1416,13 @@ def admin_modify_device(
 
         if not provider:
 
-            return {
-                "status": "error",
-                "message": "Provider cannot be empty."
-            }
+            return {"status": "error", "message": "Provider cannot be empty."}
 
-        old_provider = df.at[
-            item.id,
-            "Provider"
-        ]
+        old_provider = df.at[item.id, "Provider"]
 
-        df.at[
-            item.id,
-            "Provider"
-        ] = provider
+        df.at[item.id, "Provider"] = provider
 
-        print(
-            f"Provider updated: "
-            f"{old_provider} → {provider}"
-        )
+        print(f"Provider updated: " f"{old_provider} → {provider}")
 
     # ========================================================
     # RETAIL PRICE (MSRP)
@@ -2293,21 +1430,11 @@ def admin_modify_device(
 
     if item.MSRP is not None:
 
-        old_msrp = df.at[
-            item.id,
-            "Retail Price"
-        ]
+        old_msrp = df.at[item.id, "Retail Price"]
 
-        df.at[
-            item.id,
-            "Retail Price"
-        ] = float(item.MSRP)
+        df.at[item.id, "Retail Price"] = float(item.MSRP)
 
-        print(
-            f"Retail Price updated: "
-            f"{'N/A' if pd.isna(old_msrp) else f'RM {old_msrp:,.2f}'}"
-            f" → RM {item.MSRP:,.2f}"
-        )
+        print(f"Retail Price updated: " f"{'N/A' if pd.isna(old_msrp) else f'RM {old_msrp:,.2f}'}" f" → RM {item.MSRP:,.2f}")
 
     # ========================================================
     # TRADE-IN VALUE
@@ -2315,45 +1442,25 @@ def admin_modify_device(
 
     if item.TradeInValue is not None:
 
-        old_value = df.at[
-            item.id,
-            "Max. Trade-In Value (RM)"
-        ]
+        old_value = df.at[item.id, "Max. Trade-In Value (RM)"]
 
-        df.at[
-            item.id,
-            "Max. Trade-In Value (RM)"
-        ] = float(item.TradeInValue)
+        df.at[item.id, "Max. Trade-In Value (RM)"] = float(item.TradeInValue)
 
-        print(
-            f"Trade-in value updated: "
-            f"RM {item.TradeInValue:,.2f}"
-        )
+        print(f"Trade-in value updated: " f"RM {item.TradeInValue:,.2f}")
 
     else:
 
-        old_value = df.at[
-            item.id,
-            "Max. Trade-In Value (RM)"
-        ]
+        old_value = df.at[item.id, "Max. Trade-In Value (RM)"]
 
-        df.at[
-            item.id,
-            "Max. Trade-In Value (RM)"
-        ] = np.nan
+        df.at[item.id, "Max. Trade-In Value (RM)"] = np.nan
 
-        print(
-            "Trade-in value changed to N/A."
-        )
+        print("Trade-in value changed to N/A.")
 
     # ========================================================
     # SAVE MASTER DATASET
     # ========================================================
 
-    df.to_csv(
-        DATA_FILE,
-        index=False
-    )
+    df.to_csv(DATA_FILE, index=False)
 
     # ========================================================
     # SYNC TO GOOGLE SHEETS (best-effort, non-blocking)
@@ -2365,22 +1472,15 @@ def admin_modify_device(
 
     if not sync_result.success:
 
-        print(
-            "WARNING: Google Sheets sync failed after MODIFY: "
-            f"{sync_result.error}"
-        )
+        print("WARNING: Google Sheets sync failed after MODIFY: " f"{sync_result.error}")
 
     # ========================================================
     # LOG
     # ========================================================
 
-    print(
-        f"Record index : {item.id}"
-    )
+    print(f"Record index : {item.id}")
 
-    print(
-        "Record updated successfully."
-    )
+    print("Record updated successfully.")
 
     print("=" * 70)
 
@@ -2388,61 +1488,16 @@ def admin_modify_device(
     # RESPONSE
     # ========================================================
 
-    return {
+    return {"status": "success", "message": "Record updated successfully.", "id": item.id, "provider": (str(df.at[item.id, "Provider"]) if not pd.isna(df.at[item.id, "Provider"]) else None), "msrp": (None if pd.isna(df.at[item.id, "Retail Price"]) else float(df.at[item.id, "Retail Price"])), "trade_in_value": (None if pd.isna(df.at[item.id, "Max. Trade-In Value (RM)"]) else float(df.at[item.id, "Max. Trade-In Value (RM)"])), "sheets_sync": sync_result.as_dict()}
 
-        "status":
-            "success",
-
-        "message":
-            "Record updated successfully.",
-
-        "id":
-            item.id,
-
-        "provider":
-            (
-                str(df.at[item.id, "Provider"])
-                if not pd.isna(df.at[item.id, "Provider"])
-                else None
-            ),
-
-        "msrp":
-            (
-                None
-                if pd.isna(df.at[item.id, "Retail Price"])
-                else float(df.at[item.id, "Retail Price"])
-            ),
-
-        "trade_in_value":
-            (
-                None
-                if pd.isna(
-                    df.at[
-                        item.id,
-                        "Max. Trade-In Value (RM)"
-                    ]
-                )
-                else float(
-                    df.at[
-                        item.id,
-                        "Max. Trade-In Value (RM)"
-                    ]
-                )
-            ),
-
-        "sheets_sync":
-            sync_result.as_dict()
-
-    }
 
 # ============================================================
 # ADMIN — DELETE DEVICE
 # ============================================================
 
+
 @app.post("/admin/delete")
-def admin_delete_device(
-    item: dict
-):
+def admin_delete_device(item: dict):
 
     global df
 
@@ -2451,10 +1506,7 @@ def admin_delete_device(
     print("=" * 70)
 
     if not force_refresh_from_sheets():
-        raise HTTPException(
-            status_code=503,
-            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
-        )
+        raise HTTPException(status_code=503, detail="Unable to refresh data from Google Sheets. Operation cancelled.")
 
     # --------------------------------------------------------
     # GET RECORD ID
@@ -2462,14 +1514,9 @@ def admin_delete_device(
 
     record_id = item.get("id")
 
-
     if record_id is None:
 
-        return {
-            "status": "error",
-            "message": "Record ID is required."
-        }
-
+        return {"status": "error", "message": "Record ID is required."}
 
     try:
 
@@ -2477,11 +1524,7 @@ def admin_delete_device(
 
     except (ValueError, TypeError):
 
-        return {
-            "status": "error",
-            "message": "Invalid record ID."
-        }
-
+        return {"status": "error", "message": "Invalid record ID."}
 
     # --------------------------------------------------------
     # CHECK RECORD EXISTS
@@ -2489,11 +1532,7 @@ def admin_delete_device(
 
     if record_id not in df.index:
 
-        return {
-            "status": "error",
-            "message": "Record not found."
-        }
-
+        return {"status": "error", "message": "Record not found."}
 
     # --------------------------------------------------------
     # CHECK DATA VERSION
@@ -2506,19 +1545,9 @@ def admin_delete_device(
 
     submitted_version = item.get("dataVersion")
 
-    if (
-        submitted_version is not None
-        and submitted_version != _data_version
-    ):
+    if submitted_version is not None and submitted_version != _data_version:
 
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "The underlying data has changed since you "
-                "loaded this record. Reloading..."
-            ),
-        )
-
+        raise HTTPException(status_code=409, detail=("The underlying data has changed since you " "loaded this record. Reloading..."))
 
     # --------------------------------------------------------
     # GET RECORD BEFORE DELETING
@@ -2526,42 +1555,23 @@ def admin_delete_device(
 
     deleted_row = df.loc[record_id].copy()
 
+    print(f"Deleting record index: {record_id}")
 
-    print(
-        f"Deleting record index: {record_id}"
-    )
+    print(f"Model: " f"{deleted_row['Standardized Model']}")
 
-    print(
-        f"Model: "
-        f"{deleted_row['Standardized Model']}"
-    )
-
-    print(
-        f"Trade-In Value: "
-        f"{deleted_row['Max. Trade-In Value (RM)']}"
-    )
-
+    print(f"Trade-In Value: " f"{deleted_row['Max. Trade-In Value (RM)']}")
 
     # --------------------------------------------------------
     # DELETE
     # --------------------------------------------------------
 
-    df = df.drop(
-        index=record_id
-    ).reset_index(
-        drop=True
-    )
-
+    df = df.drop(index=record_id).reset_index(drop=True)
 
     # --------------------------------------------------------
     # SAVE MASTER CLEAN
     # --------------------------------------------------------
 
-    df.to_csv(
-        DATA_FILE,
-        index=False
-    )
-
+    df.to_csv(DATA_FILE, index=False)
 
     # --------------------------------------------------------
     # SYNC TO GOOGLE SHEETS (best-effort, non-blocking)
@@ -2573,32 +1583,21 @@ def admin_delete_device(
 
     if not sync_result.success:
 
-        print(
-            "WARNING: Google Sheets sync failed after DELETE: "
-            f"{sync_result.error}"
-        )
+        print("WARNING: Google Sheets sync failed after DELETE: " f"{sync_result.error}")
 
+    print("Record deleted successfully.")
 
-    print(
-        "Record deleted successfully."
-    )
-
-    print(
-        f"Updated dataset rows: {len(df)}"
-    )
+    print(f"Updated dataset rows: {len(df)}")
 
     print("=" * 70)
 
+    return {"status": "success", "message": "Record deleted successfully.", "sheets_sync": sync_result.as_dict()}
 
-    return {
-        "status": "success",
-        "message": "Record deleted successfully.",
-        "sheets_sync": sync_result.as_dict()
-    }
 
 # ============================================================
 # ADMIN — FORECAST TRADE-IN VALUE
 # ============================================================
+
 
 @app.post("/admin/forecast")
 def admin_forecast(item: dict):
@@ -2612,7 +1611,6 @@ def admin_forecast(item: dict):
 
         current_year = datetime.now().year
 
-
         # ----------------------------------------------------
         # GET INPUT
         # ----------------------------------------------------
@@ -2620,26 +1618,16 @@ def admin_forecast(item: dict):
         record_id = item.get("record_id")
         forecast_until = item.get("forecast_until")
 
-
         if record_id is None:
 
-            return {
-                "status": "error",
-                "message": "Record ID is required."
-            }
-
+            return {"status": "error", "message": "Record ID is required."}
 
         if forecast_until is None:
 
-            return {
-                "status": "error",
-                "message": "Forecast end year is required."
-            }
-
+            return {"status": "error", "message": "Forecast end year is required."}
 
         record_id = int(record_id)
         forecast_until = int(forecast_until)
-
 
         # ----------------------------------------------------
         # VALIDATE YEAR
@@ -2647,21 +1635,11 @@ def admin_forecast(item: dict):
 
         if forecast_until < current_year:
 
-            return {
-                "status": "error",
-                "message":
-                    f"Forecast year must be "
-                    f"{current_year} or later."
-            }
-
+            return {"status": "error", "message": f"Forecast year must be " f"{current_year} or later."}
 
         if record_id not in df.index:
 
-            return {
-                "status": "error",
-                "message": "Record not found."
-            }
-
+            return {"status": "error", "message": "Record not found."}
 
         # ----------------------------------------------------
         # GET BASE RECORD
@@ -2669,25 +1647,15 @@ def admin_forecast(item: dict):
 
         base = df.loc[record_id].copy()
 
+        device = str(base["Device"])
 
-        device = str(
-            base["Device"]
-        )
+        sub_device = str(base["Sub-device"])
 
-        sub_device = str(
-            base["Sub-device"]
-        )
+        model_name = str(base["Standardized Model"])
 
-        model_name = str(
-            base["Standardized Model"]
-        )
-
-        provider = str(
-            base["Provider"]
-        )
+        provider = str(base["Provider"])
 
         model_year_value = base["Model_Year"]
-
 
         # ----------------------------------------------------
         # VALIDATE MODEL YEAR
@@ -2695,18 +1663,9 @@ def admin_forecast(item: dict):
 
         if pd.isna(model_year_value):
 
-            return {
-                "status": "unresolved",
-                "message":
-                    "Model year is unavailable for "
-                    "this device."
-            }
+            return {"status": "unresolved", "message": "Model year is unavailable for " "this device."}
 
-
-        model_year = int(
-            float(model_year_value)
-        )
-
+        model_year = int(float(model_year_value))
 
         # ----------------------------------------------------
         # RETAIL PRICE (MSRP)
@@ -2719,14 +1678,7 @@ def admin_forecast(item: dict):
 
         if pd.isna(msrp_value):
 
-            return {
-                "status":
-                    "unresolved",
-
-                "message":
-                    "Retail price is unavailable for this device."
-            }
-
+            return {"status": "unresolved", "message": "Retail price is unavailable for this device."}
 
         msrp = float(msrp_value)
 
@@ -2738,35 +1690,19 @@ def admin_forecast(item: dict):
         print("ADMIN — DEPRECIATION FORECAST")
         print("=" * 70)
 
-        print(
-            f"Device       : {device}"
-        )
+        print(f"Device       : {device}")
 
-        print(
-            f"Sub-device   : {sub_device}"
-        )
+        print(f"Sub-device   : {sub_device}")
 
-        print(
-            f"Model        : {model_name}"
-        )
+        print(f"Model        : {model_name}")
 
-        print(
-            f"Provider     : {provider}"
-        )
+        print(f"Provider     : {provider}")
 
-        print(
-            f"Model Year   : {model_year}"
-        )
+        print(f"Model Year   : {model_year}")
 
-        print(
-            f"Retail Price : RM {msrp:,.2f}"
-        )
+        print(f"Retail Price : RM {msrp:,.2f}")
 
-        print(
-            f"Forecast     : {model_year} → "
-            f"{forecast_until}"
-        )
-
+        print(f"Forecast     : {model_year} → " f"{forecast_until}")
 
         # ----------------------------------------------------
         # TIMELINE ANCHORED TO DEVICE RELEASE YEAR
@@ -2784,18 +1720,11 @@ def admin_forecast(item: dict):
 
         if forecast_start > forecast_until:
 
-            return {
-                "status": "error",
-                "message":
-                    "Forecast end year must be "
-                    f"{forecast_start} or later, since "
-                    f"this device's Model Year is {model_year}."
-            }
+            return {"status": "error", "message": "Forecast end year must be " f"{forecast_start} or later, since " f"this device's Model Year is {model_year}."}
 
         results = []
 
         previous_value = None
-
 
         # ----------------------------------------------------
         # ACTUAL OBSERVATION YEAR
@@ -2813,22 +1742,13 @@ def admin_forecast(item: dict):
 
         has_actual_trade_in = not pd.isna(actual_trade_in_raw)
 
-
-        for year in range(
-            forecast_start,
-            forecast_until + 1
-        ):
+        for year in range(forecast_start, forecast_until + 1):
 
             # ------------------------------------------------
             # DEVICE AGE
             # ------------------------------------------------
 
-            device_age = (
-                year
-                -
-                model_year
-            )
-
+            device_age = year - model_year
 
             # ------------------------------------------------
             # ACTUAL OBSERVATION (PRIORITY)
@@ -2839,22 +1759,13 @@ def admin_forecast(item: dict):
             # where it exists.
             # ------------------------------------------------
 
-            if (
-                year == ACTUAL_OBSERVATION_YEAR
-                and has_actual_trade_in
-            ):
+            if year == ACTUAL_OBSERVATION_YEAR and has_actual_trade_in:
 
                 prediction = float(actual_trade_in_raw)
 
                 point_type = "actual_observation"
 
-                print(
-                    f"Forecast {year}: "
-                    f"RM {prediction:,.2f} | "
-                    f"Tier: actual_observation | "
-                    f"Curve: recorded value"
-                )
-
+                print(f"Forecast {year}: " f"RM {prediction:,.2f} | " f"Tier: actual_observation | " f"Curve: recorded value")
 
             # ------------------------------------------------
             # AGE 0
@@ -2870,13 +1781,7 @@ def admin_forecast(item: dict):
 
                 point_type = "msrp_baseline"
 
-                print(
-                    f"Forecast {year}: "
-                    f"RM {prediction:,.2f} | "
-                    f"Tier: launch_price | "
-                    f"Curve: Retail price baseline"
-                )
-
+                print(f"Forecast {year}: " f"RM {prediction:,.2f} | " f"Tier: launch_price | " f"Curve: Retail price baseline")
 
             # ------------------------------------------------
             # AGE 1+
@@ -2886,63 +1791,21 @@ def admin_forecast(item: dict):
 
             else:
 
-                fallback_result = fallback.predict(
-
-                    device=device,
-
-                    sub_device=sub_device,
-
-                    provider=provider,
-
-                    msrp=msrp,
-
-                    model_year=model_year,
-
-                    reference_year=year
-
-                )
-
+                fallback_result = fallback.predict(device=device, sub_device=sub_device, provider=provider, msrp=msrp, model_year=model_year, reference_year=year)
 
                 # ------------------------------------------------
                 # UNRESOLVED
                 # ------------------------------------------------
 
-                if (
-                    fallback_result.predicted_value
-                    is None
-                ):
+                if fallback_result.predicted_value is None:
 
-                    return {
+                    return {"status": "unresolved", "message": ("No suitable depreciation curve " "is available for this device."), "confidence_flag": fallback_result.confidence_flag}
 
-                        "status":
-                            "unresolved",
+                print(f"Forecast {year}: " f"RM {fallback_result.predicted_value:,.2f} | " f"Tier: {fallback_result.matched_tier} | " f"Curve: {fallback_result.form}")
 
-                        "message":
-                            (
-                                "No suitable depreciation curve "
-                                "is available for this device."
-                            ),
-
-                        "confidence_flag":
-                            fallback_result.confidence_flag
-
-                    }
-
-
-                print(
-                    f"Forecast {year}: "
-                    f"RM {fallback_result.predicted_value:,.2f} | "
-                    f"Tier: {fallback_result.matched_tier} | "
-                    f"Curve: {fallback_result.form}"
-                )
-
-
-                prediction = float(
-                    fallback_result.predicted_value
-                )
+                prediction = float(fallback_result.predicted_value)
 
                 point_type = "curve_forecast"
-
 
             # ------------------------------------------------
             # CHANGE
@@ -2956,177 +1819,73 @@ def admin_forecast(item: dict):
 
             else:
 
-                change = (
-                    prediction
-                    -
-                    previous_value
-                )
-
+                change = prediction - previous_value
 
                 if previous_value != 0:
 
-                    change_percent = (
-                        change
-                        /
-                        previous_value
-                    ) * 100
+                    change_percent = (change / previous_value) * 100
 
                 else:
 
                     change_percent = None
 
-
             # ------------------------------------------------
             # RESULT
             # ------------------------------------------------
 
-            results.append({
-
-                "year":
-                    year,
-
-                "device_age":
-                    device_age,
-
-                "estimated_trade_in":
-                    round(
-                        prediction,
-                        2
-                    ),
-
-                "change":
-                    (
-                        None
-                        if change is None
-                        else round(
-                            change,
-                            2
-                        )
-                    ),
-
-                "change_percent":
-                    (
-                        None
-                        if change_percent is None
-                        else round(
-                            change_percent,
-                            2
-                        )
-                    ),
-
-                "data_point_type":
-                    point_type
-
-            })
-
+            results.append({"year": year, "device_age": device_age, "estimated_trade_in": round(prediction, 2), "change": (None if change is None else round(change, 2)), "change_percent": (None if change_percent is None else round(change_percent, 2)), "data_point_type": point_type})
 
             previous_value = prediction
-
 
         # ----------------------------------------------------
         # RETURN
         # ----------------------------------------------------
 
-        return {
-
-            "status":
-                "success",
-
-            "model":
-                model_name,
-
-            "device":
-                device,
-
-            "sub_device":
-                sub_device,
-
-            "provider":
-                provider,
-
-            "model_year":
-                model_year,
-
-            "msrp":
-                round(
-                    msrp,
-                    2
-                ),
-
-            "current_year":
-                current_year,
-
-            "forecast_until":
-                forecast_until,
-
-            "method":
-                "depreciation_curve_with_msrp_baseline",
-
-            "results":
-                results
-
-        }
-
+        return {"status": "success", "model": model_name, "device": device, "sub_device": sub_device, "provider": provider, "model_year": model_year, "msrp": round(msrp, 2), "current_year": current_year, "forecast_until": forecast_until, "method": "depreciation_curve_with_msrp_baseline", "results": results}
 
     except Exception as e:
 
-        print(
-            "\nFORECAST ERROR:"
-        )
+        print("\nFORECAST ERROR:")
 
-        print(
-            repr(e)
-        )
+        print(repr(e))
 
+        return {"status": "error", "message": str(e)}
 
-        return {
-
-            "status":
-                "error",
-
-            "message":
-                str(e)
-
-        }
 
 # ============================================================
 # CUSTOMER FRONTEND
 # ============================================================
 
+
 @app.get("/")
 def customer_frontend():
-    return FileResponse(
-        ASSETS_DIR / "index.html"
-    )
+    return FileResponse(ASSETS_DIR / "index.html")
 
 
 @app.get("/customer-detail")
 def customer_detail_page():
-    return FileResponse(
-        ASSETS_DIR / "customer-detail.html"
-    )
+    return FileResponse(ASSETS_DIR / "customer-detail.html")
 
 
 # ============================================================
 # ADMIN FRONTEND
 # ============================================================
 
+
 @app.get("/admin")
 def admin_frontend():
-    return FileResponse(
-        ASSETS_DIR / "admin.html"
-    )
+    return FileResponse(ASSETS_DIR / "admin.html")
 
 
 # ============================================================
 # ADMIN — DATA STATUS FRONTEND
 # ============================================================
 
+
 @app.get("/admin/status-page")
 def admin_status_page():
-    return FileResponse(
-        ASSETS_DIR / "status.html"
-    )
+    return FileResponse(ASSETS_DIR / "status.html")
+
 
 @app.post("/admin/refresh")
 def admin_refresh():
@@ -3134,36 +1893,24 @@ def admin_refresh():
         refreshed = force_refresh_from_sheets()
 
         if not refreshed:
-            raise HTTPException(
-                status_code=503,
-                detail="force_refresh_from_sheets() returned False. Check FastAPI terminal."
-            )
+            raise HTTPException(status_code=503, detail="force_refresh_from_sheets() returned False. Check FastAPI terminal.")
 
-        return {
-            "success": True,
-            "message": "Data refreshed successfully.",
-            "dataVersion": _data_version,
-            "rows": len(df)
-        }
+        return {"success": True, "message": "Data refreshed successfully.", "dataVersion": _data_version, "rows": len(df)}
 
     except HTTPException:
         raise
 
     except Exception as exc:
         print(f"Admin refresh endpoint error: {exc}")
-        raise HTTPException(
-            status_code=500,
-            detail=str(exc)
-        )
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 # ============================================================
 # HEALTH CHECK
 # ============================================================
 
+
 @app.get("/health")
 def health_check():
 
-    return {
-        "status": "online",
-    }
+    return {"status": "online"}

@@ -1798,7 +1798,7 @@ select:disabled {
 
 @media (max-width: 640px) {
   .customer-detail-page {
-    padding: 40px 16px 32px;
+    padding: 28px 16px 32px;
   }
 
   .customer-detail-brand {
@@ -1806,8 +1806,8 @@ select:disabled {
   }
 
   .customer-detail-brand img {
-    max-width: 150px;
-    height: 54px;
+    width: 40px;
+    height: 40px;
   }
 
   .customer-detail-header {
@@ -1815,7 +1815,7 @@ select:disabled {
   }
 
   .customer-detail-header h1 {
-    font-size: clamp(2rem, 10vw, 2.7rem);
+    font-size: 36px;
   }
 
   .customer-detail-subtitle {
@@ -1823,20 +1823,26 @@ select:disabled {
   }
 
   .customer-detail-progress {
-    gap: 10px;
+    gap: 8px;
     padding: 12px 14px;
+    border-radius: 15px;
   }
 
   .customer-progress-label {
     font-size: 12px;
   }
 
+  .customer-progress-number {
+    width: 26px;
+    height: 26px;
+  }
+
   .customer-detail-card {
-    border-radius: 20px;
+    border-radius: 22px;
   }
 
   .customer-form-section {
-    padding: 28px 20px;
+    padding: 26px 22px;
   }
 
   .customer-form-heading {
@@ -1852,7 +1858,7 @@ select:disabled {
   }
 
   .customer-detail-actions {
-    padding: 20px;
+    padding: 20px 22px 24px;
   }
 }
 
@@ -1885,110 +1891,4 @@ select:disabled {
   .customer-detail-actions {
     padding: 18px 16px 22px;
   }
-}
-
-@media (max-width: 640px) {
-    .customer-detail-page {
-        padding: 28px 16px 30px;
-    }
-
-    .customer-detail-brand {
-        margin-bottom: 22px;
-    }
-
-    .customer-detail-header {
-        margin-bottom: 22px;
-    }
-
-    .customer-detail-header h1 {
-        font-size: 38px;
-    }
-
-    .customer-detail-subtitle {
-        font-size: 15px;
-    }
-
-    .customer-detail-progress {
-        gap: 9px;
-        padding: 12px 14px;
-        border-radius: 15px;
-    }
-
-    .customer-progress-label {
-        font-size: 12px;
-    }
-
-    .customer-progress-number {
-        width: 26px;
-        height: 26px;
-    }
-
-    .customer-detail-card {
-        border-radius: 22px;
-    }
-
-    .customer-form-section {
-        padding: 26px 20px;
-    }
-
-    .customer-detail-actions {
-        padding: 20px;
-    }
-
-    .customer-privacy-note {
-        padding: 15px 20px;
-    }
-}
-
-/* Mobile */
-
-@media (max-width: 600px) {
-
-.customer-detail-page {
-padding: 28px 16px 32px;
-}
-
-.customer-detail-brand {
-margin-bottom: 22px;
-}
-
-.customer-detail-brand img {
-width: 40px;
-height: 40px;
-}
-
-.customer-detail-header {
-margin-bottom: 22px;
-}
-
-.customer-detail-header h1 {
-font-size: 36px;
-}
-
-.customer-detail-subtitle {
-font-size: 15px;
-}
-
-.customer-detail-progress {
-gap: 8px;
-padding: 12px 14px;
-}
-
-.customer-progress-label {
-font-size: 12px;
-}
-
-.customer-progress-number {
-width: 26px;
-height: 26px;
-}
-
-.customer-form-section {
-padding: 26px 22px;
-}
-
-.customer-detail-actions {
-padding: 20px 22px 24px;
-}
-
 }

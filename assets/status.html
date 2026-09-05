@@ -2,308 +2,110 @@
 <html lang="en">
 
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Data Status</title>
-
-    <link
-        rel="stylesheet"
-        href="/assets/admin.css"
-    >
-
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Data Status</title>
+	<link rel="stylesheet" href="/assets/admin.css">
 </head>
 
-
 <body>
-
-    <main class="container status-page">
-
-        <!-- ============================================================
+	<main class="container status-page">
+		<!-- ============================================================
              STATUS HEADER
              ============================================================ -->
-
-        <header class="status-page-header">
-
-            <button
-                type="button"
-                id="status-back"
-                class="secondary status-back-button"
-            >
-                <span aria-hidden="true">←</span>
-                Back to Admin
-            </button>
-
-
-            <div class="status-page-heading">
-
-                <span class="status-page-eyebrow">
-                    Data Quality
-                </span>
-
-                <h1 id="status-title">
-                    Missing / Unknown Values
-                </h1>
-
-                <p
-                    id="status-description"
-                    class="description"
-                >
-                    Records requiring attention.
-                </p>
-
-            </div>
-
-        </header>
-
-
-        <!-- ============================================================
+		<header class="status-page-header">
+			<button type="button" id="status-back" class="secondary status-back-button">
+				<span aria-hidden="true">←</span> Back to Admin </button>
+			<div class="status-page-heading">
+				<span class="status-page-eyebrow"> Data Quality </span>
+				<h1 id="status-title"> Missing / Unknown Values </h1>
+				<p id="status-description" class="description"> Records requiring attention. </p>
+			</div>
+		</header>
+		<!-- ============================================================
              STATUS SUMMARY
              ============================================================ -->
-
-        <section class="status-summary card">
-
-            <div class="status-summary-icon" aria-hidden="true">
-                !
-            </div>
-
-
-            <div class="status-summary-content">
-
-                <span class="status-summary-label">
-                    Records requiring attention
-                </span>
-
-                <strong
-                    id="status-summary-count"
-                    class="status-summary-count"
-                >
-                    —
-                </strong>
-
-                <span class="status-summary-description">
-                    Review the affected records below and inspect
-                    individual entries where necessary.
-                </span>
-
-            </div>
-
-        </section>
-
-
-        <!-- ============================================================
+		<section class="status-summary card">
+			<div class="status-summary-icon" aria-hidden="true"> ! </div>
+			<div class="status-summary-content">
+				<span class="status-summary-label"> Records requiring attention </span>
+				<strong id="status-summary-count" class="status-summary-count"> — </strong>
+				<span class="status-summary-description"> Review the affected records below and inspect individual entries where necessary. </span>
+			</div>
+		</section>
+		<!-- ============================================================
              SEARCH / FILTERS
              ============================================================ -->
-
-        <section class="card status-filter-card">
-
-            <div class="status-filter-header">
-
-                <div>
-
-                    <h2>
-                        Find records
-                    </h2>
-
-                    <p>
-                        Search and filter the affected records.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="status-toolbar">
-
-                <div class="status-search-wrapper">
-
-                    <span
-                        class="status-search-icon"
-                        aria-hidden="true"
-                    >
-                        ⌕
-                    </span>
-
-                    <input
-                        type="search"
-                        id="status-search"
-                        placeholder="Search by model..."
-                        autocomplete="off"
-                    >
-
-                </div>
-
-
-                <select id="status-device-filter">
-
-                    <option value="">
-                        All devices
-                    </option>
-
-                </select>
-
-
-                <select id="status-provider-filter">
-
-                    <option value="">
-                        All providers
-                    </option>
-
-                </select>
-
-            </div>
-
-        </section>
-
-
-        <!-- ============================================================
+		<section class="card status-filter-card">
+			<div class="status-filter-header">
+				<div>
+					<h2> Find records </h2>
+					<p> Search and filter the affected records. </p>
+				</div>
+			</div>
+			<div class="status-toolbar">
+				<div class="status-search-wrapper">
+					<span class="status-search-icon" aria-hidden="true"> ⌕ </span>
+					<input type="search" id="status-search" placeholder="Search by model..." autocomplete="off">
+				</div>
+				<select id="status-device-filter">
+					<option value=""> All devices </option>
+				</select>
+				<select id="status-provider-filter">
+					<option value=""> All providers </option>
+				</select>
+			</div>
+		</section>
+		<!-- ============================================================
              RECORDS
              ============================================================ -->
-
-        <section class="card status-records-card">
-
-            <div class="status-records-header">
-
-                <div>
-
-                    <h2>
-                        Affected records
-                    </h2>
-
-                    <div
-                        id="status-record-count"
-                        class="status-record-count"
-                    >
-                        Loading records...
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div
-                id="status-records"
-                class="status-records-page"
-            >
-
-                <div class="status-loading">
-                    <span class="status-loading-dot"></span>
-                    Checking data...
-                </div>
-
-            </div>
-
-
-            <div
-                id="status-pagination"
-                class="status-pagination"
-            ></div>
-
-        </section>
-
-    </main>
-
-
-    <script>
-
-        // ============================================================
-        // ADMIN STATUS PAGE
-        // ============================================================
-
-        const API_BASE = "";
-
-        let statusCategories = [];
-
-        let selectedCategory = null;
-
-        let filteredRecords = [];
-
-        let currentPage = 1;
-
-        const recordsPerPage = 20;
-
-
-        // ============================================================
-        // GET FIELD FROM URL
-        // ============================================================
-
-        const params =
-            new URLSearchParams(
-                window.location.search
-            );
-
-
-        const requestedField =
-            params.get("field");
-
-
-        // ============================================================
-        // LOAD STATUS
-        // ============================================================
-
-        async function loadStatusPage() {
-
-            const recordsContainer =
-                document.getElementById(
-                    "status-records"
-                );
-
-
-            try {
-
-                const response =
-                    await fetch(
-                        `${API_BASE}/admin/status`
-                    );
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        "Failed to load data status."
-                    );
-
-                }
-
-
-                const data =
-                    await response.json();
-
-
-                statusCategories =
-                    data.categories || [];
-
-
-                selectedCategory =
-                    statusCategories.find(
-                        category =>
-                            category.field ===
-                            requestedField
-                    );
-
-
-                if (!selectedCategory) {
-
-                    document.getElementById(
-                        "status-title"
-                    ).textContent =
-                        "Data Status";
-
-
-                    document.getElementById(
-                        "status-description"
-                    ).textContent =
-                        "The requested category could not be found.";
-
-
-                    recordsContainer.innerHTML = `
+		<section class="card status-records-card">
+			<div class="status-records-header">
+				<div>
+					<h2> Affected records </h2>
+					<div id="status-record-count" class="status-record-count"> Loading records... </div>
+				</div>
+			</div>
+			<div id="status-records" class="status-records-page">
+				<div class="status-loading">
+					<span class="status-loading-dot"></span> Checking data...
+				</div>
+			</div>
+			<div id="status-pagination" class="status-pagination"></div>
+		</section>
+	</main>
+	<script>
+		// ============================================================
+		// ADMIN STATUS PAGE
+		// ============================================================
+		const API_BASE = "";
+		let statusCategories = [];
+		let selectedCategory = null;
+		let filteredRecords = [];
+		let currentPage = 1;
+		const recordsPerPage = 20;
+		// ============================================================
+		// GET FIELD FROM URL
+		// ============================================================
+		const params = new URLSearchParams(window.location.search);
+		const requestedField = params.get("field");
+		// ============================================================
+		// LOAD STATUS
+		// ============================================================
+		async function loadStatusPage() {
+			const recordsContainer = document.getElementById("status-records");
+			try {
+				const response = await fetch(`${API_BASE}/admin/status`);
+				if (!response.ok) {
+					throw new Error("Failed to load data status.");
+				}
+				const data = await response.json();
+				statusCategories = data.categories || [];
+				selectedCategory = statusCategories.find(category => category.field === requestedField);
+				if (!selectedCategory) {
+					document.getElementById("status-title").textContent = "Data Status";
+					document.getElementById("status-description").textContent = "The requested category could not be found.";
+					recordsContainer.innerHTML = `
                         <div class="status-empty">
                             <div class="status-empty-icon">✓</div>
                             <strong>No records found</strong>
@@ -312,66 +114,21 @@
                             </span>
                         </div>
                     `;
-
-
-                    return;
-
-                }
-
-
-                const affectedCount =
-                    selectedCategory.count || 0;
-
-
-                document.getElementById(
-                    "status-title"
-                ).textContent =
-                    selectedCategory.field;
-
-
-                document.getElementById(
-                    "status-description"
-                ).textContent =
-                    `${affectedCount} records require attention.`;
-
-
-                const summaryCount =
-                    document.getElementById(
-                        "status-summary-count"
-                    );
-
-
-                if (summaryCount) {
-
-                    summaryCount.textContent =
-                        affectedCount.toLocaleString();
-
-                }
-
-
-                populateFilters(
-                    selectedCategory.records
-                );
-
-
-                filteredRecords =
-                    [
-                        ...selectedCategory.records
-                    ];
-
-
-                renderRecords();
-
-            }
-            catch (error) {
-
-                console.error(
-                    "STATUS PAGE ERROR:",
-                    error
-                );
-
-
-                recordsContainer.innerHTML = `
+					return;
+				}
+				const affectedCount = selectedCategory.count || 0;
+				document.getElementById("status-title").textContent = selectedCategory.field;
+				document.getElementById("status-description").textContent = `${affectedCount} records require attention.`;
+				const summaryCount = document.getElementById("status-summary-count");
+				if (summaryCount) {
+					summaryCount.textContent = affectedCount.toLocaleString();
+				}
+				populateFilters(selectedCategory.records);
+				filteredRecords = [...selectedCategory.records];
+				renderRecords();
+			} catch (error) {
+				console.error("STATUS PAGE ERROR:", error);
+				recordsContainer.innerHTML = `
                     <div class="status-empty status-error">
                         <div class="status-empty-icon">!</div>
                         <strong>Unable to load data</strong>
@@ -380,208 +137,55 @@
                         </span>
                     </div>
                 `;
-
-            }
-
-        }
-
-
-        // ============================================================
-        // POPULATE FILTERS
-        // ============================================================
-
-        function populateFilters(records) {
-
-            const deviceFilter =
-                document.getElementById(
-                    "status-device-filter"
-                );
-
-
-            const providerFilter =
-                document.getElementById(
-                    "status-provider-filter"
-                );
-
-
-            const devices =
-                [
-                    ...new Set(
-                        records
-                            .map(
-                                record =>
-                                    record.device
-                            )
-                            .filter(Boolean)
-                    )
-                ]
-                .sort();
-
-
-            const providers =
-                [
-                    ...new Set(
-                        records
-                            .map(
-                                record =>
-                                    record.provider
-                            )
-                            .filter(Boolean)
-                    )
-                ]
-                .sort();
-
-
-            devices.forEach(
-                device => {
-
-                    const option =
-                        document.createElement(
-                            "option"
-                        );
-
-                    option.value =
-                        device;
-
-                    option.textContent =
-                        device;
-
-                    deviceFilter.appendChild(
-                        option
-                    );
-
-                }
-            );
-
-
-            providers.forEach(
-                provider => {
-
-                    const option =
-                        document.createElement(
-                            "option"
-                        );
-
-                    option.value =
-                        provider;
-
-                    option.textContent =
-                        provider;
-
-                    providerFilter.appendChild(
-                        option
-                    );
-
-                }
-            );
-
-        }
-
-
-        // ============================================================
-        // FILTER RECORDS
-        // ============================================================
-
-        function applyFilters() {
-
-            const search =
-                document
-                    .getElementById(
-                        "status-search"
-                    )
-                    .value
-                    .trim()
-                    .toLowerCase();
-
-
-            const device =
-                document
-                    .getElementById(
-                        "status-device-filter"
-                    )
-                    .value;
-
-
-            const provider =
-                document
-                    .getElementById(
-                        "status-provider-filter"
-                    )
-                    .value;
-
-
-            filteredRecords =
-                selectedCategory.records.filter(
-                    record => {
-
-                        const matchesSearch =
-                            !search ||
-                            (
-                                record.model ||
-                                ""
-                            )
-                                .toLowerCase()
-                                .includes(search);
-
-
-                        const matchesDevice =
-                            !device ||
-                            record.device ===
-                                device;
-
-
-                        const matchesProvider =
-                            !provider ||
-                            record.provider ===
-                                provider;
-
-
-                        return (
-                            matchesSearch &&
-                            matchesDevice &&
-                            matchesProvider
-                        );
-
-                    }
-                );
-
-
-            currentPage = 1;
-
-            renderRecords();
-
-        }
-
-
-        // ============================================================
-        // RENDER RECORDS
-        // ============================================================
-
-        function renderRecords() {
-
-            const container =
-                document.getElementById(
-                    "status-records"
-                );
-
-
-            const count =
-                document.getElementById(
-                    "status-record-count"
-                );
-
-
-            const total =
-                filteredRecords.length;
-
-
-            count.textContent =
-                `${total.toLocaleString()} affected record${total === 1 ? "" : "s"}`;
-
-
-            if (total === 0) {
-
-                container.innerHTML = `
+			}
+		}
+		// ============================================================
+		// POPULATE FILTERS
+		// ============================================================
+		function populateFilters(records) {
+			const deviceFilter = document.getElementById("status-device-filter");
+			const providerFilter = document.getElementById("status-provider-filter");
+			const devices = [...new Set(records.map(record => record.device).filter(Boolean))].sort();
+			const providers = [...new Set(records.map(record => record.provider).filter(Boolean))].sort();
+			devices.forEach(device => {
+				const option = document.createElement("option");
+				option.value = device;
+				option.textContent = device;
+				deviceFilter.appendChild(option);
+			});
+			providers.forEach(provider => {
+				const option = document.createElement("option");
+				option.value = provider;
+				option.textContent = provider;
+				providerFilter.appendChild(option);
+			});
+		}
+		// ============================================================
+		// FILTER RECORDS
+		// ============================================================
+		function applyFilters() {
+			const search = document.getElementById("status-search").value.trim().toLowerCase();
+			const device = document.getElementById("status-device-filter").value;
+			const provider = document.getElementById("status-provider-filter").value;
+			filteredRecords = selectedCategory.records.filter(record => {
+				const matchesSearch = !search || (record.model || "").toLowerCase().includes(search);
+				const matchesDevice = !device || record.device === device;
+				const matchesProvider = !provider || record.provider === provider;
+				return (matchesSearch && matchesDevice && matchesProvider);
+			});
+			currentPage = 1;
+			renderRecords();
+		}
+		// ============================================================
+		// RENDER RECORDS
+		// ============================================================
+		function renderRecords() {
+			const container = document.getElementById("status-records");
+			const count = document.getElementById("status-record-count");
+			const total = filteredRecords.length;
+			count.textContent = `${total.toLocaleString()} affected record${total === 1 ? "" : "s"}`;
+			if (total === 0) {
+				container.innerHTML = `
                     <div class="status-empty">
                         <div class="status-empty-icon">✓</div>
 
@@ -594,52 +198,17 @@
                         </span>
                     </div>
                 `;
-
-
-                renderPagination();
-
-                return;
-
-            }
-
-
-            const start =
-                (
-                    currentPage - 1
-                ) *
-                recordsPerPage;
-
-
-            const end =
-                start +
-                recordsPerPage;
-
-
-            const pageRecords =
-                filteredRecords.slice(
-                    start,
-                    end
-                );
-
-
-            container.innerHTML =
-                "";
-
-
-            pageRecords.forEach(
-                record => {
-
-                    const item =
-                        document.createElement(
-                            "article"
-                        );
-
-
-                    item.className =
-                        "status-page-record";
-
-
-                    item.innerHTML = `
+				renderPagination();
+				return;
+			}
+			const start = (currentPage - 1) * recordsPerPage;
+			const end = start + recordsPerPage;
+			const pageRecords = filteredRecords.slice(start, end);
+			container.innerHTML = "";
+			pageRecords.forEach(record => {
+				const item = document.createElement("article");
+				item.className = "status-page-record";
+				item.innerHTML = `
 
                         <div class="status-record-indicator">
                             <span></span>
@@ -710,231 +279,74 @@
                         </button>
 
                     `;
-
-
-                    item
-                        .querySelector(
-                            ".status-inspect"
-                        )
-                        .addEventListener(
-                            "click",
-                            () => {
-
-                                inspectRecord(
-                                    record
-                                );
-
-                            }
-                        );
-
-
-                    container.appendChild(
-                        item
-                    );
-
-                }
-            );
-
-
-            renderPagination();
-
-        }
-
-
-        // ============================================================
-        // PAGINATION
-        // ============================================================
-
-        function renderPagination() {
-
-            const pagination =
-                document.getElementById(
-                    "status-pagination"
-                );
-
-
-            const totalPages =
-                Math.ceil(
-                    filteredRecords.length /
-                    recordsPerPage
-                );
-
-
-            pagination.innerHTML =
-                "";
-
-
-            if (totalPages <= 1) {
-
-                return;
-
-            }
-
-
-            const previous =
-                document.createElement(
-                    "button"
-                );
-
-
-            previous.type =
-                "button";
-
-            previous.className =
-                "secondary";
-
-            previous.textContent =
-                "Previous";
-
-            previous.disabled =
-                currentPage === 1;
-
-
-            previous.addEventListener(
-                "click",
-                () => {
-
-                    currentPage--;
-
-                    renderRecords();
-
-                }
-            );
-
-
-            const pageInfo =
-                document.createElement(
-                    "span"
-                );
-
-
-            pageInfo.textContent =
-                `Page ${currentPage} of ${totalPages}`;
-
-
-            const next =
-                document.createElement(
-                    "button"
-                );
-
-
-            next.type =
-                "button";
-
-            next.className =
-                "secondary";
-
-            next.textContent =
-                "Next";
-
-            next.disabled =
-                currentPage === totalPages;
-
-
-            next.addEventListener(
-                "click",
-                () => {
-
-                    currentPage++;
-
-                    renderRecords();
-
-                }
-            );
-
-
-            pagination.appendChild(
-                previous
-            );
-
-            pagination.appendChild(
-                pageInfo
-            );
-
-            pagination.appendChild(
-                next
-            );
-
-        }
-
-
-        // ============================================================
-        // INSPECT RECORD
-        // ============================================================
-
-        function inspectRecord(record) {
-
-            /*
-             * Pass the exact record to admin.html.
-             * The admin page will reopen it through the
-             * existing MODIFY workflow.
-             */
-
-            localStorage.setItem(
-                "adminStatusRecord",
-                JSON.stringify(record)
-            );
-
-
-            window.location.href =
-                "/admin?statusRecord=1";
-
-        }
-
-
-        // ============================================================
-        // EVENTS
-        // ============================================================
-
-        document
-            .getElementById(
-                "status-search"
-            )
-            .addEventListener(
-                "input",
-                applyFilters
-            );
-
-
-        document
-            .getElementById(
-                "status-device-filter"
-            )
-            .addEventListener(
-                "change",
-                applyFilters
-            );
-
-
-        document
-            .getElementById(
-                "status-provider-filter"
-            )
-            .addEventListener(
-                "change",
-                applyFilters
-            );
-
-
-        document
-            .getElementById(
-                "status-back"
-            )
-            .addEventListener(
-                "click",
-                () => {
-
-                    window.location.href =
-                        "/admin";
-
-                }
-            );
-
-
-        loadStatusPage();
-
-    </script>
-
+				item.querySelector(".status-inspect").addEventListener("click",
+					() => {
+						inspectRecord(record);
+					});
+				container.appendChild(item);
+			});
+			renderPagination();
+		}
+		// ============================================================
+		// PAGINATION
+		// ============================================================
+		function renderPagination() {
+			const pagination = document.getElementById("status-pagination");
+			const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+			pagination.innerHTML = "";
+			if (totalPages <= 1) {
+				return;
+			}
+			const previous = document.createElement("button");
+			previous.type = "button";
+			previous.className = "secondary";
+			previous.textContent = "Previous";
+			previous.disabled = currentPage === 1;
+			previous.addEventListener("click",
+				() => {
+					currentPage--;
+					renderRecords();
+				});
+			const pageInfo = document.createElement("span");
+			pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+			const next = document.createElement("button");
+			next.type = "button";
+			next.className = "secondary";
+			next.textContent = "Next";
+			next.disabled = currentPage === totalPages;
+			next.addEventListener("click",
+				() => {
+					currentPage++;
+					renderRecords();
+				});
+			pagination.appendChild(previous);
+			pagination.appendChild(pageInfo);
+			pagination.appendChild(next);
+		}
+		// ============================================================
+		// INSPECT RECORD
+		// ============================================================
+		function inspectRecord(record) {
+			/*
+			 * Pass the exact record to admin.html.
+			 * The admin page will reopen it through the
+			 * existing MODIFY workflow.
+			 */
+			localStorage.setItem("adminStatusRecord", JSON.stringify(record));
+			window.location.href = "/admin?statusRecord=1";
+		}
+		// ============================================================
+		// EVENTS
+		// ============================================================
+		document.getElementById("status-search").addEventListener("input", applyFilters);
+		document.getElementById("status-device-filter").addEventListener("change", applyFilters);
+		document.getElementById("status-provider-filter").addEventListener("change", applyFilters);
+		document.getElementById("status-back").addEventListener("click",
+			() => {
+				window.location.href = "/admin";
+			});
+		loadStatusPage();
+	</script>
 </body>
 
 </html>
