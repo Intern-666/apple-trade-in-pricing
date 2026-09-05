@@ -34,7 +34,7 @@ but the admin action itself should still be reported as successful.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import json
 
 import pandas as pd
@@ -73,6 +73,58 @@ class FetchResult:
         return {
             "success": self.success,
             "rows_fetched": self.rows_fetched,
+            "error": self.error,
+        }
+
+
+@dataclass
+class RecordsResult:
+    """
+    Result of reading a worksheet's raw rows, each paired with its
+    live 1-indexed sheet row number (row 1 is the header, so the
+    first data row is row 2).
+
+    Row numbers are only meaningful at the instant of this read --
+    a row can shift if the sheet changes between calls. Callers
+    that need to act on a specific row later (e.g. deletion) must
+    re-verify the row's contents at that time rather than trusting
+    the row number alone; see SheetsSync.delete_rows().
+    """
+
+    success: bool
+    records: Optional[List[Dict[str, Any]]]
+    error: Optional[str]
+
+    def as_dict(self):
+
+        return {
+            "success": self.success,
+            "records": self.records,
+            "error": self.error,
+        }
+
+
+@dataclass
+class DeleteRowsResult:
+    """
+    Result of a verified row deletion. `deleted_rows` lists the row
+    numbers actually removed; `skipped_rows` lists row numbers that
+    were requested but not deleted because their live content no
+    longer matched what the caller expected (edited or already
+    removed since it was last read).
+    """
+
+    success: bool
+    deleted_rows: Optional[List[int]]
+    skipped_rows: Optional[List[int]]
+    error: Optional[str]
+
+    def as_dict(self):
+
+        return {
+            "success": self.success,
+            "deleted_rows": self.deleted_rows,
+            "skipped_rows": self.skipped_rows,
             "error": self.error,
         }
 
@@ -391,4 +443,176 @@ class SheetsSync:
                 success=False,
                 rows_synced=0,
                 error=str(exc)
+            )
+
+    def list_records(self) -> RecordsResult:
+        """
+        Reads the worksheet's raw rows and returns each data row
+        paired with its live 1-indexed sheet row number.
+
+        Uses raw get_all_values() rather than get_all_records() so
+        an empty worksheet (no data rows yet) is a normal, valid
+        state -- returned as an empty list, not an error -- which
+        matters for Customer Data since a fresh deployment starts
+        with none.
+
+        Never raises -- any failure is captured in the returned
+        RecordsResult.
+        """
+
+        if not self.is_available:
+
+            return RecordsResult(
+                success=False,
+                records=None,
+                error=(
+                    self._init_error
+                    or "Google Sheets client is not initialized."
+                ),
+            )
+
+        try:
+
+            values = self._worksheet.get_all_values()
+
+            if not values:
+
+                return RecordsResult(success=True, records=[], error=None)
+
+            header = values[0]
+            data_rows = values[1:]
+
+            records = []
+
+            for offset, row in enumerate(data_rows):
+
+                # Sheets trims trailing empty cells, so a short row
+                # is padded out to the header's width rather than
+                # left ragged -- otherwise fields would silently
+                # shift left for rows with empty trailing columns.
+                padded = row + [""] * (len(header) - len(row))
+
+                row_number = offset + 2  # +1 for 1-index, +1 for header row
+
+                records.append({
+                    "row": row_number,
+                    "fields": dict(zip(header, padded[:len(header)])),
+                })
+
+            return RecordsResult(success=True, records=records, error=None)
+
+        except Exception as exc:
+
+            print(f"WARNING: Google Sheets list_records failed: {exc}")
+
+            return RecordsResult(success=False, records=None, error=str(exc))
+
+    def delete_rows(self, requested: List[Dict[str, Any]]) -> DeleteRowsResult:
+        """
+        Deletes specific rows from the worksheet, identified by
+        1-indexed row number AND verified against their full field
+        content immediately before deletion.
+
+        `requested` is a list of {"row": int, "fields": {header:
+        value, ...}} -- normally exactly the items previously
+        returned by list_records(). A row number alone is not a
+        safe identifier (rows shift if the sheet is edited between
+        listing and deleting), and neither is a single field like
+        name (two customers can share one). So every requested row
+        is re-checked against a fresh read of the sheet, comparing
+        every column, and is only deleted if the whole row still
+        matches what the caller expects.
+
+        Rows that no longer match (edited, or already removed) are
+        reported back as skipped rather than deleted, so the caller
+        can tell the admin to refresh and retry instead of silently
+        deleting the wrong record.
+
+        Deletions happen bottom-up (highest row number first) so
+        that removing one row never shifts the row numbers of the
+        others still pending in this same call.
+
+        Never raises -- any failure is captured in the returned
+        DeleteRowsResult.
+        """
+
+        if not self.is_available:
+
+            return DeleteRowsResult(
+                success=False,
+                deleted_rows=None,
+                skipped_rows=None,
+                error=(
+                    self._init_error
+                    or "Google Sheets client is not initialized."
+                ),
+            )
+
+        if not requested:
+
+            return DeleteRowsResult(
+                success=True,
+                deleted_rows=[],
+                skipped_rows=[],
+                error=None,
+            )
+
+        try:
+
+            values = self._worksheet.get_all_values()
+
+            header = values[0] if values else []
+            data_rows = values[1:] if values else []
+
+            confirmed_rows = []
+            skipped_rows = []
+
+            for item in requested:
+
+                row_number = item.get("row")
+                expected_fields = item.get("fields") or {}
+
+                index = (row_number - 2) if row_number is not None else -1
+
+                if row_number is None or index < 0 or index >= len(data_rows):
+
+                    skipped_rows.append(row_number)
+                    continue
+
+                current_row = data_rows[index]
+
+                padded = current_row + [""] * (len(header) - len(current_row))
+
+                current_fields = dict(zip(header, padded[:len(header)]))
+
+                matches = all(
+                    str(current_fields.get(key, "")) == str(value)
+                    for key, value in expected_fields.items()
+                )
+
+                if matches:
+                    confirmed_rows.append(row_number)
+                else:
+                    skipped_rows.append(row_number)
+
+            for row_number in sorted(confirmed_rows, reverse=True):
+
+                self._worksheet.delete_rows(row_number)
+
+            return DeleteRowsResult(
+                success=True,
+                deleted_rows=sorted(confirmed_rows),
+                skipped_rows=skipped_rows,
+                error=None,
+            )
+
+        except Exception as exc:
+
+            print(f"WARNING: Google Sheets delete_rows failed: {exc}")
+
+            return DeleteRowsResult(
+                success=False,
+                deleted_rows=None,
+                skipped_rows=None,
+                error=str(exc),
             )

@@ -50,6 +50,7 @@
 				<button type="button" id="nav-modify"> MODIFY </button>
 				<button type="button" id="nav-delete"> DELETE </button>
 				<button type="button" id="nav-forecast"> FORECAST </button>
+				<button type="button" id="nav-customers"> CUSTOMERS </button>
 			</nav>
 			<!-- =================================================
              ADD
@@ -326,6 +327,37 @@
 					</div>
 				</div>
 			</section>
+
+			<!-- ==================================================
+			CUSTOMER DATA
+			================================================== -->
+			<section id="customers-section" class="card hidden">
+				<h2> Customer Data </h2>
+				<p class="description"> Customers who submitted their details before a trade-in valuation. Click a row to see the full trade-in details it was submitted with. </p>
+
+				<div class="customer-toolbar">
+					<label class="customer-select-all-label">
+						<input type="checkbox" id="customer-select-all">
+						Select All
+					</label>
+					<button type="button" id="customer-delete-selected" class="danger" disabled> Delete Selected </button>
+				</div>
+
+				<div id="customer-list" class="record-list"></div>
+
+				<div id="customer-delete-confirm" class="hidden">
+					<div class="delete-modal">
+						<div class="delete-modal-title"> Confirm deletion </div>
+						<p id="customer-delete-confirm-info" class="delete-modal-info"></p>
+						<div class="buttons">
+							<button type="button" id="customer-delete-confirm-button" class="danger"> Delete Permanently </button>
+							<button type="button" id="customer-delete-cancel-button" class="secondary"> Cancel </button>
+						</div>
+					</div>
+				</div>
+
+				<div id="customer-result" class="result"></div>
+			</section>
 		</main>
 		<script>
 		// ====================================================
@@ -349,13 +381,15 @@
 			add: document.getElementById("add-section"),
 			modify: document.getElementById("modify-section"),
 			delete: document.getElementById("delete-section"),
-			forecast: document.getElementById("forecast-section")
+			forecast: document.getElementById("forecast-section"),
+			customers: document.getElementById("customers-section")
 		};
 		const navButtons = {
 			add: document.getElementById("nav-add"),
 			modify: document.getElementById("nav-modify"),
 			delete: document.getElementById("nav-delete"),
-			forecast: document.getElementById("nav-forecast")
+			forecast: document.getElementById("nav-forecast"),
+			customers: document.getElementById("nav-customers")
 		};
 
 		function showSection(sectionName) {
@@ -475,6 +509,16 @@
 				document.getElementById("add-result").textContent = "";
 				updateAddFields();
 			}
+			// ============================================================
+			// RESET CUSTOMERS
+			// ============================================================
+			if (sectionName === "customers") {
+				document.getElementById("customer-delete-confirm").classList.add("hidden");
+				document.getElementById("customer-result").className = "result";
+				document.getElementById("customer-result").textContent = "";
+				selectedCustomerRows.clear();
+				customerDeleteTargets = [];
+			}
 		}
 		// ------------------------------------------------------------
 		// NAV BUTTONS
@@ -494,6 +538,10 @@
 		navButtons.forecast.addEventListener("click", async () => {
 			showSection("forecast");
 			await loadForecastHierarchy();
+		});
+		navButtons.customers.addEventListener("click", async () => {
+			showSection("customers");
+			await loadCustomers();
 		});
 		// ============================================================
 		// DELETE — LOAD MODELS
@@ -1842,6 +1890,207 @@
 				}
 			}
 		}
+
+		// ============================================================
+		// CUSTOMER DATA
+		// ============================================================
+		let customerRecords = []; // [{ row, fields }, ...] as returned by /admin/customers
+		let selectedCustomerRows = new Set();
+		let customerDeleteTargets = [];
+
+		async function loadCustomers() {
+			const container = document.getElementById("customer-list");
+			container.innerHTML = `
+                <p class="empty-state">
+                    Loading customers...
+                </p>
+            `;
+			selectedCustomerRows.clear();
+			updateCustomerToolbar();
+			try {
+				const response = await fetch("/admin/customers");
+				const data = await response.json();
+				if (!response.ok || data.status !== "success") {
+					throw new Error(data.detail || data.message || "Failed to load customers.");
+				}
+				customerRecords = data.customers || [];
+				renderCustomerList();
+			} catch (error) {
+				console.error("Unable to load customers:", error);
+				container.innerHTML = `
+                    <p class="empty-state">
+                        Unable to load customer data.
+                    </p>
+                `;
+				showAdminToast(error.message || "Unable to load customer data.", "error");
+			}
+		}
+
+		function renderCustomerList() {
+			const container = document.getElementById("customer-list");
+			container.innerHTML = "";
+
+			if (!customerRecords.length) {
+				container.innerHTML = `
+                    <p class="empty-state">
+                        No customers submitted yet.
+                    </p>
+                `;
+				updateCustomerToolbar();
+				return;
+			}
+
+			customerRecords.forEach(customer => {
+				const fields = customer.fields || {};
+				const row = customer.row;
+
+				const wrapper = document.createElement("div");
+				wrapper.className = "record customer-row";
+
+				const summary = document.createElement("div");
+				summary.className = "customer-summary";
+				summary.innerHTML = `
+                    <label class="customer-checkbox-label"></label>
+                    <div class="customer-summary-fields">
+                        <div class="customer-summary-name">
+                            ${fields["Customer Name"] || "Unknown"}
+                        </div>
+                        <div class="customer-summary-details">
+                            ${fields["Phone"] || "N/A"} &nbsp;&middot;&nbsp;
+                            ${fields["Email"] || "N/A"} &nbsp;&middot;&nbsp;
+                            ${fields["Preferred Contact"] || "N/A"}
+                        </div>
+                    </div>
+                `;
+
+				// Checkbox is built separately (not via innerHTML) so
+				// its "change" listener can't be lost on re-render.
+				const checkboxLabel = summary.querySelector(".customer-checkbox-label");
+				const checkbox = document.createElement("input");
+				checkbox.type = "checkbox";
+				checkbox.className = "customer-checkbox";
+				checkbox.checked = selectedCustomerRows.has(row);
+				checkboxLabel.appendChild(checkbox);
+
+				const details = document.createElement("div");
+				details.className = "customer-details hidden";
+				details.innerHTML = `
+                    <div class="record-details">
+                        Timestamp: ${fields["Timestamp"] || "N/A"} <br>
+                        Device: ${fields["Device"] || "N/A"} <br>
+                        Sub-device: ${fields["Sub-device"] || "N/A"} <br>
+                        Model: ${fields["Model"] || "N/A"} <br>
+                        Model Number: ${fields["Model Number"] || "N/A"} <br>
+                        Storage: ${fields["Storage (GB)"] || "N/A"} GB <br>
+                        Storage Type: ${fields["Storage Type"] || "N/A"} <br>
+                        Connectivity: ${fields["Connectivity"] || "N/A"} <br>
+                        Market Value: RM ${fields["Market Value (RM)"] || "N/A"} <br>
+                        Final Trade-In Value: RM ${fields["Final Trade-In Value (RM)"] || "N/A"}
+                    </div>
+                `;
+
+				wrapper.appendChild(summary);
+				wrapper.appendChild(details);
+
+				// Clicking the row expands/collapses it -- but a click
+				// that originated on the checkbox (or its label) must
+				// only toggle selection, never expansion.
+				wrapper.addEventListener("click", (event) => {
+					if (event.target.closest(".customer-checkbox-label")) {
+						return;
+					}
+					details.classList.toggle("hidden");
+				});
+
+				checkbox.addEventListener("change", () => {
+					if (checkbox.checked) {
+						selectedCustomerRows.add(row);
+					} else {
+						selectedCustomerRows.delete(row);
+					}
+					updateCustomerToolbar();
+				});
+
+				container.appendChild(wrapper);
+			});
+
+			updateCustomerToolbar();
+		}
+
+		function updateCustomerToolbar() {
+			const deleteButton = document.getElementById("customer-delete-selected");
+			deleteButton.disabled = selectedCustomerRows.size === 0;
+
+			const selectAll = document.getElementById("customer-select-all");
+			selectAll.checked = customerRecords.length > 0 && selectedCustomerRows.size === customerRecords.length;
+			selectAll.indeterminate = selectedCustomerRows.size > 0 && selectedCustomerRows.size < customerRecords.length;
+		}
+
+		document.getElementById("customer-select-all").addEventListener("change", (event) => {
+			if (event.target.checked) {
+				customerRecords.forEach(customer => selectedCustomerRows.add(customer.row));
+			} else {
+				selectedCustomerRows.clear();
+			}
+			renderCustomerList();
+		});
+
+		document.getElementById("customer-delete-selected").addEventListener("click", () => {
+			if (!selectedCustomerRows.size) {
+				return;
+			}
+			customerDeleteTargets = customerRecords.filter(customer => selectedCustomerRows.has(customer.row));
+			const count = customerDeleteTargets.length;
+			document.getElementById("customer-delete-confirm-info").textContent = `Delete ${count} customer record${count === 1 ? "" : "s"}? ` + "This will permanently remove them from the Customer Data " + "Google Sheet and cannot be undone.";
+			document.getElementById("customer-delete-confirm").classList.remove("hidden");
+		});
+
+		document.getElementById("customer-delete-cancel-button").addEventListener("click", () => {
+			document.getElementById("customer-delete-confirm").classList.add("hidden");
+			customerDeleteTargets = [];
+		});
+
+		document.getElementById("customer-delete-confirm-button").addEventListener("click", async () => {
+			if (!customerDeleteTargets.length) {
+				return;
+			}
+			const button = document.getElementById("customer-delete-confirm-button");
+			setActionLoading(button, "Deleting...");
+			try {
+				const response = await fetch("/admin/customers/delete", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+						rows: customerDeleteTargets.map(customer => ({
+							row: customer.row,
+							fields: customer.fields
+						}))
+					})
+				});
+				const data = await response.json();
+				if (!response.ok) {
+					throw new Error(data.detail || data.message || "Delete failed.");
+				}
+				document.getElementById("customer-delete-confirm").classList.add("hidden");
+				customerDeleteTargets = [];
+				selectedCustomerRows.clear();
+				if (data.status === "partial") {
+					showAdminToast(data.message, "warning", 5000);
+				} else {
+					showAdminToast(data.message || "Customer record(s) deleted.");
+				}
+				// Refresh so the list reflects what's actually left
+				// in the Sheet after deletion.
+				await loadCustomers();
+			} catch (error) {
+				console.error("CUSTOMER DELETE ERROR:", error);
+				showAdminToast(error.message || "Failed to delete customer record(s).", "error");
+			} finally {
+				resetActionButton(button, "Delete Permanently");
+			}
+		});
 
 		function showAdminToast(message, type = "success", duration = 3000) {
 			const container = document.getElementById("admin-toast-container");

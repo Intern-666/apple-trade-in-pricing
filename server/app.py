@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from typing import Optional, cast
+from typing import Optional, cast, List
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -1592,6 +1592,93 @@ def admin_delete_device(item: dict):
     print("=" * 70)
 
     return {"status": "success", "message": "Record deleted successfully.", "sheets_sync": sync_result.as_dict()}
+
+
+# ============================================================
+# ADMIN — CUSTOMER DATA
+#
+# Unlike the master dataset, Customer Data has no in-memory
+# dataframe -- it's append-only from the customer-facing flow and
+# is read/deleted directly against the "Customer Data" worksheet
+# via customer_sheets_sync.
+#
+# Condition information is never collected in the customer trade-in
+# flow above, and is stripped again here defensively so it can
+# never surface through this endpoint even if a column by that name
+# were ever added to the sheet directly.
+# ============================================================
+
+CONDITION_FIELD_MARKER = "condition"
+
+
+@app.get("/admin/customers")
+def admin_list_customers():
+
+    result = customer_sheets_sync.list_records()
+
+    if not result.success:
+        raise HTTPException(status_code=503, detail=result.error or "Unable to load customer data.")
+
+    customers = []
+
+    for record in result.records:
+
+        fields = {
+            key: value
+            for key, value in record["fields"].items()
+            if CONDITION_FIELD_MARKER not in key.strip().lower()
+        }
+
+        customers.append({"row": record["row"], "fields": fields})
+
+    return {"status": "success", "customers": customers}
+
+
+class CustomerDeleteRequest(BaseModel):
+
+    rows: List[dict]
+
+
+@app.post("/admin/customers/delete")
+def admin_delete_customers(item: CustomerDeleteRequest):
+
+    print("\n" + "=" * 70)
+    print("ADMIN — DELETE CUSTOMER RECORDS")
+    print("=" * 70)
+
+    if not item.rows:
+        return {"status": "error", "message": "No records selected."}
+
+    result = customer_sheets_sync.delete_rows(item.rows)
+
+    if not result.success:
+        raise HTTPException(status_code=503, detail=result.error or "Unable to delete customer records.")
+
+    print(f"Deleted rows  : {result.deleted_rows}")
+    print(f"Skipped rows  : {result.skipped_rows}")
+    print("=" * 70)
+
+    deleted_count = len(result.deleted_rows)
+    skipped_count = len(result.skipped_rows)
+
+    if skipped_count:
+
+        return {
+            "status": "partial" if deleted_count else "error",
+            "message": (
+                f"{deleted_count} record(s) deleted. {skipped_count} record(s) "
+                "were skipped because their data changed since the list was "
+                "loaded -- please refresh and try again."
+            ),
+            "deleted_rows": result.deleted_rows,
+            "skipped_rows": result.skipped_rows,
+        }
+
+    return {
+        "status": "success",
+        "message": f"{deleted_count} record(s) deleted.",
+        "deleted_rows": result.deleted_rows,
+    }
 
 
 # ============================================================

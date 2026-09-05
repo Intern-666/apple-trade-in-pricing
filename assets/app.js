@@ -56,11 +56,11 @@ const DEVICE_IMAGE_MAP = {
     "default": "mac/base.png"
   },
   "apple-watch": {
-    "se": "watch/se.png",
-    "series": "watch/series.png",
-    "ultra": "watch/ultra.png",
+    "watch-se": "watch/se.png",
+    "watch-series": "watch/series.png",
+    "watch-ultra": "watch/ultra.png",
     "default": "watch/base.png"
-  },
+},
   "airpods": {
     "airpods": "airpods/standard.png",
     "airpods-pro": "airpods/pro.png",
@@ -86,23 +86,23 @@ function slugify(text) {
    sub-device is known. Returns null if the device itself isn't
    mapped, so callers can fall back to DEVICE_IMAGE_FALLBACK. */
 function resolveDeviceImage(device, subDevice) {
+  const deviceMap = DEVICE_IMAGE_MAP[slugify(device)];
 
-  const deviceMap =
-    DEVICE_IMAGE_MAP[slugify(device)];
+  if (!deviceMap) return null;
 
-  if (!deviceMap) {
-    return null;
-  }
+  if (!subDevice) return deviceMap["default"] || null;
 
-  if (!subDevice) {
-    return deviceMap["default"] || null;
-  }
+  const key = slugify(subDevice);
+  const image = deviceMap[key] || deviceMap["default"] || null;
 
-  return (
-    deviceMap[slugify(subDevice)] ||
-    deviceMap["default"] ||
-    null
-  );
+  console.log("IMAGE DEBUG:", {
+    device,
+    subDevice,
+    slug: key,
+    image
+  });
+
+  return image;
 }
 
 function updateDeviceImagePreview(device, subDevice) {
