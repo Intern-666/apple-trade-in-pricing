@@ -1,4 +1,4 @@
-Provider,Device,Sub-device,Model Number,Standardized Model,MSRP,Specification,Storage (GB),Storage Type,Connectivity,Material,Max. Trade-In Value (RM),Model_Year,Chipset,Screen Size,Case Size,Charging Method,RAM Configurations (GB),RAM Min (GB),Mac Storage Category,Mac Generation
+Provider,Device,Sub-device,Model Number,Standardized Model,Retail Price,Specification,Storage (GB),Storage Type,Connectivity,Material,Max. Trade-In Value (RM),Model_Year,Chipset,Screen Size,Case Size,Charging Method,RAM Configurations (GB),RAM Min (GB),Mac Storage Category,Mac Generation
 CompAsia,iPhone,Standard,"A2111, A2221, A2223",iPhone 11,3599.0,,128.0,Unknown,Unknown,,390.0,2019,A13 Bionic,,,,,,,Unknown
 CompAsia,iPhone,Standard,"A2111, A2221, A2223",iPhone 11,4099.0,,256.0,Unknown,Unknown,,450.0,2019,A13 Bionic,,,,,,,Unknown
 CompAsia,iPhone,Standard,"A2111, A2221, A2223",iPhone 11,3399.0,,64.0,Unknown,Unknown,,340.0,2019,A13 Bionic,,,,,,,Unknown
@@ -4182,6 +4182,7 @@ Unknown,AirPods,AirPods Pro,,iPhone 18 Pro Max,2.0,,,,,,,,,,,,,,,
 Unknown,AirPods,AirPods Pro,,iPhone 18 Pro Max,2500.0,,,,,,,,,,,,,,,
 Unknown,iPad,Air,,iPhone 18 Pro Max,123.0,,,,,,,,,,,,,,,
 Unknown,iPad,Air,,iPhone 18 Pro Max,123.0,,,,,,,,,,,,,,,
-Unknown,iPhone,Standard,,1,1.0,,1.0,,,,,2027,1,,,,,,,
+Unknown,iPhone,Standard,,1,1.0,,1.0,,,,1.0,2027,1,,,,,,,
 Unknown,iPhone,Standard,1,1,1.0,,-1.0,,,,,2020,1,,,,,,,
 Unknown,iPhone,Standard,2,2,1.1,,-1.1,,,,,2021,2,,,,,,,
+Unknown,iPhone,Standard,3,3,1.2,,-1.2,,,,,2022,3,,,,,,,

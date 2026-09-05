@@ -170,15 +170,127 @@ const startOverBtn = document.getElementById("startOverBtn");
 const productLineSection = document.getElementById("productLineSection");
 const modelSection = document.getElementById("modelSection");
 
-// Hide the autocomplete dropdown if the user clicks anywhere else on the page
+const modelNumberHelpBtn = document.getElementById("modelNumberHelpBtn");
+const modelNumberHelp = document.getElementById("modelNumberHelp");
+const modelNumberHelpText = document.getElementById("modelNumberHelpText");
+const modelNumberHelpLink = document.getElementById("modelNumberHelpLink");
+
+// Hide autocomplete/help popups if the user clicks elsewhere
 document.addEventListener("click", function (e) {
+
     if (modelNumberInput && modelNumberList) {
-        if (!modelNumberInput.contains(e.target) && !modelNumberList.contains(e.target)) {
+
+        if (
+            !modelNumberInput.contains(e.target) &&
+            !modelNumberList.contains(e.target)
+        ) {
             modelNumberList.classList.add("hidden");
         }
     }
+
+    if (
+        modelNumberHelpBtn &&
+        modelNumberHelp &&
+        !modelNumberHelpBtn.contains(e.target) &&
+        !modelNumberHelp.contains(e.target)
+    ) {
+        modelNumberHelp.classList.add("hidden");
+
+        modelNumberHelpBtn.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+    }
 });
 
+/* =========================================================
+   MODEL NUMBER HELP
+========================================================= */
+
+const modelNumberHelpData = {
+    iPhone: {
+        label: "Where can I find my iPhone model number?",
+        url: "https://support.apple.com/en-my/106343"
+    },
+
+    iPad: {
+        label: "Where can I find my iPad model number?",
+        url: "https://support.apple.com/en-my/106343"
+    },
+
+    "Apple Watch": {
+        label: "Where can I find my Apple Watch model number?",
+        url: "https://support.apple.com/en-my/108056"
+    },
+
+    AirPods: {
+        label: "Where can I find my AirPods model number?",
+        url: "https://support.apple.com/en-my/109525"
+    },
+
+    Mac: {
+        label: "Where can I find my Mac model identifier?",
+        url: "https://support.apple.com/en-my/102767"
+    }
+};
+
+
+function updateModelNumberHelp() {
+
+    if (
+        !modelNumberHelpBtn ||
+        !modelNumberHelp ||
+        !modelNumberHelpText ||
+        !modelNumberHelpLink
+    ) {
+        return;
+    }
+
+    const selectedDevice =
+        deviceSelect.value;
+
+    const helpData =
+        modelNumberHelpData[selectedDevice];
+
+    if (!helpData) {
+
+        modelNumberHelpBtn.disabled = true;
+
+        modelNumberHelp.classList.add("hidden");
+
+        modelNumberHelpBtn.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        return;
+    }
+
+    modelNumberHelpBtn.disabled = false;
+
+    modelNumberHelpText.textContent =
+        helpData.label;
+
+    modelNumberHelpLink.href =
+        helpData.url;
+}
+
+if (modelNumberHelpBtn) {
+
+    modelNumberHelpBtn.addEventListener(
+        "click",
+        function () {
+
+            const isHidden =
+                modelNumberHelp.classList.toggle("hidden");
+
+            modelNumberHelpBtn.setAttribute(
+                "aria-expanded",
+                String(!isHidden)
+            );
+        }
+    );
+}
 
 /* =========================================================
    STEP CONTROLLER
@@ -577,6 +689,8 @@ deviceSelect.addEventListener("change", function (event) {
 
     const selectedDevice = event.target.value;
 
+    updateModelNumberHelp();
+
     const subDevices =
         deviceData[selectedDevice] || {};
 
@@ -637,6 +751,8 @@ subDeviceSelect.addEventListener("change", function (event) {
 
     const selectedSub =
         event.target.value;
+
+    updateModelNumberHelp();
 
     const modelsObj =
         deviceData[selectedDevice][selectedSub] || {};

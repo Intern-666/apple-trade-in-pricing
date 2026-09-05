@@ -339,7 +339,7 @@ class TradeInFallback:
                 "Device",
                 "Sub-device",
                 "Model_Year",
-                "MSRP",
+                "Retail Price",
                 "Max. Trade-In Value (RM)",
             }
 
@@ -495,7 +495,7 @@ class TradeInFallback:
             - same Sub-device
             - Model_Year < target model_year
             - valid positive trade-in value
-            - valid positive MSRP
+            - valid positive Retail Price
 
         Selection:
             - group by distinct Model_Year
@@ -543,11 +543,11 @@ class TradeInFallback:
                 > 0
             )
             & (
-                raw["MSRP"]
+                raw["Retail Price"]
                 .notna()
             )
             & (
-                raw["MSRP"]
+                raw["Retail Price"]
                 > 0
             )
         ]
@@ -612,7 +612,7 @@ class TradeInFallback:
 
         Retention:
 
-            trade_in / MSRP
+            trade_in / Retail Price
 
         Candidate forms:
             exponential
@@ -663,7 +663,7 @@ class TradeInFallback:
             )
             /
             rows[
-                "MSRP"
+                "Retail Price"
             ].to_numpy(
                 dtype=float
             )
@@ -980,7 +980,7 @@ class TradeInFallback:
                 f"Raw curve predicted "
                 f"{raw_retention:.3f} retention; "
                 "capped at 1.000 because trade-in value "
-                "cannot exceed MSRP."
+                "cannot exceed Retail Price."
             )
 
         return FallbackResult(
@@ -1053,7 +1053,7 @@ class TradeInFallback:
         # Apply retention floor / ceiling
         #
         # RETENTION_CEILING (1.0) is a blunt, global sanity bound --
-        # never predict more than 100% of MSRP. group_max_retention
+        # never predict more than 100% of Retail Price. group_max_retention
         # is a tighter, per-group bound: never predict more than the
         # single highest retention actually observed anywhere in
         # THIS specific fitted group's real training data, since a
@@ -1165,7 +1165,7 @@ class TradeInFallback:
             )
 
         # ----------------------------------------------------------
-        # MSRP cap diagnostic
+        # Retail Price cap diagnostic
         # ----------------------------------------------------------
 
         if (
@@ -1177,7 +1177,7 @@ class TradeInFallback:
                 f"Raw curve predicted "
                 f"{raw_retention:.3f} retention; "
                 "capped at 1.000 because trade-in value "
-                "cannot exceed MSRP."
+                "cannot exceed Retail Price."
             )
 
         confidence_flag = (
@@ -1240,7 +1240,7 @@ class TradeInFallback:
             )
 
         # ==========================================================
-        # VALIDATE MSRP
+        # VALIDATE RETAIL PRICE
         # ==========================================================
 
         if (
@@ -1255,8 +1255,8 @@ class TradeInFallback:
                 matched_tier=None,
                 form=None,
                 confidence_flag=(
-                    f"Invalid MSRP: {msrp}. "
-                    "MSRP must be greater than zero."
+                    f"Invalid Retail Price: {msrp}. "
+                    "Retail Price must be greater than zero."
                 ),
             )
 

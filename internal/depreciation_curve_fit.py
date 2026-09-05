@@ -556,7 +556,7 @@ def main(csv_path: str):
         "Device",
         "Sub-device",
         "Provider",
-        "MSRP",
+        "Retail Price",
         "Max. Trade-In Value (RM)",
         "Model_Year",
     }
@@ -573,19 +573,19 @@ def main(csv_path: str):
 
     df = df.dropna(
         subset=[
-            "MSRP",
+            "Retail Price",
             "Max. Trade-In Value (RM)",
             "Model_Year",
         ]
     ).copy()
 
-    df = df[df["MSRP"] > 0]
+    df = df[df["Retail Price"] > 0]
 
     df["Age"] = REFERENCE_YEAR - df["Model_Year"]
 
     # Age 0 is excluded from the FITTING input (not from the raw
     # dataset overall) because app.py's forecast loop never calls
-    # the fitted curve at age 0 -- it uses the device's raw MSRP
+    # the fitted curve at age 0 -- it uses the device's raw Retail Price
     # directly for a brand-new device instead. Age-0 rows can only
     # pull the curve's shape around at ages that are never actually
     # used, and age-0 retention in the real data is often noisy or
@@ -597,7 +597,7 @@ def main(csv_path: str):
     df = df[df["Age"] >= 1]
 
     df["Retention"] = (
-        df["Max. Trade-In Value (RM)"] / df["MSRP"]
+        df["Max. Trade-In Value (RM)"] / df["Retail Price"]
     )
 
     df = df[

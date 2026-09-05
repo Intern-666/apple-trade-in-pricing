@@ -514,6 +514,148 @@ select {
   position: relative;
 }
 
+/* =========================
+   MODEL NUMBER HELP
+========================= */
+
+.label-with-help {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.field-help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 19px;
+  height: 19px;
+
+  padding: 0;
+
+  border: 1px solid var(--border-hover);
+  border-radius: 50%;
+
+  background: var(--surface);
+  color: var(--text-secondary);
+
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transform: translateY(-1px);
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.field-help-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: rgba(215, 25, 32, 0.35);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.field-help-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.field-help-button:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+
+  box-shadow:
+    0 0 0 3px var(--accent-focus);
+}
+
+.field-help-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* ---------------------------------------------------------
+   Help popup
+   --------------------------------------------------------- */
+
+.model-number-help {
+  position: absolute;
+
+  top: 100%;
+  left: 0;
+
+  width: min(360px, 100%);
+
+  margin-top: 8px;
+  padding: 15px 16px;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.10);
+
+  z-index: 110;
+}
+
+.model-number-help.hidden {
+  display: none;
+}
+
+.model-number-help p {
+  margin: 0 0 9px;
+
+  color: var(--text);
+
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.model-number-help a {
+  color: var(--accent);
+
+  font-size: 0.78rem;
+  font-weight: 700;
+
+  text-decoration: none;
+
+  transition: color 0.18s ease;
+}
+
+.model-number-help a:hover {
+  color: var(--accent-dark);
+  text-decoration: underline;
+}
+
+
+/* ---------------------------------------------------------
+   Mobile
+   --------------------------------------------------------- */
+
+@media (max-width: 600px) {
+
+  .field-help-button {
+    width: 19px;
+    height: 19px;
+    font-size: 0.68rem;
+  }
+
+  .model-number-help {
+    width: 100%;
+    padding: 14px;
+  }
+
+}
+
 .custom-autocomplete {
   position: absolute;
   top: 100%;

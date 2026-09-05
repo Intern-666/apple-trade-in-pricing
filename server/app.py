@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional, cast
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from internal.tradein_fallback import TradeInFallback
 from internal.sheets_sync import SheetsSync
 
@@ -1085,7 +1086,7 @@ def save_customer_trade_in(
     # --------------------------------------------------------
 
     customer_record = {
-        "Timestamp": item.createdAt,
+        "Timestamp": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime("%d %b %Y, %I:%M %p"),
         "Customer Name": customer_name,
         "Phone": customer_phone,
         "Email": customer_email,
@@ -1263,14 +1264,14 @@ def admin_add_device(item: AdminAddDevice):
         )
 
     # ========================================================
-    # MSRP
+    # Retail Price (MSRP)
     # ========================================================
 
     if item.MSRP < 0:
 
         raise HTTPException(
             status_code=400,
-            detail="MSRP cannot be negative.",
+            detail="Retail price cannot be negative.",
         )
 
     msrp = float(item.MSRP)
@@ -1629,7 +1630,7 @@ def admin_add_device(item: AdminAddDevice):
     )
 
     print(
-        f"MSRP         : RM {msrp:,.2f}"
+        f"Retail Price : RM {msrp:,.2f}"
     )
 
     print(
@@ -1739,7 +1740,7 @@ def admin_status():
         "Device",
         "Sub-device",
         "Standardized Model",
-        "MSRP",
+        "Retail Price",
         "Storage (GB)",
         "Storage Type",
         "Connectivity",
@@ -2277,8 +2278,8 @@ def admin_records(
             "msrp":
                 (
                     None
-                    if pd.isna(row["MSRP"])
-                    else float(row["MSRP"])
+                    if pd.isna(row["Retail Price"])
+                    else float(row["Retail Price"])
                 ),
 
             "trade_in_value":
@@ -2363,7 +2364,7 @@ def admin_modify_device(
         )
 
     # ========================================================
-    # VALIDATE MSRP
+    # VALIDATE RETAIL PRICE (MSRP)
     # ========================================================
 
     if (
@@ -2373,7 +2374,7 @@ def admin_modify_device(
 
         return {
             "status": "error",
-            "message": "MSRP cannot be negative."
+            "message": "Retail price cannot be negative."
         }
 
     # ========================================================
@@ -2422,23 +2423,23 @@ def admin_modify_device(
         )
 
     # ========================================================
-    # MSRP
+    # RETAIL PRICE (MSRP)
     # ========================================================
 
     if item.MSRP is not None:
 
         old_msrp = df.at[
             item.id,
-            "MSRP"
+            "Retail Price"
         ]
 
         df.at[
             item.id,
-            "MSRP"
+            "Retail Price"
         ] = float(item.MSRP)
 
         print(
-            f"MSRP updated: "
+            f"Retail Price updated: "
             f"{'N/A' if pd.isna(old_msrp) else f'RM {old_msrp:,.2f}'}"
             f" → RM {item.MSRP:,.2f}"
         )
@@ -2543,8 +2544,8 @@ def admin_modify_device(
         "msrp":
             (
                 None
-                if pd.isna(df.at[item.id, "MSRP"])
-                else float(df.at[item.id, "MSRP"])
+                if pd.isna(df.at[item.id, "Retail Price"])
+                else float(df.at[item.id, "Retail Price"])
             ),
 
         "trade_in_value":
@@ -2843,13 +2844,13 @@ def admin_forecast(item: dict):
 
 
         # ----------------------------------------------------
-        # MSRP
+        # RETAIL PRICE (MSRP)
         #
-        # MSRP is stored directly in the master dataset.
-        # Each record carries its own MSRP.
+        # Retail Price is stored directly in the master dataset.
+        # Each record carries its own Retail Price.
         # ----------------------------------------------------
 
-        msrp_value = base["MSRP"]
+        msrp_value = base["Retail Price"]
 
         if pd.isna(msrp_value):
 
@@ -2858,7 +2859,7 @@ def admin_forecast(item: dict):
                     "unresolved",
 
                 "message":
-                    "MSRP is unavailable for this device."
+                    "Retail price is unavailable for this device."
             }
 
 
@@ -2893,7 +2894,7 @@ def admin_forecast(item: dict):
         )
 
         print(
-            f"MSRP         : RM {msrp:,.2f}"
+            f"Retail Price : RM {msrp:,.2f}"
         )
 
         print(
@@ -2994,7 +2995,7 @@ def admin_forecast(item: dict):
             # AGE 0
             #
             # Device is in its model year.
-            # Use MSRP as the baseline value.
+            # Use Retail Price as the baseline value.
             # No depreciation curve is required.
             # ------------------------------------------------
 
@@ -3008,7 +3009,7 @@ def admin_forecast(item: dict):
                     f"Forecast {year}: "
                     f"RM {prediction:,.2f} | "
                     f"Tier: launch_price | "
-                    f"Curve: MSRP baseline"
+                    f"Curve: Retail price baseline"
                 )
 
 

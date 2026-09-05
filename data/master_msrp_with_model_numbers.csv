@@ -1,4 +1,4 @@
-Provider,Device,Sub-device,Standardized Model,MSRP,Specification,Storage (GB),Storage Type,Connectivity,Material,Max. Trade-In Value (RM),Model_Year,Chipset,Screen Size,Case Size,Charging Method,RAM Configurations (GB),RAM Min (GB),Mac Storage Category,Mac Generation,Model Number
+Provider,Device,Sub-device,Standardized Model,Retail Price,Specification,Storage (GB),Storage Type,Connectivity,Material,Max. Trade-In Value (RM),Model_Year,Chipset,Screen Size,Case Size,Charging Method,RAM Configurations (GB),RAM Min (GB),Mac Storage Category,Mac Generation,Model Number
 CompAsia,iPhone,Standard,iPhone 11,3599.0,,128.0,Unknown,Unknown,,390.0,2019.0,A13 Bionic,,,,,,,Unknown,"A2111, A2221, A2223"
 CompAsia,iPhone,Standard,iPhone 11,4099.0,,256.0,Unknown,Unknown,,450.0,2019.0,A13 Bionic,,,,,,,Unknown,"A2111, A2221, A2223"
 CompAsia,iPhone,Standard,iPhone 11,3399.0,,64.0,Unknown,Unknown,,340.0,2019.0,A13 Bionic,,,,,,,Unknown,"A2111, A2221, A2223"

@@ -141,7 +141,41 @@
 
           <!-- Model Number search bar with custom autocomplete -->
           <div class="form-group relative-group">
-            <label for="modelNumberInput">Model Number</label>
+            <div class="label-with-help">
+              <label for="modelNumberInput">Model Number</label>
+
+              <button
+                type="button"
+                id="modelNumberHelpBtn"
+                class="field-help-button"
+                aria-label="Where to find your model number"
+                aria-expanded="false"
+                aria-controls="modelNumberHelp"
+              >
+                ?
+              </button>
+            </div>
+
+            <div
+              id="modelNumberHelp"
+              class="model-number-help hidden"
+              role="dialog"
+              aria-label="Where to find your model number"
+            >
+              <p id="modelNumberHelpText">
+                Need help finding your model number?
+              </p>
+
+              <a
+                id="modelNumberHelpLink"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View Apple Support guide →
+              </a>
+            </div>
+
             <input
               type="text"
               id="modelNumberInput"
