@@ -2074,7 +2074,7 @@
 				// flows: all selected records were stale, nothing
 				// was deleted -- refresh and let the admin retry.
 				if (response.status === 409) {
-					showAdminToast(data.detail || "The selected record(s) changed just before deleting -- reloading the latest list.", "warning", 5000);
+					showAdminToast(data.detail || "The selected record(s) changed just before deleting. Reloading...", "warning", 5000);
 					customerDeleteTargets = [];
 					selectedCustomerRows.clear();
 					document.getElementById("customer-delete-confirm").classList.add("hidden");

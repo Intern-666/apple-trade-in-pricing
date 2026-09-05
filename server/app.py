@@ -1676,7 +1676,7 @@ def admin_delete_customers(item: CustomerDeleteRequest):
             status_code=409,
             detail=(
                 "The selected record(s) changed since the list was "
-                "loaded -- please refresh and try again."
+                "loaded. Reloading..."
             ),
         )
 
@@ -1697,7 +1697,7 @@ def admin_delete_customers(item: CustomerDeleteRequest):
             "message": (
                 f"{deleted_count} record(s) deleted. {skipped_count} record(s) "
                 "were skipped because their data changed since the list was "
-                "loaded -- please refresh and try again."
+                "loaded. Reloading..."
             ),
             "deleted_rows": result.deleted_rows,
             "skipped_rows": result.skipped_rows,
