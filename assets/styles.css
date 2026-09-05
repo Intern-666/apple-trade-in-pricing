@@ -1725,6 +1725,42 @@ select:disabled {
   animation: customerFooterEnter 0.7s ease-out 0.24s both;
 }
 
+/* =========================================================
+   TOP NAVIGATION / BACK BUTTON
+========================================================= */
+.top-nav {
+  width: 100%;
+  padding: 1.5rem 2rem 0;
+  box-sizing: border-box;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1d1d1f;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.back-link:hover {
+  opacity: 0.6;
+}
+
+.back-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Adjust padding on mobile so it lines up with your hero section */
+@media (max-width: 768px) {
+  .top-nav {
+    padding: 1rem 1.5rem 0;
+  }
+}
+
 @keyframes customerPageFadeIn {
   from {
     opacity: 0;
