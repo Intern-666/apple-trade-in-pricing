@@ -366,6 +366,24 @@ print(f"Master dataset: {DATA_FILE.name}")
 
 df = clean_dataset(df)
 
+test_columns = [
+    "Device",
+    "Sub-device",
+    "Model Number",
+    "Standardized Model"
+]
+
+print("Columns:", df.columns.tolist())
+
+for column in test_columns:
+    print(
+        repr(column),
+        "=>",
+        column in df.columns
+    )
+
+test = df.groupby(test_columns)
+
 device_model_map, device_config_map = build_device_maps(df)
 model_number_map = build_model_number_map(df)
 
