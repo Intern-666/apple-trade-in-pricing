@@ -205,3 +205,18 @@ document.addEventListener("DOMContentLoaded", () => {
         submitText.textContent = "Start my trade-in";
     });
 });
+
+document.addEventListener("DOMContentLoaded", function() {
+        // Fetch the saved details from the session storage your app already uses
+        const savedDetails = JSON.parse(sessionStorage.getItem("customerDetails"));
+        
+        // If data exists, repopulate the form fields
+        if (savedDetails) {
+            if (savedDetails.name) document.getElementById("name").value = savedDetails.name;
+            if (savedDetails.phone) document.getElementById("phone").value = savedDetails.phone;
+            if (savedDetails.email) document.getElementById("email").value = savedDetails.email;
+            if (savedDetails.preferredContact) {
+                document.getElementById("preferredContact").value = savedDetails.preferredContact;
+            }
+        }
+    });
