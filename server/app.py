@@ -140,7 +140,6 @@ TEXT_COLUMNS = [
     "Storage Type",
     "Connectivity",
     "Chipset",
-    "Mac Generation"
 ]
 
 
@@ -367,24 +366,6 @@ print(f"Master dataset: {DATA_FILE.name}")
 
 df = clean_dataset(df)
 
-test_columns = [
-    "Device",
-    "Sub-device",
-    "Model Number",
-    "Standardized Model"
-]
-
-print("Columns:", df.columns.tolist())
-
-for column in test_columns:
-    print(
-        repr(column),
-        "=>",
-        column in df.columns
-    )
-
-test = df.groupby(test_columns)
-
 device_model_map, device_config_map = build_device_maps(df)
 model_number_map = build_model_number_map(df)
 
@@ -451,15 +432,6 @@ else:
     print(
         "Customer Google Sheets sync UNAVAILABLE."
     )
-
-
-# ============================================================
-# CLEAN + BUILD (INITIAL PASS, FROM THE CSV LOADED ABOVE)
-# ============================================================
-
-df = clean_dataset(df)
-
-device_model_map, device_config_map = build_device_maps(df)
 
 print(
     f"Devices available: {len(device_model_map)}"
@@ -1181,20 +1153,10 @@ class AdminAddDevice(BaseModel):
     Chipset: Optional[str] = None
     Connectivity: Optional[str] = None
 
-    Specification: Optional[str] = None
-
-    ScreenSize: Optional[str] = None
-
     Material: Optional[str] = None
     CaseSize: Optional[int] = None
 
     ChargingMethod: Optional[str] = None
-
-    RAMConfigurations: Optional[str] = None
-    RAMMin: Optional[float] = None
-
-    MacStorageCategory: Optional[str] = None
-    MacGeneration: Optional[str] = None
 
 # ============================================================
 # ADMIN — ADD DEVICE
@@ -1382,18 +1344,6 @@ def admin_add_device(item: AdminAddDevice):
             detail="Connectivity is required.",
         )
 
-    specification = (
-        item.Specification.strip()
-        if item.Specification
-        else np.nan
-    )
-
-    screen_size = (
-        item.ScreenSize.strip()
-        if item.ScreenSize
-        else np.nan
-    )
-
     material = (
         item.Material.strip()
         if item.Material
@@ -1431,56 +1381,6 @@ def admin_add_device(item: AdminAddDevice):
         if item.ChargingMethod
         else np.nan
     )
-
-    ram_configurations = (
-        item.RAMConfigurations.strip()
-        if item.RAMConfigurations
-        else np.nan
-    )
-
-    # ========================================================
-    # NON-MAC RAM
-    # ========================================================
-
-    if device != "Mac":
-
-        ram_configurations = np.nan
-        ram_min = np.nan
-
-    else:
-
-        if (
-            item.RAMMin is not None
-            and item.RAMMin < 0
-        ):
-
-            raise HTTPException(
-                status_code=400,
-                detail="RAM cannot be negative.",
-            )
-
-        ram_min = item.RAMMin
-
-    # ========================================================
-    # MAC-SPECIFIC
-    # ========================================================
-
-    mac_storage_category = (
-        item.MacStorageCategory.strip()
-        if item.MacStorageCategory
-        else np.nan
-    )
-
-    mac_generation = (
-        item.MacGeneration.strip()
-        if item.MacGeneration
-        else np.nan
-    )
-
-    if device != "Mac":
-
-        mac_storage_category = np.nan
-        mac_generation = np.nan
 
     # ========================================================
     # MODEL YEAR
@@ -1523,11 +1423,8 @@ def admin_add_device(item: AdminAddDevice):
         "Model Number":
             model_number,
 
-        "MSRP":
+        "Retail Price":
             msrp,
-
-        "Specification":
-            specification,
 
         "Storage (GB)":
             storage,
@@ -1554,26 +1451,11 @@ def admin_add_device(item: AdminAddDevice):
         "Chipset":
             chipset,
 
-        "Screen Size":
-            screen_size,
-
         "Case Size":
             case_size,
 
         "Charging Method":
             charging_method,
-
-        "RAM Configurations (GB)":
-            ram_configurations,
-
-        "RAM Min (GB)":
-            ram_min,
-
-        "Mac Storage Category":
-            mac_storage_category,
-
-        "Mac Generation":
-            mac_generation
     }
 
     # ========================================================
@@ -2240,32 +2122,15 @@ def admin_records(
                     row
                 ),
 
-            "specification":
-                clean_value(
-                    "Specification",
-                    row
-                ),
-
             "material":
                 clean_value(
                     "Material",
                     row
                 ),
 
-            "ram":
-                safe_numeric(
-                    row["RAM Min (GB)"]
-                ),
-
             "chipset":
                 clean_value(
                     "Chipset",
-                    row
-                ),
-
-            "mac_generation":
-                clean_value(
-                    "Mac Generation",
                     row
                 ),
 
