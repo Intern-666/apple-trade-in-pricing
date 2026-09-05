@@ -109,45 +109,10 @@ body {
 }
 
 /* ============================================================
-   REFRESH DATA BUTTON & SPINNER
+   ACTION-BUTTON LOADING SPINNER
+   (shared by any button that shows a spinner while busy, via
+   setActionLoading() -- e.g. Save / Delete / Add)
    ============================================================ */
-#admin-refresh-button {
-    margin-left: auto; /* Pushes the button to the far right */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: #fff;
-    color: #1d1d1f;
-    border: 1px solid #d2d2d7;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-/* Override default nav button styles for this specific button */
-.admin-nav #admin-refresh-button:hover {
-    background: #f5f5f7;
-    color: #1d1d1f;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
-}
-
-.admin-nav #admin-refresh-button:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.admin-nav #admin-refresh-button:disabled {
-    opacity: 0.65;
-    cursor: not-allowed;
-    background: #f5f5f7;
-    transform: none;
-    box-shadow: none;
-}
-
 .refresh-spinner {
     width: 14px;
     height: 14px;
@@ -162,14 +127,6 @@ body {
 @keyframes refreshSpin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-/* Ensure mobile layout doesn't stretch the button weirdly */
-@media (max-width: 600px) {
-    .admin-nav #admin-refresh-button {
-        flex: 0 0 auto;
-        min-width: auto;
-    }
 }
 
 .admin-nav button {
@@ -1815,6 +1772,55 @@ STATUS PAGE RESPONSIVE
 /* Adjust wrapper layout */
 .forecast-chart-wrapper {
     margin: 0 0 24px 0; /* Reset margins from single-column version */
+}
+
+.forecast-chart-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.forecast-drag-hint {
+    margin: 0;
+    font-size: 12px;
+    color: #6e6e73;
+    text-align: center;
+}
+
+.forecast-reset-btn {
+    position: absolute;
+    right: 0;
+
+    width: 30px;
+    height: 30px;
+
+    border: none;
+    background: transparent;
+
+    font-size: 20px;
+    line-height: 1;
+
+    color: #6e6e73;
+
+    cursor: pointer;
+
+    border-radius: 50%;
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.forecast-reset-btn:hover {
+    background: #f2f2f7;
+    color: #1d1d1f;
+}
+
+.forecast-reset-btn:active {
+    transform: rotate(-45deg);
 }
 
 @media (max-width: 900px) {

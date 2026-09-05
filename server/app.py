@@ -771,6 +771,20 @@ def get_model_configuration():
 
 
 # ============================================================
+# MODEL NUMBERS
+# (Exposes the existing model_number_map for lookup/filtering.
+# Does not change how the map is built.)
+# ============================================================
+
+@app.get("/model-numbers")
+def get_model_numbers():
+
+    refresh_data_if_stale()
+
+    return model_number_map
+
+
+# ============================================================
 # REQUEST MODEL
 # ============================================================
 
@@ -1073,6 +1087,7 @@ def save_customer_trade_in(
         "Device": device_name,
         "Sub-device": sub_device,
         "Model": model_name,
+        "Model Number": device.get("modelNumber") or "N/A",
         "Storage (GB)": device.get("storage"),
         "Storage Type": device.get("storageType") or "N/A",
         "Connectivity": device.get("connectivity") or "N/A",
@@ -1142,6 +1157,8 @@ class AdminAddDevice(BaseModel):
     SubDevice: str
     Model: str
 
+    ModelNumber: Optional[str] = None
+
     Provider: Optional[str] = None
 
     MSRP: float
@@ -1197,6 +1214,12 @@ def admin_add_device(item: AdminAddDevice):
     device = item.Device.strip()
     sub_device = item.SubDevice.strip()
     model_name = item.Model.strip()
+
+    model_number = (
+        item.ModelNumber.strip()
+        if item.ModelNumber
+        else np.nan
+    )
 
     if not device:
         raise HTTPException(
@@ -1488,6 +1511,9 @@ def admin_add_device(item: AdminAddDevice):
 
         "Standardized Model":
             model_name,
+
+        "Model Number":
+            model_number,
 
         "MSRP":
             msrp,
@@ -1969,6 +1995,27 @@ def admin_status():
             int(total_missing)
 
     }
+
+# ============================================================
+# ADMIN — DATA VERSION (lightweight staleness check)
+#
+# The admin UI polls this on an interval to detect when the
+# underlying data has changed (e.g. someone edited the Sheet
+# directly, or another admin session made a change) so it can
+# refresh itself automatically instead of relying on a manual
+# "Refresh Data" button.
+#
+# Deliberately does none of the heavier work /admin/status does
+# (iterating every row to find missing fields) -- it just runs the
+# same throttled staleness check every other admin endpoint runs,
+# then reports the current stamp. Cheap enough to poll frequently.
+# ============================================================
+
+@app.get("/admin/data-version")
+def admin_data_version():
+    refresh_data_if_stale()
+
+    return {"dataVersion": _data_version}
 
 # ============================================================
 # ADMIN — AVAILABLE MODELS

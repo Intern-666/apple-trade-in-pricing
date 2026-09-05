@@ -1,5 +1,6 @@
 let deviceData = {};
 let configData = {};
+let modelNumberData = {};
 
 /* =========================================================
    CUSTOMER DETAILS
@@ -138,6 +139,8 @@ function updateDeviceImagePreview(device, subDevice) {
 
 const deviceSelect = document.getElementById("deviceSelect");
 const subDeviceSelect = document.getElementById("subDeviceSelect");
+const modelNumberInput = document.getElementById("modelNumberInput");
+const modelNumberList = document.getElementById("modelNumberList");
 const modelSelect = document.getElementById("modelSelect");
 const storageSelect = document.getElementById("storageSelect");
 
@@ -166,6 +169,15 @@ const startOverBtn = document.getElementById("startOverBtn");
 
 const productLineSection = document.getElementById("productLineSection");
 const modelSection = document.getElementById("modelSection");
+
+// Hide the autocomplete dropdown if the user clicks anywhere else on the page
+document.addEventListener("click", function (e) {
+    if (modelNumberInput && modelNumberList) {
+        if (!modelNumberInput.contains(e.target) && !modelNumberList.contains(e.target)) {
+            modelNumberList.classList.add("hidden");
+        }
+    }
+});
 
 
 /* =========================================================
@@ -253,6 +265,11 @@ function unlockStep(step) {
    changing Device resets Product Line, Model, Configuration,
    and Condition. */
 function resetFromStep(step) {
+
+    if (step < 3) {
+        modelNumberInput.value = "";
+        modelNumberInput.disabled = true;
+    }
 
     if (step < 4) {
 
@@ -372,9 +389,10 @@ window.addEventListener("DOMContentLoaded", async function () {
 
     try {
 
-        const [modelsResponse, configResponse] = await Promise.all([
+        const [modelsResponse, configResponse, numbersResponse] = await Promise.all([
             fetch("/available-models"),
-            fetch("/model-configuration")
+            fetch("/model-configuration"),
+            fetch("/model-numbers")
         ]);
 
         if (!modelsResponse.ok) {
@@ -391,6 +409,14 @@ window.addEventListener("DOMContentLoaded", async function () {
         // rest of the flow still work normally.
         configData = configResponse.ok
             ? await configResponse.json()
+            : {};
+
+        // Model number data is additive -- if this call fails for
+        // any reason, the Model Number field simply stays disabled
+        // and every model remains selectable directly, same as
+        // before this feature existed.
+        modelNumberData = numbersResponse.ok
+            ? await numbersResponse.json()
             : {};
 
         deviceSelect.innerHTML =
@@ -646,10 +672,145 @@ subDeviceSelect.addEventListener("change", function (event) {
     resetFromStep(2);
     unlockStep(3);
 
+    // ========================================================
+    // MODEL NUMBER FILTERING
+    //
+    // If this device/sub-device has model numbers on record,
+    // require a valid one before the Model dropdown unlocks.
+    // Otherwise the Model Number field stays disabled and the
+    // flow behaves exactly as it did before this feature.
+    // ========================================================
+
+    const subDeviceNumbers =
+        (modelNumberData[selectedDevice] && modelNumberData[selectedDevice][selectedSub])
+            ? modelNumberData[selectedDevice][selectedSub]
+            : {};
+
+    const availableNumbers =
+        Object.keys(subDeviceNumbers).sort();
+
+    modelNumberInput.value = "";
+    modelNumberList.innerHTML = "";
+    modelNumberList.classList.add("hidden");
+
+    if (availableNumbers.length === 0) {
+
+        modelNumberInput.disabled = true;
+        modelNumberInput.placeholder = "Not available for this product";
+
+    } else {
+
+        modelNumberInput.disabled = false;
+        modelNumberInput.placeholder = "Search model number (e.g. A2890)...";
+
+        modelSelect.innerHTML =
+            '<option value="" disabled selected>Select a valid Model Number first...</option>';
+        modelSelect.disabled = true;
+    }
+
     updateProgress();
 
     goToStep(3, "forward");
 });
+
+/* =========================================================
+   MODEL NUMBER SEARCH / FILTERING
+========================================================= */
+
+function handleAutocompleteAndFiltering() {
+
+    const selectedDevice = deviceSelect.value;
+    const selectedSub = subDeviceSelect.value;
+
+    if (!selectedDevice || !selectedSub) {
+        return;
+    }
+
+    const subDeviceNumbers =
+        (modelNumberData[selectedDevice] && modelNumberData[selectedDevice][selectedSub])
+            ? modelNumberData[selectedDevice][selectedSub]
+            : {};
+
+    const filterText = modelNumberInput.value.trim().toUpperCase();
+    const availableNumbers = Object.keys(subDeviceNumbers).sort();
+
+    // ========================================================
+    // BUILD AUTOCOMPLETE LIST
+    // ========================================================
+
+    modelNumberList.innerHTML = "";
+    let hasVisibleOptions = false;
+
+    availableNumbers.forEach(num => {
+
+        if (num.toUpperCase().includes(filterText) || filterText === "") {
+
+            hasVisibleOptions = true;
+
+            const li = document.createElement("li");
+            li.textContent = num;
+
+            li.addEventListener("click", function () {
+                modelNumberInput.value = num;
+                modelNumberList.classList.add("hidden");
+                modelNumberInput.dispatchEvent(new Event("input"));
+            });
+
+            modelNumberList.appendChild(li);
+        }
+    });
+
+    modelNumberList.classList.toggle("hidden", !hasVisibleOptions);
+
+    // ========================================================
+    // VALIDATE EXACT MATCH & LOCK/UNLOCK MODEL DROPDOWN
+    // ========================================================
+
+    if (filterText === "") {
+
+        modelSelect.innerHTML =
+            '<option value="" disabled selected>Select a valid Model Number first...</option>';
+        modelSelect.disabled = true;
+
+        resetFromStep(3);
+        return;
+    }
+
+    const exactMatchKey =
+        availableNumbers.find(k => k.toUpperCase() === filterText);
+
+    if (exactMatchKey) {
+
+        modelNumberList.classList.add("hidden");
+
+        const validModels = subDeviceNumbers[exactMatchKey].sort();
+
+        modelSelect.innerHTML =
+            '<option value="" disabled selected>Select a model...</option>';
+
+        validModels.forEach(model => {
+
+            const option = document.createElement("option");
+            option.value = model;
+            option.textContent = model;
+
+            modelSelect.appendChild(option);
+        });
+
+        modelSelect.disabled = false;
+
+    } else {
+
+        modelSelect.innerHTML =
+            '<option value="" disabled selected>Select a valid Model Number first...</option>';
+        modelSelect.disabled = true;
+
+        resetFromStep(3);
+    }
+}
+
+modelNumberInput.addEventListener("input", handleAutocompleteAndFiltering);
+modelNumberInput.addEventListener("focus", handleAutocompleteAndFiltering);
 
 
 /* =========================================================
@@ -1847,6 +2008,7 @@ tradeInForm.addEventListener(
             device: {
                 device: device,
                 subDevice: subDevice,
+                modelNumber: modelNumberInput.value.trim() || null,
                 model: model,
                 storage: storage || null,
                 storageType: storageType || null,
@@ -1946,6 +2108,9 @@ startOverBtn.addEventListener(
                 box.classList.remove("selected");
                 box.setAttribute("aria-selected", "false");
             });
+
+        modelNumberInput.value = "";
+        modelNumberInput.disabled = true;
 
         modelSelect.innerHTML =
             '<option value="" disabled selected>Select a model...</option>';

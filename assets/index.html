@@ -139,6 +139,19 @@
             <img id="deviceImagePreviewImg" src="" alt="">
           </div>
 
+          <!-- Model Number search bar with custom autocomplete -->
+          <div class="form-group relative-group">
+            <label for="modelNumberInput">Model Number</label>
+            <input
+              type="text"
+              id="modelNumberInput"
+              placeholder="Search model number (e.g. A2890)..."
+              autocomplete="off"
+              disabled
+            >
+            <ul id="modelNumberList" class="custom-autocomplete hidden"></ul>
+          </div>
+
           <div class="form-group">
             <label for="modelSelect">Model</label>
             <div class="select-wrapper">

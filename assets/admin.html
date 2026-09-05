@@ -145,11 +145,6 @@
                 FORECAST
             </button>
 
-            <!-- Moved inside admin-nav -->
-            <button id="admin-refresh-button" type="button">
-                Refresh Data
-            </button>
-
         </nav>
 
         <!-- =================================================
@@ -226,6 +221,21 @@
                     </option>
 
                 </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="add-model-number">
+                    Model Number
+                </label>
+
+                <input
+                    id="add-model-number"
+                    type="text"
+                    placeholder="e.g. A2890"
+                >
 
             </div>
 
@@ -961,8 +971,24 @@
                     
                     <div id="forecast-results-container" class="hidden">
                         
-                        <div id="forecast-graph-tabs" class="graph-tabs">
+                        <div class="forecast-graph-tabs" id="forecast-graph-tabs">
                             <!-- Model Tabs appear here -->
+                        </div>
+
+                        <div class="forecast-chart-header">
+                            <p class="forecast-drag-hint">
+                                Drag the red dots to adjust forecast values.
+                            </p>
+
+                            <button
+                                type="button"
+                                id="reset-forecast"
+                                class="forecast-reset-btn"
+                                title="Reset forecast values"
+                                aria-label="Reset forecast values"
+                            >
+                                ↻
+                            </button>
                         </div>
 
                         <div class="forecast-chart-wrapper">
@@ -1248,6 +1274,7 @@
                     </option>
                 `;
 
+                document.getElementById("add-model-number").value = "";
                 document.getElementById("add-model").value = "";
                 document.getElementById("add-year").value = "";
                 document.getElementById("add-msrp").value = "";
@@ -1813,107 +1840,500 @@
 
         function drawForecastGraph(index) {
             const data = forecastResultsCache[index];
-            if (forecastChart) { forecastChart.destroy(); }
-            const ctx = document.getElementById("forecast-chart").getContext("2d");
 
-            // Mapping styles based on data_point_type
-            const bgColors = [], borders = [], radiuses = [], styles = [];
+            if (forecastChart) {
+                forecastChart.destroy();
+            }
+
+            const canvas = document.getElementById("forecast-chart");
+            const ctx = canvas.getContext("2d");
+
+            // Use adjusted value when the user has manually moved a point.
+            const getPointValue = pt =>
+                pt.adjusted_trade_in ?? pt.estimated_trade_in;
+
+            // ============================================================
+            // POINT STYLING
+            // ============================================================
+
+            const bgColors = [];
+            const borders = [];
+            const radiuses = [];
+            const styles = [];
+
             data.results.forEach(pt => {
+
                 if (pt.data_point_type === "msrp_baseline") {
-                    bgColors.push("#9a9aa0"); borders.push("#9a9aa0"); radiuses.push(5); styles.push("rect");
+
+                    bgColors.push("#9a9aa0");
+                    borders.push("#9a9aa0");
+                    radiuses.push(5);
+                    styles.push("rect");
+
                 } else if (pt.data_point_type === "actual_observation") {
-                    bgColors.push("#34c759"); borders.push("#248a3d"); radiuses.push(6); styles.push("circle");
+
+                    bgColors.push("#34c759");
+                    borders.push("#248a3d");
+                    radiuses.push(6);
+                    styles.push("circle");
+
                 } else {
-                    bgColors.push("#d32f2f"); borders.push("#d32f2f"); radiuses.push(4); styles.push("circle");
+
+                    bgColors.push("#d32f2f");
+                    borders.push("#d32f2f");
+                    radiuses.push(4);
+                    styles.push("circle");
                 }
             });
 
+            // ============================================================
+            // CREATE CHART
+            // ============================================================
+
             forecastChart = new Chart(ctx, {
                 type: "line",
+
                 data: {
                     labels: data.results.map(r => r.year),
+
                     datasets: [{
                         label: data._label,
-                        data: data.results.map(r => r.estimated_trade_in),
-                        tension: 0.3,
+
+                        data: data.results.map(getPointValue),
+
+                        tension: 0.4,
+
                         pointBackgroundColor: bgColors,
                         pointBorderColor: borders,
                         pointRadius: radiuses,
                         pointStyle: styles,
-                        borderColor: '#d32f2f',
+
+                        borderColor: "#d32f2f",
                         borderWidth: 2,
+
                         fill: false
                     }]
                 },
+
                 options: {
-                    responsive: true, maintainAspectRatio: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
+
                     plugins: {
-                        legend: { display: false },
+
+                        legend: {
+                            display: false
+                        },
+
                         tooltip: {
                             mode: "nearest",
                             intersect: false,
+
                             callbacks: {
+
                                 title: function(context) {
                                     return `Year: ${context[0].label}`;
                                 },
+
                                 label: function(context) {
-                                    const rawPt = data.results[context.dataIndex];
+
+                                    const rawPt =
+                                        data.results[context.dataIndex];
+
+                                    const value =
+                                        getPointValue(rawPt);
+
                                     let prefix = "Predicted value";
-                                    if (rawPt.data_point_type === "msrp_baseline") prefix = "MSRP Baseline";
-                                    if (rawPt.data_point_type === "actual_observation") prefix = "Observed value";
-                                    return `${prefix}: RM ${context.raw.toLocaleString()}`;
+
+                                    if (
+                                        rawPt.data_point_type ===
+                                        "msrp_baseline"
+                                    ) {
+                                        prefix = "MSRP Baseline";
+                                    }
+
+                                    if (
+                                        rawPt.data_point_type ===
+                                        "actual_observation"
+                                    ) {
+                                        prefix = "Observed value";
+                                    }
+
+                                    return `${prefix}: RM ${Number(value).toLocaleString()}`;
                                 }
                             }
                         }
                     },
+
                     interaction: {
                         mode: "nearest",
                         intersect: false
                     },
+
                     scales: {
+
                         x: {
-                            title: { display: true, text: "Year" }
+                            title: {
+                                display: true,
+                                text: "Year"
+                            }
                         },
+
                         y: {
+
                             beginAtZero: true,
-                            title: { display: true, text: "Estimated Trade-In Value (RM)" },
+
+                            title: {
+                                display: true,
+                                text: "Estimated Trade-In Value (RM)"
+                            },
+
                             ticks: {
                                 callback: function(value) {
-                                    return "RM " + Number(value).toLocaleString();
+                                    return "RM " +
+                                        Number(value).toLocaleString();
                                 }
                             }
                         }
                     }
                 }
             });
+
+            // ============================================================
+            // DRAGGING
+            // ============================================================
+
+            let draggingPointIndex = null;
+
+            // Prevent browser scrolling while interacting with the chart.
+            canvas.style.touchAction = "none";
+
+            // ============================================================
+            // POINTER DOWN
+            // ============================================================
+
+            canvas.onpointerdown = function(event) {
+
+                if (!forecastChart) return;
+
+                const points =
+                    forecastChart.getElementsAtEventForMode(
+                        event,
+                        "nearest",
+                        {
+                            intersect: true
+                        },
+                        false
+                    );
+
+                if (!points.length) return;
+
+                const pointIndex = points[0].index;
+                const pt = data.results[pointIndex];
+
+                const selectedUntilYear =
+                    Number(
+                        document
+                            .getElementById("forecast-until")
+                            .value
+                    );
+
+                const isMsrp =
+                    pt.data_point_type === "msrp_baseline";
+
+                const isObserved =
+                    pt.data_point_type === "actual_observation";
+
+                const isFinalForecastPoint =
+                    Number(pt.year) === selectedUntilYear;
+
+                // MSRP, actual observations, and final forecast
+                // point cannot be manually changed.
+                if (
+                    isMsrp ||
+                    isObserved ||
+                    isFinalForecastPoint
+                ) {
+                    return;
+                }
+
+                draggingPointIndex = pointIndex;
+
+                canvas.style.cursor = "grabbing";
+
+                if (canvas.setPointerCapture) {
+                    canvas.setPointerCapture(event.pointerId);
+                }
+
+                event.preventDefault();
+            };
+
+            // ============================================================
+            // POINTER MOVE
+            // ============================================================
+
+            canvas.onpointermove = function(event) {
+
+                if (!forecastChart) return;
+
+                // --------------------------------------------------------
+                // HOVER CURSOR
+                // --------------------------------------------------------
+
+                if (draggingPointIndex === null) {
+
+                    const points =
+                        forecastChart.getElementsAtEventForMode(
+                            event,
+                            "nearest",
+                            {
+                                intersect: true
+                            },
+                            false
+                        );
+
+                    // IMPORTANT:
+                    // There may be no point underneath the cursor.
+                    if (!points.length) {
+                        canvas.style.cursor = "default";
+                        return;
+                    }
+
+                    const pointIndex = points[0].index;
+                    const pt = data.results[pointIndex];
+
+                    const selectedUntilYear =
+                        Number(
+                            document
+                                .getElementById("forecast-until")
+                                .value
+                        );
+
+                    const isLocked =
+                        pt.data_point_type === "msrp_baseline" ||
+                        pt.data_point_type === "actual_observation" ||
+                        Number(pt.year) === selectedUntilYear;
+
+                    canvas.style.cursor =
+                        isLocked ? "default" : "grab";
+
+                    return;
+                }
+
+                // --------------------------------------------------------
+                // GET VALUE FROM POINTER POSITION
+                // --------------------------------------------------------
+
+                const yScale = forecastChart.scales.y;
+
+                let newValue =
+                    yScale.getValueForPixel(event.offsetY);
+
+                // Never allow negative trade-in values.
+                newValue = Math.max(0, newValue);
+
+                // Snap to nearest RM10.
+                newValue =
+                    Math.round(newValue / 10) * 10;
+
+                // --------------------------------------------------------
+                // SAVE MANUAL VALUE
+                // --------------------------------------------------------
+
+                const pt =
+                    data.results[draggingPointIndex];
+
+                pt.adjusted_trade_in = newValue;
+
+                // --------------------------------------------------------
+                // UPDATE GRAPH
+                // --------------------------------------------------------
+
+                forecastChart.data.datasets[0].data[
+                    draggingPointIndex
+                ] = newValue;
+
+                forecastChart.update("none");
+
+                // --------------------------------------------------------
+                // UPDATE TABLE
+                // --------------------------------------------------------
+
+                renderUnifiedTable();
+
+                event.preventDefault();
+            };
+
+            // ============================================================
+            // POINTER UP
+            // ============================================================
+
+            canvas.onpointerup = function(event) {
+
+                if (draggingPointIndex !== null) {
+
+                    draggingPointIndex = null;
+
+                    canvas.style.cursor = "default";
+
+                    if (canvas.releasePointerCapture) {
+
+                        try {
+                            canvas.releasePointerCapture(
+                                event.pointerId
+                            );
+                        } catch (e) {
+                            // Pointer capture may already be released.
+                        }
+                    }
+                }
+            };
+
+            // ============================================================
+            // POINTER CANCEL
+            // ============================================================
+
+            canvas.onpointercancel = function(event) {
+
+                draggingPointIndex = null;
+
+                canvas.style.cursor = "default";
+
+                if (canvas.releasePointerCapture) {
+
+                    try {
+                        canvas.releasePointerCapture(
+                            event.pointerId
+                        );
+                    } catch (e) {}
+                }
+            };
+
+            // ============================================================
+            // POINTER LEAVE
+            // ============================================================
+
+            canvas.onpointerleave = function() {
+
+                if (draggingPointIndex === null) {
+                    canvas.style.cursor = "default";
+                }
+            };
         }
 
-        function renderUnifiedTable() {
-            // Find all unique years across all cached results
-            const yearsSet = new Set();
-            forecastResultsCache.forEach(d => d.results.forEach(pt => yearsSet.add(pt.year)));
-            const years = Array.from(yearsSet).sort((a, b) => a - b);
+        document
+            .getElementById("reset-forecast")
+            .addEventListener("click", function() {
 
-            const thead = document.getElementById("forecast-multi-table-head");
-            let headHTML = '<tr><th>Model</th>';
-            years.forEach(y => headHTML += `<th>${y}</th>`);
-            headHTML += '</tr>';
+                if (!forecastChart) return;
+
+                const activeIndex =
+                    forecastResultsCache.findIndex(
+                        d =>
+                            d._label ===
+                            forecastChart.data.datasets[0].label
+                    );
+
+                if (activeIndex === -1) return;
+
+                const data =
+                    forecastResultsCache[activeIndex];
+
+                // Remove all manual adjustments.
+                data.results.forEach(pt => {
+                    delete pt.adjusted_trade_in;
+                });
+
+                // Restore original forecast values.
+                forecastChart.data.datasets[0].data =
+                    data.results.map(
+                        pt => pt.estimated_trade_in
+                    );
+
+                forecastChart.update();
+
+                renderUnifiedTable();
+            });
+
+        function renderUnifiedTable() {
+            // Find all unique years across all cached results.
+            const yearsSet = new Set();
+
+            forecastResultsCache.forEach(d => {
+                d.results.forEach(pt => {
+                    yearsSet.add(pt.year);
+                });
+            });
+
+            const years =
+                Array.from(yearsSet)
+                    .sort((a, b) => a - b);
+
+            const thead =
+                document.getElementById(
+                    "forecast-multi-table-head"
+                );
+
+            let headHTML = "<tr><th>Model</th>";
+
+            years.forEach(y => {
+                headHTML += `<th>${y}</th>`;
+            });
+
+            headHTML += "</tr>";
+
             thead.innerHTML = headHTML;
 
-            const tbody = document.getElementById("forecast-multi-table-body");
-            let bodyHTML = '';
+            const tbody =
+                document.getElementById(
+                    "forecast-multi-table-body"
+                );
+
+            let bodyHTML = "";
+
             forecastResultsCache.forEach(d => {
-                bodyHTML += `<tr><td><strong>${d.model}</strong><br><span style="color:#6e6e73;font-size:11px;">${d.provider}</span></td>`;
+
+                bodyHTML +=
+                    `<tr>
+                        <td>
+                            <strong>${d.model}</strong>
+                            <br>
+                            <span style="color:#6e6e73;font-size:11px;">
+                                ${d.provider}
+                            </span>
+                        </td>`;
+
                 years.forEach(y => {
-                    const pt = d.results.find(p => p.year === y);
+
+                    const pt =
+                        d.results.find(
+                            p => p.year === y
+                        );
+
                     if (pt) {
-                        bodyHTML += `<td>RM ${Number(pt.estimated_trade_in).toLocaleString(undefined, {minimumFractionDigits: 0})}</td>`;
+
+                        const displayValue =
+                            pt.adjusted_trade_in ??
+                            pt.estimated_trade_in;
+
+                        bodyHTML +=
+                            `<td>RM ${Number(displayValue).toLocaleString(
+                                undefined,
+                                {
+                                    minimumFractionDigits: 0
+                                }
+                            )}</td>`;
+
                     } else {
-                        bodyHTML += `<td style="color:#c7c7cc;">—</td>`;
+
+                        bodyHTML +=
+                            `<td style="color:#c7c7cc;">—</td>`;
                     }
                 });
-                bodyHTML += '</tr>';
+
+                bodyHTML += "</tr>";
             });
+
             tbody.innerHTML = bodyHTML;
         }
 
@@ -2203,6 +2623,11 @@
 
                 const records = await response.json();
 
+                // Tracked so an in-progress auto-refresh can tell
+                // whether the record a user has open is still here.
+                container.dataset.lastRecordIds =
+                    records.map(record => record.id).join(",");
+
                 if (!records.length) {
 
                     container.innerHTML = `
@@ -2345,13 +2770,23 @@
 
                             showAdminToast(
                                 data.detail ||
-                                "The data has changed. Please refresh before editing.",
+                                "The data changed just before deleting -- reloading the latest records.",
                                 "warning",
                                 5000
                             );
 
                             selectedDeleteRecordId = null;
                             selectedDeleteDataVersion = null;
+
+                            // The records shown were stale by the time we
+                            // tried to delete; pull the current ones in
+                            // automatically rather than leaving the old
+                            // list on screen.
+                            await refreshDeleteRecords();
+
+                            document
+                                .getElementById("delete-confirm")
+                                .classList.add("hidden");
 
                             return;
 
@@ -2632,6 +3067,15 @@
                             .value;
 
 
+                    const modelNumber =
+                        document
+                            .getElementById(
+                                "add-model-number"
+                            )
+                            .value
+                            .trim();
+
+
                     const model =
                         document
                             .getElementById(
@@ -2739,6 +3183,17 @@
 
                         showAdminToast(
                             "Please complete the device, sub-device and model.",
+                            "warning"
+                        );
+
+                        return;
+
+                    }
+
+                    if (!modelNumber) {
+
+                        showAdminToast(
+                            "Please enter the model number.",
                             "warning"
                         );
 
@@ -2921,6 +3376,9 @@
 
                         SubDevice:
                             subDevice,
+
+                        ModelNumber:
+                            modelNumber || null,
 
                         Model:
                             model,
@@ -3447,6 +3905,11 @@
 
                 container.innerHTML = "";
 
+                // Tracked so an in-progress auto-refresh can tell
+                // whether the record a user has open is still here.
+                container.dataset.lastRecordIds =
+                    records.map(record => record.id).join(",");
+
                 records.forEach(record => {
 
                     const div =
@@ -3647,13 +4110,23 @@
 
                             showAdminToast(
                                 data.detail ||
-                                "The data has changed. Please refresh the records before modifying.",
+                                "The data changed just before saving -- reloading the latest records.",
                                 "warning",
                                 5000
                             );
 
                             selectedRecordId = null;
                             selectedRecordDataVersion = null;
+
+                            // The records shown were stale by the time we
+                            // tried to save; pull the current ones in
+                            // automatically rather than leaving the old
+                            // list on screen.
+                            await refreshModifyRecords();
+
+                            document
+                                .getElementById("modify-form")
+                                .classList.add("hidden");
 
                             return;
 
@@ -4049,52 +4522,235 @@
 
         loadAdminStatus(); 
 
-        document.getElementById("admin-refresh-button").addEventListener("click", async () => {
-            const button = document.getElementById("admin-refresh-button");
+        // ============================================================
+        // AUTO-REFRESH — POLL FOR STALE DATA
+        //
+        // Replaces the old manual "Refresh Data" button. Every
+        // AUTO_REFRESH_POLL_MS, ask the backend for its current
+        // dataVersion (cheap -- /admin/data-version does none of the
+        // heavier /admin/status work). If it doesn't match what we
+        // last saw, the underlying dataset changed (Sheets sync,
+        // another admin session, etc.) and we quietly pull fresh
+        // data into whichever section is currently open, WITHOUT
+        // resetting the device/model dropdowns the user has picked
+        // or discarding an in-progress Modify/Delete selection.
+        // ============================================================
 
-            button.disabled = true;
-            // Must be innerHTML, NOT textContent, to render the <span>
-            button.innerHTML = '<span class="refresh-spinner"></span> Refreshing...';
+        const AUTO_REFRESH_POLL_MS = 15000;
+
+        async function pollForDataChanges() {
 
             try {
-                const response = await fetch("/admin/refresh", {
-                    method: "POST"
-                });
+
+                const response = await fetch("/admin/data-version");
+
+                if (!response.ok) {
+                    return;
+                }
 
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.detail || "Failed to refresh data.");
-                }
-
-                adminDataVersion = data.dataVersion;
-
-                showAdminToast(
-                    "Data refreshed successfully."
-                );
-
-                // Reload the currently relevant admin data.
-                if (typeof loadModifyModels === "function") {
-                    await loadModifyModels();
-                }
-
-                if (typeof loadDeleteModels === "function") {
-                    await loadDeleteModels();
-                }
-
-                if (typeof loadForecastHierarchy === "function") {
-                    await loadForecastHierarchy();
+                if (
+                    adminDataVersion !== null
+                    && data.dataVersion
+                    && data.dataVersion !== adminDataVersion
+                ) {
+                    await handleAutoRefresh(data.dataVersion);
+                } else if (adminDataVersion === null) {
+                    // First time we learn the version (e.g. before
+                    // any /admin/records call has run yet).
+                    adminDataVersion = data.dataVersion;
                 }
 
             } catch (error) {
-                console.error("Refresh failed:", error);
-                showAdminToast(error.message || "Failed to refresh data.", "error");
-            } finally {
-                button.disabled = false;
-                // Reset using innerHTML to clear the spinner out cleanly
-                button.innerHTML = 'Refresh Data';
+                // Best-effort: a missed poll just tries again next
+                // interval, same fail-safe spirit as the backend's
+                // own Sheets sync.
+                console.error("Data-version poll failed:", error);
             }
-        });
+
+        }
+
+        setInterval(pollForDataChanges, AUTO_REFRESH_POLL_MS);
+
+        async function handleAutoRefresh(newVersion) {
+
+            const activeSection =
+                Object.keys(sections).find(
+                    name => !sections[name].classList.contains("hidden")
+                );
+
+            if (activeSection === "modify") {
+                await autoRefreshModifySection(newVersion);
+            } else if (activeSection === "delete") {
+                await autoRefreshDeleteSection(newVersion);
+            } else if (activeSection === "forecast" && typeof loadForecastHierarchy === "function") {
+                await loadForecastHierarchy();
+                adminDataVersion = newVersion;
+            } else {
+                adminDataVersion = newVersion;
+            }
+
+            // Keep the status bubble/count in sync too, quietly.
+            if (typeof loadAdminStatus === "function") {
+                loadAdminStatus();
+            }
+
+        }
+
+        // ------------------------------------------------------
+        // MODIFY — auto refresh while preserving selection
+        // ------------------------------------------------------
+
+        async function autoRefreshModifySection(newVersion) {
+
+            const deviceVal = document.getElementById("modify-device").value;
+            const modelVal = document.getElementById("modify-model").value;
+            const wasFormOpen = !document.getElementById("modify-form").classList.contains("hidden");
+            const openRecordId = selectedRecordId;
+
+            if (!deviceVal) {
+                adminDataVersion = newVersion;
+                return;
+            }
+
+            // Rebuild the model dropdown, then restore the user's pick.
+            await loadModifyModels();
+
+            if (!modelVal) {
+                adminDataVersion = newVersion;
+                return;
+            }
+
+            const modelSelect = document.getElementById("modify-model");
+
+            const modelStillExists =
+                Array.from(modelSelect.options).some(o => o.value === modelVal);
+
+            if (modelStillExists) {
+                modelSelect.value = modelVal;
+            } else {
+                adminDataVersion = newVersion;
+
+                showAdminToast(
+                    "That model is no longer available -- the list was refreshed.",
+                    "warning"
+                );
+
+                document.getElementById("modify-form").classList.add("hidden");
+                selectedRecordId = null;
+                selectedRecordDataVersion = null;
+                return;
+            }
+
+            // Re-fetch the records for that device/model (this also
+            // updates adminDataVersion from the response header).
+            await refreshModifyRecords();
+
+            if (wasFormOpen && openRecordId !== null) {
+
+                const container = document.getElementById("modify-records");
+                const stillThere = container.dataset.lastRecordIds
+                    ? container.dataset.lastRecordIds.split(",").includes(String(openRecordId))
+                    : true;
+
+                if (stillThere) {
+                    // The record is still around; just bump the
+                    // version we'll submit against so the next save
+                    // isn't rejected as stale. Leave whatever the
+                    // user has typed in the form untouched.
+                    selectedRecordId = openRecordId;
+                    selectedRecordDataVersion = adminDataVersion;
+                } else {
+                    showAdminToast(
+                        "That record changed or was removed elsewhere -- please reselect it.",
+                        "warning"
+                    );
+                    document.getElementById("modify-form").classList.add("hidden");
+                    selectedRecordId = null;
+                    selectedRecordDataVersion = null;
+                }
+            }
+
+        }
+
+        // ------------------------------------------------------
+        // DELETE — auto refresh while preserving selection
+        // ------------------------------------------------------
+
+        async function autoRefreshDeleteSection(newVersion) {
+
+            const deviceVal = document.getElementById("delete-device").value;
+            const modelVal = document.getElementById("delete-model").value;
+            const wasConfirmOpen = !document.getElementById("delete-confirm").classList.contains("hidden");
+            const openRecordId = selectedDeleteRecordId;
+
+            if (!deviceVal) {
+                adminDataVersion = newVersion;
+                return;
+            }
+
+            await loadDeleteModels();
+
+            if (!modelVal) {
+                adminDataVersion = newVersion;
+                return;
+            }
+
+            const modelSelect = document.getElementById("delete-model");
+
+            const modelStillExists =
+                Array.from(modelSelect.options).some(o => o.value === modelVal);
+
+            if (modelStillExists) {
+                modelSelect.value = modelVal;
+            } else {
+                adminDataVersion = newVersion;
+
+                showAdminToast(
+                    "That model is no longer available -- the list was refreshed.",
+                    "warning"
+                );
+
+                document.getElementById("delete-confirm").classList.add("hidden");
+                selectedDeleteRecordId = null;
+                selectedDeleteDataVersion = null;
+                return;
+            }
+
+            await refreshDeleteRecords();
+
+            if (wasConfirmOpen && openRecordId !== null) {
+
+                const container = document.getElementById("delete-records");
+                const stillThere = container.dataset.lastRecordIds
+                    ? container.dataset.lastRecordIds.split(",").includes(String(openRecordId))
+                    : true;
+
+                if (stillThere) {
+                    selectedDeleteRecordId = openRecordId;
+                    selectedDeleteDataVersion = adminDataVersion;
+
+                    // loadDeleteModels() unconditionally hides the
+                    // confirm popup when it rebuilds the dropdown;
+                    // since the selected record is still valid,
+                    // bring it back (its text was already set by
+                    // selectDeleteRecord() and doesn't need redoing).
+                    document
+                        .getElementById("delete-confirm")
+                        .classList.remove("hidden");
+                } else {
+                    showAdminToast(
+                        "That record changed or was removed elsewhere -- please reselect it.",
+                        "warning"
+                    );
+                    document.getElementById("delete-confirm").classList.add("hidden");
+                    selectedDeleteRecordId = null;
+                    selectedDeleteDataVersion = null;
+                }
+            }
+
+        }
 
         function showAdminToast(message, type = "success", duration = 3000) {
             const container =
