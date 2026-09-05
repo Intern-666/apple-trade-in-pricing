@@ -545,7 +545,7 @@ def write_csv_atomically(raw_df, destination_path):
 
 def refresh_data_if_stale():
 
-    global df, device_model_map, device_config_map, _last_refresh_at
+    global df, device_model_map, device_config_map, model_number_map, _last_refresh_at
 
     seconds_since_refresh = (
         datetime.now() - _last_refresh_at
@@ -584,6 +584,10 @@ def refresh_data_if_stale():
             build_device_maps(refreshed_df)
         )
 
+        refreshed_model_number_map = build_model_number_map(
+            refreshed_df
+        )
+
     except Exception as exc:
 
         # A malformed Sheet (missing column, bad header, etc.)
@@ -599,6 +603,7 @@ def refresh_data_if_stale():
     df = refreshed_df
     device_model_map = refreshed_model_map
     device_config_map = refreshed_config_map
+    model_number_map = refreshed_model_number_map
 
     bump_data_version()
 
@@ -654,7 +659,7 @@ def force_refresh_from_sheets():
     Updates the backend dataframe and data version only when
     the Sheet contents actually differ from the current dataframe.
     """
-    global df, device_model_map, device_config_map, _last_refresh_at
+    global df, device_model_map, device_config_map, model_number_map, _last_refresh_at
 
     if not sheets_sync.is_available:
         print("Admin force refresh failed: Google Sheets sync is not available.")
@@ -682,11 +687,13 @@ def force_refresh_from_sheets():
         # Build the refreshed maps locally first.
         # Global state is only updated after all refreshed data is ready.
         refreshed_model_map, refreshed_config_map = build_device_maps(refreshed_df)
+        refreshed_model_number_map = build_model_number_map(refreshed_df)
 
         # Apply the refreshed state atomically.
         df = refreshed_df
         device_model_map = refreshed_model_map
         device_config_map = refreshed_config_map
+        model_number_map = refreshed_model_number_map
         _last_refresh_at = datetime.now()
 
         if data_changed:
@@ -2351,8 +2358,7 @@ def admin_modify_device(
             status_code=409,
             detail=(
                 "The underlying data has changed since you "
-                "loaded this record. Please reload and try "
-                "again to avoid editing the wrong record."
+                "loaded this record. Reloading..."
             ),
         )
 
@@ -2643,8 +2649,7 @@ def admin_delete_device(
             status_code=409,
             detail=(
                 "The underlying data has changed since you "
-                "loaded this record. Please reload and try "
-                "again to avoid deleting the wrong record."
+                "loaded this record. Reloading..."
             ),
         )
 

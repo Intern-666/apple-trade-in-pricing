@@ -4,5 +4,4 @@ __pycache__/
 *.pyc
 .gitignore
 internal/service_account.json
-catboost_info/
 .env
