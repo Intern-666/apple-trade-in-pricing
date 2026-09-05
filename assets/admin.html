@@ -2076,10 +2076,19 @@
 				document.getElementById("customer-delete-confirm").classList.add("hidden");
 				customerDeleteTargets = [];
 				selectedCustomerRows.clear();
-				if (data.status === "partial") {
+				if (data.skipped_rows && data.skipped_rows.length) {
+					// Some or all selected rows had changed since the
+					// list was loaded -- same "data changed elsewhere"
+					// situation as the 409 conflicts in Modify/Delete,
+					// so it gets the same warning treatment, not error.
 					showAdminToast(data.message, "warning", 5000);
-				} else {
+				} else if (data.status === "success") {
 					showAdminToast(data.message || "Customer record(s) deleted.");
+				} else {
+					// e.g. nothing was selected -- a validation-style
+					// message, not a real failure, so it matches the
+					// "warning" toasts used for validation elsewhere.
+					showAdminToast(data.message || "Nothing was deleted.", "warning");
 				}
 				// Refresh so the list reflects what's actually left
 				// in the Sheet after deletion.
