@@ -6,4 +6,3 @@ __pycache__/
 internal/service_account.json
 catboost_info/
 .env
-data/master_msrp.csv
