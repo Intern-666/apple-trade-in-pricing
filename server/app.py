@@ -146,36 +146,45 @@ TEXT_COLUMNS = [
 
 def clean_dataset(raw_df):
     """
-    Applies the exact same cleaning steps to `raw_df` regardless of
-    whether it came from the local CSV (startup) or a live Google
-    Sheets read (refresh): storage parsing, numeric coercion on the
-    target column, and text-column normalization.
+    Normalize the master dataset consistently regardless of source.
+
+    Applies:
+    - Storage (GB) parsing
+    - Numeric coercion for Max. Trade-In Value (RM)
+    - Text normalization for known text columns
+
+    Records with missing trade-in values are intentionally retained
+    because Admin may need to edit them later.
     """
 
     cleaned = raw_df.copy()
 
-    if "Storage (GB)" in cleaned.columns:
+    # ------------------------------------------------------------
+    # STORAGE
+    # ------------------------------------------------------------
 
+    if "Storage (GB)" in cleaned.columns:
         cleaned["Storage (GB)"] = (
             cleaned["Storage (GB)"]
             .apply(storage_to_gb)
         )
 
-    if "Max. Trade-In Value (RM)" in cleaned.columns:
+    # ------------------------------------------------------------
+    # TRADE-IN VALUE
+    # ------------------------------------------------------------
 
+    if "Max. Trade-In Value (RM)" in cleaned.columns:
         cleaned["Max. Trade-In Value (RM)"] = pd.to_numeric(
             cleaned["Max. Trade-In Value (RM)"],
             errors="coerce"
         )
 
-    # Keep records with missing trade-in values.
-    # Admin needs these records so they can later be modified.
-    cleaned = cleaned.copy()
+    # ------------------------------------------------------------
+    # TEXT NORMALIZATION
+    # ------------------------------------------------------------
 
     for col in TEXT_COLUMNS:
-
         if col in cleaned.columns:
-
             cleaned[col] = (
                 cleaned[col]
                 .fillna("Unknown")
@@ -188,10 +197,16 @@ def clean_dataset(raw_df):
 
 def build_device_maps(cleaned_df):
     """
-    Builds device_model_map and device_config_map from a cleaned
-    dataframe. Pure function of `cleaned_df` -- same output every
-    time for the same input, whether that input came from the CSV
-    at startup or a fresh Sheets read.
+    Build device_model_map and device_config_map from a cleaned
+    dataframe.
+
+    Returns:
+        model_map:
+            Device -> Sub-device -> Model -> Storage options
+
+        config_map:
+            Device -> Sub-device -> Model ->
+            Storage Type / Connectivity options
     """
 
     model_map = {}
@@ -209,11 +224,12 @@ def build_device_maps(cleaned_df):
         ]
     ):
 
-        if device not in model_map:
-            model_map[device] = {}
+        model_map.setdefault(device, {})
+        model_map[device].setdefault(sub_device, {})
 
-        if sub_device not in model_map[device]:
-            model_map[device][sub_device] = {}
+        # --------------------------------------------------------
+        # STORAGE OPTIONS
+        # --------------------------------------------------------
 
         storages = (
             group["Storage (GB)"]
@@ -237,21 +253,30 @@ def build_device_maps(cleaned_df):
             model_name
         ] = clean_storages
 
-        if device not in config_map:
-            config_map[device] = {}
+        # --------------------------------------------------------
+        # CONFIGURATION OPTIONS
+        # --------------------------------------------------------
 
-        if sub_device not in config_map[device]:
-            config_map[device][sub_device] = {}
+        config_map.setdefault(device, {})
+        config_map[device].setdefault(sub_device, {})
 
-        storage_types = sorted(
-            t for t in group["Storage Type"].dropna().unique().tolist()
-            if t and t != "Unknown"
-        ) if "Storage Type" in group.columns else []
+        storage_types = []
 
-        connectivity_options = sorted(
-            c for c in group["Connectivity"].dropna().unique().tolist()
-            if c and c != "Unknown"
-        ) if "Connectivity" in group.columns else []
+        if "Storage Type" in group.columns:
+            storage_types = sorted(
+                t
+                for t in group["Storage Type"].dropna().unique().tolist()
+                if t and t != "Unknown"
+            )
+
+        connectivity_options = []
+
+        if "Connectivity" in group.columns:
+            connectivity_options = sorted(
+                c
+                for c in group["Connectivity"].dropna().unique().tolist()
+                if c and c != "Unknown"
+            )
 
         config_map[
             device
@@ -266,7 +291,17 @@ def build_device_maps(cleaned_df):
 
     return model_map, config_map
 
+
 def build_model_number_map(model_number_df):
+    """
+    Build a lookup map for device model numbers.
+
+    Returns:
+        Device -> Sub-device -> Model Number -> Model names
+
+    Model numbers without a valid value are ignored.
+    """
+
     model_number_map = {}
 
     for (
@@ -282,20 +317,37 @@ def build_model_number_map(model_number_df):
             "Standardized Model"
         ]
     ):
-        if pd.isna(model_number) or not str(model_number).strip():
+
+        if pd.isna(model_number):
+            continue
+
+        model_number = str(model_number).strip()
+
+        if not model_number:
             continue
 
         device = str(device).strip()
         sub_device = str(sub_device).strip()
-        model_number = str(model_number).strip()
         model_name = str(model_name).strip()
 
         model_number_map.setdefault(device, {})
         model_number_map[device].setdefault(sub_device, {})
         model_number_map[device][sub_device].setdefault(model_number, [])
 
-        if model_name not in model_number_map[device][sub_device][model_number]:
-            model_number_map[device][sub_device][model_number].append(model_name)
+        if model_name not in model_number_map[
+            device
+        ][
+            sub_device
+        ][
+            model_number
+        ]:
+            model_number_map[
+                device
+            ][
+                sub_device
+            ][
+                model_number
+            ].append(model_name)
 
     return model_number_map
 
@@ -312,6 +364,8 @@ df = pd.read_csv(DATA_FILE)
 
 print(f"Rows loaded: {len(df)}")
 print(f"Master dataset: {DATA_FILE.name}")
+print(f"CSV columns: {df.columns.tolist()}")
+print(f"Model Number exists: {'Model Number' in df.columns}")
 
 device_model_map, device_config_map = build_device_maps(df)
 model_number_map = build_model_number_map(df)
