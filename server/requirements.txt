@@ -1,3 +1,5 @@
+# Target Python: 3.12
+# Keep environment aligned with the project runtime used by the dashboard.
 fastapi
 uvicorn[standard]
 pandas

@@ -1,0 +1,274 @@
+Category,Model,Display,Storage,Price
+Macbook,MacBook Air i5 1.6GHz 13 inch (Mid 2019),"13""",128GB,430
+Macbook,MacBook Air i5 1.6GHz 13 inch (Mid 2019),"13""",256GB,440
+Macbook,MacBook Air i5 1.6GHz 13 inch (Mid 2019),"13""",512GB,510
+Macbook,MacBook Air i5 1.6GHz 13 inch (Mid 2019),"13""",1TB,520
+Macbook,MacBook Air i3 1.1GHz 13 inch (Early 2020),"13""",256GB,370
+Macbook,MacBook Air i3 1.1GHz 13 inch (Early 2020),"13""",512GB,380
+Macbook,MacBook Air i3 1.1GHz 13 inch (Early 2020),"13""",1TB,390
+Macbook,MacBook Air i3 1.1GHz 13 inch (Early 2020),"13""",2TB,450
+Macbook,MacBook Air i5 1.1GHz 13 inch (Early 2020),"13""",256GB,480
+Macbook,MacBook Air i5 1.1GHz 13 inch (Early 2020),"13""",512GB,520
+Macbook,MacBook Air i5 1.1GHz 13 inch (Early 2020),"13""",1TB,530
+Macbook,MacBook Air i5 1.1GHz 13 inch (Early 2020),"13""",2TB,600
+Macbook,MacBook Air i7 1.2GHz 13 inch (Early 2020),"13""",256GB,510
+Macbook,MacBook Air i7 1.2GHz 13 inch (Early 2020),"13""",512GB,520
+Macbook,MacBook Air i7 1.2GHz 13 inch (Early 2020),"13""",1TB,550
+Macbook,MacBook Air i7 1.2GHz 13 inch (Early 2020),"13""",2TB,620
+Macbook,MacBook Air M1 8-Core CPU and 7-Core GPU 13 inch (Late 2020),"13""",128GB,705
+Macbook,MacBook Air M1 8-Core CPU and 7-Core GPU 13 inch (Late 2020),"13""",256GB,805
+Macbook,MacBook Air M1 8-Core CPU and 7-Core GPU 13 inch (Late 2020),"13""",512GB,805
+Macbook,MacBook Air M1 8-Core CPU and 7-Core GPU 13 inch (Late 2020),"13""",1TB,805
+Macbook,MacBook Air M1 8-Core CPU and 7-Core GPU 13 inch (Late 2020),"13""",2TB,905
+Macbook,MacBook Air M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",256GB,780
+Macbook,MacBook Air M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",512GB,855
+Macbook,MacBook Air M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",1TB,905
+Macbook,MacBook Air M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",2TB,955
+Macbook,MacBook Air M2 8-Core CPU and 8-Core GPU 13.6 inch (Mid 2022),"13.6""",256GB,1410
+Macbook,MacBook Air M2 8-Core CPU and 8-Core GPU 13.6 inch (Mid 2022),"13.6""",512GB,1600
+Macbook,MacBook Air M2 8-Core CPU and 8-Core GPU 13.6 inch (Mid 2022),"13.6""",1TB,1760
+Macbook,MacBook Air M2 8-Core CPU and 8-Core GPU 13.6 inch (Mid 2022),"13.6""",2TB,2190
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 13.6 inch (Mid 2022),"13.6""",256GB,1410
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 13.6 inch (Mid 2022),"13.6""",512GB,1600
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 13.6 inch (Mid 2022),"13.6""",1TB,1760
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 13.6 inch (Mid 2022),"13.6""",2TB,2220
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 15 inch (Mid 2023),"15""",256GB,2060
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 15 inch (Mid 2023),"15""",512GB,2220
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 15 inch (Mid 2023),"15""",1TB,2450
+Macbook,MacBook Air M2 8-Core CPU and 10-Core GPU 15 inch (Mid 2023),"15""",2TB,3020
+Macbook,MacBook Air M3 8-Core CPU and 8-Core GPU 13.6 inch (Early 2024),"13.6""",256GB,2170
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 13.6 inch (Early 2024),"13.6""",256GB,2180
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 13.6 inch (Early 2024),"13.6""",512GB,2360
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 13.6 inch (Early 2024),"13.6""",1TB,2680
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 13.6 inch (Early 2024),"13.6""",2TB,3300
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 15 inch (Early 2024),"15""",256GB,2500
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 15 inch (Early 2024),"15""",512GB,2740
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 15 inch (Early 2024),"15""",1TB,3370
+Macbook,MacBook Air M3 8-Core CPU and 10-Core GPU 15 inch (Early 2024),"15""",2TB,3680
+Macbook,MacBook Air M4 10-Core CPU and 8-Core GPU 13 inch (2025),"13""",256GB,2450
+Macbook,MacBook Air M4 10-Core CPU and 10-Core GPU 13 inch (Early 2025),"13""",256GB,2650
+Macbook,MacBook Air M4 10-Core CPU and 10-Core GPU 13 inch (2025),"13""",512GB,2875
+Macbook,MacBook Air M4 10-Core CPU and 10-Core GPU 13 inch (Early 2025),"13""",1TB,3325
+Macbook,MacBook Air M4 10-Core CPU and 10-Core GPU 13 inch (Early 2025),"13""",2TB,4200
+Macbook,MacBook Air M4 10-Core CPU and 10-Core GPU 15 inch (2025),"15""",256GB,2950
+Macbook,MacBook Air M4 10-Core CPU and 10-Core GPU 15 inch (2025),"15""",512GB,3175
+Macbook,MacBook Air M4 10-core CPU and 10-core GPU 15 inch (Early 2025),"15""",1TB,3800
+Macbook,MacBook Air M4 10-core CPU and 10-core GPU 15 inch (Early 2025),"15""",2TB,4600
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2019),"13""",128GB,460
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2019),"13""",256GB,540
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2019),"13""",512GB,590
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2019),"13""",1TB,660
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2019),"13""",2TB,710
+Macbook,MacBook Pro i5 2.4GHz 13 inch (Mid 2019),"13""",256GB,710
+Macbook,MacBook Pro i5 2.4GHz 13 inch (Mid 2019),"13""",512GB,720
+Macbook,MacBook Pro i5 2.4GHz 13 inch (Mid 2019),"13""",1TB,750
+Macbook,MacBook Pro i5 2.4GHz 13 inch (Mid 2019),"13""",2TB,780
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2019),"13""",128GB,520
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2019),"13""",256GB,590
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2019),"13""",512GB,630
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2019),"13""",1TB,710
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2019),"13""",2TB,750
+Macbook,MacBook Pro i7 2.6GHz 15 inch (Mid 2019),"15""",256GB,1050
+Macbook,MacBook Pro i7 2.6GHz 15 inch (Mid 2019),"15""",512GB,1090
+Macbook,MacBook Pro i7 2.6GHz 15 inch (Mid 2019),"15""",1TB,1170
+Macbook,MacBook Pro i7 2.6GHz 15 inch (Mid 2019),"15""",2TB,1290
+Macbook,MacBook Pro i7 2.6GHz 15 inch (Mid 2019),"15""",4TB,1390
+Macbook,MacBook Pro i7 2.8GHz 13 inch (Mid 2019),"13""",256GB,750
+Macbook,MacBook Pro i7 2.8GHz 13 inch (Mid 2019),"13""",512GB,780
+Macbook,MacBook Pro i7 2.8GHz 13 inch (Mid 2019),"13""",1TB,790
+Macbook,MacBook Pro i7 2.8GHz 13 inch (Mid 2019),"13""",2TB,850
+Macbook,MacBook Pro i9 2.3GHz 15 inch (Mid 2019),"15""",256GB,1050
+Macbook,MacBook Pro i9 2.3GHz 15 inch (Mid 2019),"15""",512GB,1120
+Macbook,MacBook Pro i9 2.3GHz 15 inch (Mid 2019),"15""",1TB,1310
+Macbook,MacBook Pro i9 2.3GHz 15 inch (Mid 2019),"15""",2TB,1410
+Macbook,MacBook Pro i9 2.3GHz 15 inch (Mid 2019),"15""",4TB,1530
+Macbook,MacBook Pro i9 2.4GHz 15 inch (Mid 2019),"15""",256GB,1050
+Macbook,MacBook Pro i9 2.4GHz 15 inch (Mid 2019),"15""",512GB,1200
+Macbook,MacBook Pro i9 2.4GHz 15 inch (Mid 2019),"15""",1TB,1310
+Macbook,MacBook Pro i9 2.4GHz 15 inch (Mid 2019),"15""",2TB,1410
+Macbook,MacBook Pro i9 2.4GHz 15 inch (Mid 2019),"15""",4TB,1530
+Macbook,MacBook Pro i7 2.6GHz 16 inch (Late 2019),"16""",512GB,1120
+Macbook,MacBook Pro i7 2.6GHz 16 inch (Late 2019),"16""",1TB,1210
+Macbook,MacBook Pro i7 2.6GHz 16 inch (Late 2019),"16""",2TB,1310
+Macbook,MacBook Pro i7 2.6GHz 16 inch (Late 2019),"16""",4TB,1400
+Macbook,MacBook Pro i7 2.6GHz 16 inch (Late 2019),"16""",8TB,1520
+Macbook,MacBook Pro i9 2.3GHz 16 inch (Late 2019),"16""",1TB,1300
+Macbook,MacBook Pro i9 2.3GHz 16 inch (Late 2019),"16""",2TB,1400
+Macbook,MacBook Pro i9 2.3GHz 16 inch (Late 2019),"16""",4TB,1580
+Macbook,MacBook Pro i9 2.3GHz 16 inch (Late 2019),"16""",8TB,1590
+Macbook,MacBook Pro i9 2.4GHz 16 inch (Late 2019),"16""",512GB,1210
+Macbook,MacBook Pro i9 2.4GHz 16 inch (Late 2019),"16""",1TB,1430
+Macbook,MacBook Pro i9 2.4GHz 16 inch (Late 2019),"16""",2TB,1500
+Macbook,MacBook Pro i9 2.4GHz 16 inch (Late 2019),"16""",4TB,1620
+Macbook,MacBook Pro i9 2.4GHz 16 inch (Late 2019),"16""",8TB,1760
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2020),"13""",256GB,680
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2020),"13""",512GB,730
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2020),"13""",1TB,780
+Macbook,MacBook Pro i5 1.4GHz 13 inch (Mid 2020),"13""",2TB,800
+Macbook,MacBook Pro i5 2.0GHz 13 inch (Mid 2020),"13""",512GB,780
+Macbook,MacBook Pro i5 2.0GHz 13 inch (Mid 2020),"13""",1TB,850
+Macbook,MacBook Pro i5 2.0GHz 13 inch (Mid 2020),"13""",2TB,940
+Macbook,MacBook Pro i5 2.0GHz 13 inch (Mid 2020),"13""",4TB,1070
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2020),"13""",256GB,800
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2020),"13""",512GB,810
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2020),"13""",1TB,850
+Macbook,MacBook Pro i7 1.7GHz 13 inch (Mid 2020),"13""",2TB,940
+Macbook,MacBook Pro i7 2.3GHz 13 inch (Mid 2020),"13""",512GB,800
+Macbook,MacBook Pro i7 2.3GHz 13 inch (Mid 2020),"13""",1TB,900
+Macbook,MacBook Pro i7 2.3GHz 13 inch (Mid 2020),"13""",2TB,980
+Macbook,MacBook Pro i7 2.3GHz 13 inch (Mid 2020),"13""",4TB,1120
+Macbook,MacBook Pro M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",256GB,1110
+Macbook,MacBook Pro M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",512GB,1160
+Macbook,MacBook Pro M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",1TB,1230
+Macbook,MacBook Pro M1 8-Core CPU and 8-Core GPU 13 inch (Late 2020),"13""",2TB,1350
+Macbook,MacBook Pro 14 inch M1 Pro 8-Core CPU and 14-Core GPU (2021),"14""",512GB,2040
+Macbook,MacBook Pro 14 inch M1 Pro 8-Core CPU and 14-Core GPU (2021),"14""",1TB,2250
+Macbook,MacBook Pro 14 inch M1 Pro 8-Core CPU and 14-Core GPU (2021),"14""",2TB,2270
+Macbook,MacBook Pro 14 inch M1 Pro 8-Core CPU and 14-Core GPU (2021),"14""",4TB,2710
+Macbook,MacBook Pro 14 inch M1 Pro 8-Core CPU and 14-Core GPU (2021),"14""",8TB,3900
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 14-Core GPU (2021),"14""",512GB,2180
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 14-Core GPU (2021),"14""",1TB,2370
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 14-Core GPU (2021),"14""",2TB,2610
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 14-Core GPU (2021),"14""",4TB,3090
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 14-Core GPU (2021),"14""",8TB,4170
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"14""",512GB,2320
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"14""",1TB,2500
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"14""",2TB,2760
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"14""",4TB,3270
+Macbook,MacBook Pro 14 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"14""",8TB,4290
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"14""",512GB,2730
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"14""",1TB,2930
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"14""",2TB,2980
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"14""",4TB,3750
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"14""",8TB,4580
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"14""",512GB,2930
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"14""",1TB,3080
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"14""",2TB,3450
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"14""",4TB,3930
+Macbook,MacBook Pro 14 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"14""",8TB,4750
+Macbook,MacBook Pro 16 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"16""",512GB,2350
+Macbook,MacBook Pro 16 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"16""",1TB,2520
+Macbook,MacBook Pro 16 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"16""",2TB,2880
+Macbook,MacBook Pro 16 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"16""",4TB,3380
+Macbook,MacBook Pro 16 inch M1 Pro 10-Core CPU and 16-Core GPU (2021),"16""",8TB,4000
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"16""",512GB,2900
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"16""",1TB,2950
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"16""",2TB,3290
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"16""",4TB,3790
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 24-Core GPU (2021),"16""",8TB,4810
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"16""",512GB,2920
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"16""",1TB,3120
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"16""",2TB,3460
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"16""",4TB,4000
+Macbook,MacBook Pro 16 inch M1 Max 10-Core CPU and 32-Core GPU (2021),"16""",8TB,4970
+Macbook,MacBook Pro M2 8-Core CPU and 10-Core GPU 13 inch (Mid 2022),"13""",256GB,1600
+Macbook,MacBook Pro M2 8-Core CPU and 10-Core GPU 13 inch (Mid 2022),"13""",512GB,1880
+Macbook,MacBook Pro M2 8-Core CPU and 10-Core GPU 13 inch (Mid 2022),"13""",1TB,2100
+Macbook,MacBook Pro M2 8-Core CPU and 10-Core GPU 13 inch (Mid 2022),"13""",2TB,2460
+Macbook,MacBook Pro M2 Pro 10-Core CPU and 16-Core GPU 14 inch (Early 2023),"14""",512GB,2690
+Macbook,MacBook Pro M2 Pro 10-Core CPU and 16-Core GPU 14 inch (Early 2023),"14""",1TB,2850
+Macbook,MacBook Pro M2 Pro 10-Core CPU and 16-Core GPU 14 inch (Early 2023),"14""",2TB,3280
+Macbook,MacBook Pro M2 Pro 10-Core CPU and 16-Core GPU 14 inch (Early 2023),"14""",4TB,3780
+Macbook,MacBook Pro M2 Pro 10-Core CPU and 16-Core GPU 14 inch (Early 2023),"14""",8TB,4490
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 14 inch (Early 2023),"14""",512GB,2730
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 14 inch (Early 2023),"14""",1TB,2850
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 14 inch (Early 2023),"14""",2TB,3450
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 14 inch (Early 2023),"14""",4TB,4040
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 14 inch (Early 2023),"14""",8TB,4980
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 14 inch (Early 2023),"14""",512GB,3200
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 14 inch (Early 2023),"14""",1TB,3230
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 14 inch (Early 2023),"14""",2TB,4150
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 14 inch (Early 2023),"14""",4TB,4780
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 14 inch (Early 2023),"14""",8TB,5980
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 14 inch (Early 2023),"14""",512GB,3680
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 14 inch (Early 2023),"14""",1TB,3930
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 14 inch (Early 2023),"14""",2TB,4330
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 14 inch (Early 2023),"14""",4TB,5000
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 14 inch (Early 2023),"14""",8TB,6230
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 16 inch (Early 2023),"16""",512GB,3150
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 16 inch (Early 2023),"16""",1TB,3360
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 16 inch (Early 2023),"16""",2TB,3740
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 16 inch (Early 2023),"16""",4TB,4530
+Macbook,MacBook Pro M2 Pro 12-Core CPU and 19-Core GPU 16 inch (Early 2023),"16""",8TB,5770
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 16 inch (Early 2023),"16""",512GB,3800
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 16 inch (Early 2023),"16""",1TB,4030
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 16 inch (Early 2023),"16""",2TB,4330
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 16 inch (Early 2023),"16""",4TB,4930
+Macbook,MacBook Pro M2 Max 12-Core CPU and 30-Core GPU 16 inch (Early 2023),"16""",8TB,6150
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 16 inch (Early 2023),"16""",512GB,4130
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 16 inch (Early 2023),"16""",1TB,4200
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 16 inch (Early 2023),"16""",2TB,4700
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 16 inch (Early 2023),"16""",4TB,5150
+Macbook,MacBook Pro M2 Max 12-Core CPU and 38-Core GPU 16 inch (Early 2023),"16""",8TB,6530
+Macbook,MacBook Pro M3 8-Core CPU and 10-Core GPU 14 inch (Late 2023),"14""",512GB,2760
+Macbook,MacBook Pro M3 8-Core CPU and 10-Core GPU 14 inch (Late 2023),"14""",1TB,3020
+Macbook,MacBook Pro M3 8-Core CPU and 10-Core GPU 14 inch (Late 2023),"14""",2TB,3750
+Macbook,MacBook Pro M3 Pro 11-Core CPU and 14-Core GPU 14 inch (Late 2023),"14""",512GB,3240
+Macbook,MacBook Pro M3 Pro 11-Core CPU and 14-Core GPU 14 inch (Late 2023),"14""",1TB,3520
+Macbook,MacBook Pro M3 Pro 11-Core CPU and 14-Core GPU 14 inch (Late 2023),"14""",2TB,4300
+Macbook,MacBook Pro M3 Pro 11-Core CPU and 14-Core GPU 14 inch (Late 2023),"14""",4TB,5150
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 14 inch (Late 2023),"14""",512GB,3640
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 14 inch (Late 2023),"14""",1TB,3920
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 14 inch (Late 2023),"14""",2TB,4330
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 14 inch (Late 2023),"14""",4TB,5000
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 14 inch (Late 2023),"14""",512GB,4840
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 14 inch (Late 2023),"14""",1TB,5030
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 14 inch (Late 2023),"14""",2TB,5460
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 14 inch (Late 2023),"14""",4TB,6650
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 14 inch (Late 2023),"14""",8TB,7650
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2023),"14""",512GB,5460
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2023),"14""",1TB,5620
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2023),"14""",2TB,6300
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2023),"14""",4TB,7140
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2023),"14""",8TB,8800
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 16 inch (Late 2023),"16""",512GB,4140
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 16 inch (Late 2023),"16""",1TB,4580
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 16 inch (Late 2023),"16""",2TB,5330
+Macbook,MacBook Pro M3 Pro 12-Core CPU and 18-Core GPU 16 inch (Late 2023),"16""",4TB,6110
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 16 inch (Late 2023),"16""",512GB,5440
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 16 inch (Late 2023),"16""",1TB,5880
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 16 inch (Late 2023),"16""",2TB,6350
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 16 inch (Late 2023),"16""",4TB,7400
+Macbook,MacBook Pro M3 Max 14-Core CPU and 30-Core GPU 16 inch (Late 2023),"16""",8TB,8910
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2023),"16""",512GB,6200
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2023),"16""",1TB,6650
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2023),"16""",2TB,7230
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2023),"16""",4TB,7955
+Macbook,MacBook Pro M3 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2023),"16""",8TB,9770
+Macbook,MacBook Pro M4 10-Core CPU and 10-Core GPU 14 inch (Late 2024),"14""",512GB,3125
+Macbook,MacBook Pro M4 10-Core CPU and 10-Core GPU 14 inch (Late 2024),"14""",1TB,3500
+Macbook,MacBook Pro M4 10-Core CPU and 10-Core GPU 14 inch (Late 2024),"14""",2TB,4300
+Macbook,MacBook Pro M4 Pro 12-Core CPU and 16-Core GPU 14 inch (Late 2024),"14""",512GB,3675
+Macbook,MacBook Pro M4 Pro 12-Core CPU and 16-Core GPU 14 inch (Late 2024),"14""",1TB,4100
+Macbook,MacBook Pro M4 Pro 12-Core CPU and 16-Core GPU 14 inch (Late 2024),"14""",2TB,4775
+Macbook,MacBook Pro M4 Pro 12-Core CPU and 16-Core GPU 14 inch (Late 2024),"14""",4TB,5275
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 14 inch (Late 2024),"14""",512GB,4350
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 14 inch (Late 2024),"14""",1TB,4475
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 14 inch (Late 2024),"14""",2TB,5125
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 14 inch (Late 2024),"14""",4TB,6000
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 14 inch (Late 2024),"14""",1TB,5950
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 14 inch (Late 2024),"14""",2TB,6575
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 14 inch (Late 2024),"14""",4TB,7625
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 14 inch (Late 2024),"14""",8TB,8800
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 16 inch (Late 2024),"16""",512GB,4575
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 16 inch (Late 2024),"16""",1TB,4925
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 16 inch (Late 2024),"16""",2TB,5600
+Macbook,MacBook Pro M4 Pro 14-Core CPU and 20-Core GPU 16 inch (Late 2024),"16""",4TB,6175
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 16 inch (Late 2024),"16""",1TB,6300
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 16 inch (Late 2024),"16""",2TB,6975
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 16 inch (Late 2024),"16""",4TB,7975
+Macbook,MacBook Pro M4 Max 14-Core CPU and 32-Core GPU 16 inch (Late 2024),"16""",8TB,9075
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2024),"14""",1TB,6750
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2024),"14""",2TB,7325
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2024),"14""",4TB,8325
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 14 inch (Late 2024),"14""",8TB,9400
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2024),"16""",1TB,6950
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2024),"16""",2TB,7575
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2024),"16""",4TB,8850
+Macbook,MacBook Pro M4 Max 16-Core CPU and 40-Core GPU 16 inch (Late 2024),"16""",8TB,10100
+Macbook,MacBook Pro M5 10-Core CPU and 10-Core GPU 14 inch (2025),"14""",512GB,4150
+Macbook,MacBook Pro M5 10-Core CPU and 10-Core GPU 14 inch (2025),"14""",1TB,4625
+Macbook,MacBook Pro M5 10-Core CPU and 10-Core GPU 14 inch (Late 2025),"14""",2TB,5600
+Macbook,MacBook Pro M5 10-Core CPU and 10-Core GPU 14 inch (Late 2025),"14""",4TB,6550
+Macbook,MacBook Neo,"13""",256GB,1750
+Macbook,MacBook Neo,"13""",512GB,1990

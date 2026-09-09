@@ -6,8 +6,9 @@
 import pandas as pd
 import numpy as np
 import os
+import io
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +19,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from internal.tradein_fallback import TradeInFallback
 from internal.sheets_sync import SheetsSync
+from internal.bulk_import import analyze_upload
 
 
 # ============================================================
@@ -1336,6 +1338,88 @@ def admin_records(device: str, model: str, sub_device: Optional[str] = None):
     records = clean_json_value(records)
 
     return JSONResponse(content=records, headers={"X-Data-Version": _data_version})
+
+
+# ============================================================
+# ADMIN — BULK IMPORT PREVIEW
+#
+# Read-only. Runs an uploaded CSV through the bulk-import
+# mapping/normalization/classification pipeline (internal/bulk_import.py)
+# against the CURRENT in-memory master dataset. Does not write to
+# Google Sheets, master_msrp.csv, or the global `df` -- a defensive
+# copy of `df` is passed in so analyze_upload() has nothing it could
+# mutate even by accident.
+#
+# `provider` is stamped onto every parsed row as a real `Provider`
+# column BEFORE the row ever reaches analyze_upload(), so it flows
+# through the existing column-mapping/classification pipeline exactly
+# like any other uploaded column -- no classifier changes needed.
+#
+# `date_mode` + `date_value` are accepted and logged/echoed only.
+# There are exactly two mutually exclusive modes -- "collection_date"
+# (Date of Collection) and "price_last_updated" (Price Last Updated).
+# Neither is added to the parsed rows, and neither is part of the
+# master schema yet: this stays metadata-only until a later step
+# implements the actual Existing-record update (Retail Price + the
+# selected date) and Google Sheets writes.
+# ============================================================
+
+VALID_DATE_MODES = {"collection_date", "price_last_updated"}
+
+
+@app.post("/admin/bulk-import/preview")
+def admin_bulk_import_preview(
+    file: UploadFile = File(...),
+    provider: str = Form("Unknown"),
+    date_mode: str = Form("collection_date"),
+    date_value: Optional[str] = Form(None),
+):
+
+    print("\n" + "=" * 70)
+    print("ADMIN — BULK IMPORT PREVIEW")
+    print("=" * 70)
+    print(f"Provider: {provider!r}  |  Date mode (metadata only): {date_mode!r} = {date_value!r}")
+
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Please upload a .csv file.")
+
+    if date_mode not in VALID_DATE_MODES:
+        raise HTTPException(
+            status_code=400,
+            detail="date_mode must be exactly one of 'collection_date' or 'price_last_updated'.",
+        )
+
+    try:
+        raw_bytes = file.file.read()
+        raw_df = pd.read_csv(io.BytesIO(raw_bytes))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse CSV: {exc}")
+
+    if raw_df.empty:
+        raise HTTPException(status_code=400, detail="Uploaded CSV has no rows.")
+
+    # Stamp Provider onto every row as an actual column -- overwrites
+    # any pre-existing "Provider" column in the uploaded file, since
+    # the admin's selection for this batch is authoritative.
+    provider_value = (provider or "").strip() or "Unknown"
+    raw_df["Provider"] = provider_value
+
+    try:
+        result = analyze_upload(
+            raw_df=raw_df,
+            master_df=df.copy(),
+            clean_fn=clean_dataset,
+        )
+    except Exception as exc:
+        print(f"Bulk import preview error: {exc}")
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    # Metadata-only echo -- not used by the classification pipeline
+    # above, and not written anywhere.
+    result["date_mode"] = date_mode
+    result["date_value"] = date_value
+
+    return JSONResponse(content=result)
 
 
 # ============================================================

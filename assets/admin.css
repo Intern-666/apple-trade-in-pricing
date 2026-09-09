@@ -1724,18 +1724,22 @@ STATUS PAGE RESPONSIVE
 }
 
 /* Graph Tabs */
-.graph-tabs {
+.forecast-graph-tabs {
     display: flex;
     gap: 8px;
     margin-bottom: 16px;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 6px;
+    min-width: 0;
+    width: 100%;
 }
 
-.graph-tabs::-webkit-scrollbar {
+.forecast-graph-tabs::-webkit-scrollbar {
     height: 6px;
 }
-.graph-tabs::-webkit-scrollbar-thumb {
+
+.forecast-graph-tabs::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 4px;
 }
@@ -1751,6 +1755,7 @@ STATUS PAGE RESPONSIVE
     white-space: nowrap;
     color: #555;
     transition: all 0.15s ease;
+    flex: 0 0 auto;
 }
 
 .graph-tab:hover {
@@ -1932,4 +1937,211 @@ CUSTOMER DELETE CONFIRMATION MODAL
 
 #customer-delete-confirm.hidden {
     display: none;
+}
+
+/* ============================================================
+BULK IMPORT — ADD MODE TOGGLE (Add Model / Upload Dataset)
+============================================================ */
+
+.add-mode-toggle {
+    margin-bottom: 26px;
+    width: fit-content;
+}
+
+/* ============================================================
+BULK IMPORT PREVIEW MODAL
+============================================================ */
+
+#bulk-import-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.40);
+    backdrop-filter: blur(2px);
+}
+
+#bulk-import-modal.hidden {
+    display: none !important;
+}
+
+.bulk-import-modal-box {
+    position: relative;
+    width: 100%;
+    max-width: 1080px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 30px;
+    background: var(--white, #ffffff);
+    border: 1px solid #dddddd;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================================
+SUMMARY CHIPS
+============================================================ */
+
+.bulk-import-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 4px 0 20px;
+}
+
+.bulk-import-summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: #f5f5f7;
+    border: 1px solid #e5e5e7;
+    min-width: 96px;
+}
+
+.bulk-import-summary-count {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1d1d1f;
+}
+
+.bulk-import-summary-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6e6e73;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.bulk-import-summary-item.total {
+    background: #1d1d1f;
+    border-color: #1d1d1f;
+}
+
+.bulk-import-summary-item.total .bulk-import-summary-count,
+.bulk-import-summary-item.total .bulk-import-summary-label {
+    color: #ffffff;
+}
+
+.bulk-import-summary-item.status-new {
+    background: rgba(52, 199, 89, 0.10);
+    border-color: rgba(52, 199, 89, 0.35);
+}
+
+.bulk-import-summary-item.status-conflict {
+    background: rgba(255, 59, 48, 0.10);
+    border-color: rgba(255, 59, 48, 0.35);
+}
+
+.bulk-import-summary-item.status-needs_review {
+    background: rgba(255, 159, 10, 0.10);
+    border-color: rgba(255, 159, 10, 0.35);
+}
+
+.bulk-import-summary-item.status-duplicate {
+    background: rgba(88, 86, 214, 0.10);
+    border-color: rgba(88, 86, 214, 0.35);
+}
+
+.bulk-import-summary-item.status-multi_match {
+    background: rgba(175, 82, 222, 0.10);
+    border-color: rgba(175, 82, 222, 0.35);
+}
+
+/* ============================================================
+STATUS BADGES (per-row, inside the preview table)
+============================================================ */
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.status-badge.status-existing {
+    background: #e8e8ed;
+    color: #555;
+}
+
+.status-badge.status-new {
+    background: rgba(52, 199, 89, 0.15);
+    color: #248a3d;
+}
+
+.status-badge.status-conflict {
+    background: rgba(255, 59, 48, 0.15);
+    color: #d70015;
+}
+
+.status-badge.status-needs_review {
+    background: rgba(255, 159, 10, 0.15);
+    color: #b25a00;
+}
+
+.status-badge.status-duplicate {
+    background: rgba(88, 86, 214, 0.15);
+    color: #3c3a9e;
+}
+
+.status-badge.status-multi_match {
+    background: rgba(175, 82, 222, 0.15);
+    color: #8c3ba3;
+}
+
+/* ============================================================
+PREVIEW TABLE
+============================================================ */
+
+.bulk-import-table-wrapper {
+    overflow: auto;
+    border: 1px solid #e5e5e7;
+    border-radius: 12px;
+    flex: 1;
+    min-height: 0;
+}
+
+.bulk-import-table-wrapper thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.bulk-import-edit-row {
+    padding: 6px 12px !important;
+    min-height: unset !important;
+    flex: none !important;
+    font-size: 12px !important;
+}
+
+
+/* ============================================================
+BULK IMPORT — BACKGROUND SCROLL LOCK
+(applied to <body> only while the preview modal is open; the
+scrollbar-width padding compensation prevents the page content
+from shifting when the scrollbar disappears)
+============================================================ */
+
+body.bulk-import-scroll-lock {
+    overflow: hidden;
+}
+
+/* ============================================================
+BULK IMPORT — UPLOAD LOADING NOTE
+============================================================ */
+
+.upload-loading-note {
+    margin: 10px 2px 0;
+    font-size: 12px;
+    color: #8e8e93;
+    line-height: 1.5;
 }

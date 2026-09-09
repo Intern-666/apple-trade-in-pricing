@@ -89,6 +89,9 @@
 		// ============================================================
 		const params = new URLSearchParams(window.location.search);
 		const requestedField = params.get("field");
+        const STATUS_FIELD_LABELS = {
+            "Model_Year": "Model Year"
+        };
 		// ============================================================
 		// LOAD STATUS
 		// ============================================================
@@ -117,7 +120,11 @@
 					return;
 				}
 				const affectedCount = selectedCategory.count || 0;
-				document.getElementById("status-title").textContent = selectedCategory.field;
+				const displayFieldName =
+                    STATUS_FIELD_LABELS[selectedCategory.field] ||
+                    selectedCategory.field.replace(/_/g, " ");
+
+                document.getElementById("status-title").textContent = selectedCategory.field.replace(/_/g, " ");
 				document.getElementById("status-description").textContent = `${affectedCount} records require attention.`;
 				const summaryCount = document.getElementById("status-summary-count");
 				if (summaryCount) {

@@ -1,0 +1,213 @@
+Category,Model,Storage,Model Number,Display,Year,Chipset,Price
+Pad,iPad 7 Wi-Fi,32GB,A2197,"10.2""",2019,A10,160
+Pad,iPad 7 Wi-Fi,128GB,A2197,"10.2""",2019,A10,260
+Pad,iPad 7 Wi-Fi + Cellular,32GB,A2200 / A2198,"10.2""",2019,A10,180
+Pad,iPad 7 Wi-Fi + Cellular,128GB,A2200 / A2198,"10.2""",2019,A10,360
+Pad,iPad 8 Wi-Fi,32GB,A2270,"10.2""",2020,A12,210
+Pad,iPad 8 Wi-Fi,128GB,A2270,"10.2""",2020,A12,310
+Pad,iPad 8 Wi-Fi + Cellular,32GB,A2428 / A2429 / A2430,"10.2""",2020,A12,310
+Pad,iPad 8 Wi-Fi + Cellular,128GB,A2428 / A2429 / A2430,"10.2""",2020,A12,410
+Pad,iPad 9 Wi-Fi,64GB,A2602,"10.2""",2021,A13,360
+Pad,iPad 9 Wi-Fi,256GB,A2602,"10.2""",2021,A13,530
+Pad,iPad 9 Wi-Fi + Cellular,64GB,A2603 / A2604 / A2605,"10.2""",2021,A13,530
+Pad,iPad 9 Wi-Fi + Cellular,256GB,A2603 / A2604 / A2605,"10.2""",2021,A13,660
+Pad,iPad 10 Wi-Fi,64GB,A2696,"10.9""",2022,A14,620
+Pad,iPad 10 Wi-Fi,256GB,A2696,"10.9""",2022,A14,810
+Pad,iPad 10 Wi-Fi + Cellular,64GB,A2757 / A2777,"10.9""",2022,A14,760
+Pad,iPad 10 Wi-Fi + Cellular,256GB,A2757 / A2777,"10.9""",2022,A14,980
+Pad,iPad 11 Wi-Fi,128GB,A3354,"11""",2025,A16,650
+Pad,iPad 11 Wi-Fi,256GB,A3354,"11""",2025,A16,830
+Pad,iPad 11 Wi-Fi,512GB,A3354,"11""",2025,A16,1120
+Pad,iPad 11 Wi-Fi + Cellular,128GB,A3355 / A3356,"11""",2025,A16,850
+Pad,iPad 11 Wi-Fi + Cellular,256GB,A3355 / A3356,"11""",2025,A16,1050
+Pad,iPad 11 Wi-Fi + Cellular,512GB,A3355 / A3356,"11""",2025,A16,1380
+Pad,iPad Air 3 Wi-Fi,64GB,A2152,"10.5""",2019,A12,260
+Pad,iPad Air 3 Wi-Fi,256GB,A2152,"10.5""",2019,A12,410
+Pad,iPad Air 3 Wi-Fi + Cellular,64GB,A2123/ A2153 / A2154,"10.5""",2019,A12,360
+Pad,iPad Air 3 Wi-Fi + Cellular,256GB,A2123/ A2153 / A2154,"10.5""",2019,A12,510
+Pad,iPad Air 4 Wi-Fi,64GB,A2316,"10.9""",2020,A14,570
+Pad,iPad Air 4 Wi-Fi,256GB,A2316,"10.9""",2020,A14,730
+Pad,iPad Air 4 Wi-Fi + Cellular,64GB,A2324 / A2325 / A2072,"10.9""",2020,A14,740
+Pad,iPad Air 4 Wi-Fi + Cellular,256GB,A2324 / A2325 / A2072,"10.9""",2020,A14,860
+Pad,iPad Air 5 Wi-Fi,64GB,A2588,"10.9""",2022,M1,850
+Pad,iPad Air 5 Wi-Fi,256GB,A2588,"10.9""",2022,M1,990
+Pad,iPad Air 5 Wi-Fi + Cellular,64GB,A2589 / A2591,"10.9""",2022,M1,990
+Pad,iPad Air 5 Wi-Fi + Cellular,256GB,A2589 / A2591,"10.9""",2022,M1,1080
+Pad,iPad Air 6 11-inch (M2) Wi-Fi,128GB,A2902,"11""",2024,M2,1160
+Pad,iPad Air 6 11-inch (M2) Wi-Fi,256GB,A2902,"11""",2024,M2,1380
+Pad,iPad Air 6 11-inch (M2) Wi-Fi,512GB,A2902,"11""",2024,M2,1580
+Pad,iPad Air 6 11-inch (M2) Wi-Fi,1TB,A2902,"11""",2024,M2,1900
+Pad,iPad Air 6 11-inch (M2) Wi-Fi + Cellular,128GB,A2903 / A2904,"11""",2024,M2,1420
+Pad,iPad Air 6 11-inch (M2) Wi-Fi + Cellular,256GB,A2903 / A2904,"11""",2024,M2,1550
+Pad,iPad Air 6 11-inch (M2) Wi-Fi + Cellular,512GB,A2903 / A2904,"11""",2024,M2,1800
+Pad,iPad Air 6 11-inch (M2) Wi-Fi + Cellular,1TB,A2903 / A2904,"11""",2024,M2,2050
+Pad,iPad Air 6 13-inch (M2) Wi-Fi,128GB,A2898,"13""",2024,M2,1320
+Pad,iPad Air 6 13-inch (M2) Wi-Fi,256GB,A2898,"13""",2024,M2,1500
+Pad,iPad Air 6 13-inch (M2) Wi-Fi,512GB,A2898,"13""",2024,M2,1770
+Pad,iPad Air 6 13-inch (M2) Wi-Fi,1TB,A2898,"13""",2024,M2,2080
+Pad,iPad Air 6 13-inch (M2) WiFi + Cellular,128GB,A2899 / A2900,"13""",2024,M2,1590
+Pad,iPad Air 6 13-inch (M2) WiFi + Cellular,256GB,A2899 / A2900,"13""",2024,M2,1790
+Pad,iPad Air 6 13-inch (M2) WiFi + Cellular,512GB,A2899 / A2900,"13""",2024,M2,2080
+Pad,iPad Air 6 13-inch (M2) WiFi + Cellular,1TB,A2899 / A2900,"13""",2024,M2,2300
+Pad,iPad Air 7 11-inch (M3) Wi-Fi,128GB,A3266,"11""",2025,M3,1290
+Pad,iPad Air 7 11-inch (M3) Wi-Fi,256GB,A3266,"11""",2025,M3,1490
+Pad,iPad Air 7 11-inch (M3) Wi-Fi,512GB,A3266,"11""",2025,M3,1830
+Pad,iPad Air 7 11-inch (M3) Wi-Fi,1TB,A3266,"11""",2025,M3,2180
+Pad,iPad Air 7 11-inch (M3) Wi-Fi + Cellular,128GB,A3267 / A3270,"11""",2025,M3,1670
+Pad,iPad Air 7 11-inch (M3) Wi-Fi + Cellular,256GB,A3267 / A3270,"11""",2025,M3,1860
+Pad,iPad Air 7 11-inch (M3) Wi-Fi + Cellular,512GB,A3267 / A3270,"11""",2025,M3,2200
+Pad,iPad Air 7 11-inch (M3) Wi-Fi + Cellular,1TB,A3267 / A3270,"11""",2025,M3,2580
+Pad,iPad Air 7 13-inch (M3) Wi-Fi,128GB,A3268,"13""",2025,M3,1690
+Pad,iPad Air 7 13-inch (M3) Wi-Fi,256GB,A3268,"13""",2025,M3,1880
+Pad,iPad Air 7 13-inch (M3) Wi-Fi,512GB,A3268,"13""",2025,M3,2100
+Pad,iPad Air 7 13-inch (M3) Wi-Fi,1TB,A3268,"13""",2025,M3,2450
+Pad,iPad Air 7 13-inch (M3) WiFi + Cellular,128GB,A3269 / A3271,"13""",2025,M3,1930
+Pad,iPad Air 7 13-inch (M3) WiFi + Cellular,256GB,A3269 / A3271,"13""",2025,M3,2150
+Pad,iPad Air 7 13-inch (M3) WiFi + Cellular,512GB,A3269 / A3271,"13""",2025,M3,2400
+Pad,iPad Air 7 13-inch (M3) WiFi + Cellular,1TB,A3269 / A3271,"13""",2025,M3,2700
+Pad,iPad Air 8 11-inch (M4) Wi-Fi,128GB,A3459,"11""",2026,M4,2050
+Pad,iPad Air 8 11-inch (M4) Wi-Fi,256GB,A3459,"11""",2026,M4,2390
+Pad,iPad Air 8 11-inch (M4) Wi-Fi,512GB,A3459,"11""",2026,M4,2790
+Pad,iPad Air 8 11-inch (M4) Wi-Fi,1TB,A3459,"11""",2026,M4,3610
+Pad,iPad Air 8 11-inch (M4) Wi-Fi + Cellular,128GB,A3460 / A3463,"11""",2026,M4,2470
+Pad,iPad Air 8 11-inch (M4) Wi-Fi + Cellular,256GB,A3460 / A3463,"11""",2026,M4,2710
+Pad,iPad Air 8 11-inch (M4) Wi-Fi + Cellular,512GB,A3460 / A3463,"11""",2026,M4,3250
+Pad,iPad Air 8 11-inch (M4) Wi-Fi + Cellular,1TB,A3460 / A3463,"11""",2026,M4,4030
+Pad,iPad Air 8 13-inch (M4) Wi-Fi,128GB,A3461,"13""",2026,M4,2590
+Pad,iPad Air 8 13-inch (M4) Wi-Fi,256GB,A3461,"13""",2026,M4,2830
+Pad,iPad Air 8 13-inch (M4) Wi-Fi,512GB,A3461,"13""",2026,M4,3370
+Pad,iPad Air 8 13-inch (M4) Wi-Fi,1TB,A3461,"13""",2026,M4,4150
+Pad,iPad Air 8 13-inch (M4) Wi-Fi + Cellular,128GB,A3462 / A3464,"13""",2026,M4,3010
+Pad,iPad Air 8 13-inch (M4) Wi-Fi + Cellular,256GB,A3462 / A3464,"13""",2026,M4,3250
+Pad,iPad Air 8 13-inch (M4) Wi-Fi + Cellular,512GB,A3462 / A3464,"13""",2026,M4,3790
+Pad,iPad Air 8 13-inch (M4) Wi-Fi + Cellular,1TB,A3462 / A3464,"13""",2026,M4,4570
+Pad,iPad mini 5 Wi-Fi,64GB,A2133,"7.9""",2019,A12,310
+Pad,iPad mini 5 Wi-Fi,256GB,A2133,"7.9""",2019,A12,360
+Pad,iPad mini 5 Wi-Fi + Cellular,64GB,A2124 / A2126 / A2125,"7.9""",2019,A12,360
+Pad,iPad mini 5 Wi-Fi + Cellular,256GB,A2124 / A2126 / A2125,"7.9""",2019,A12,410
+Pad,iPad mini 6 Wi-Fi,64GB,A2567,"8.3""",2021,A15,600
+Pad,iPad mini 6 Wi-Fi,256GB,A2567,"8.3""",2021,A15,780
+Pad,iPad mini 6 Wi-Fi + Cellular,64GB,A2568 / A2569,"8.3""",2021,A15,810
+Pad,iPad mini 6 Wi-Fi + Cellular,256GB,A2568 / A2569,"8.3""",2021,A15,930
+Pad,iPad mini A17 Pro Wi-Fi,128GB,A2993,"8.3""",2024,A17 Pro,900
+Pad,iPad mini A17 Pro Wi-Fi,256GB,A2993,"8.3""",2024,A17 Pro,1020
+Pad,iPad mini A17 Pro Wi-Fi,512GB,A2993,"8.3""",2024,A17 Pro,1380
+Pad,iPad mini A17 Pro Wi-Fi + Cellular,128GB,A2995 / A2996,"8.3""",2024,A17 Pro,1080
+Pad,iPad mini A17 Pro Wi-Fi + Cellular,256GB,A2995 / A2996,"8.3""",2024,A17 Pro,1300
+Pad,iPad mini A17 Pro Wi-Fi + Cellular,512GB,A2995 / A2996,"8.3""",2024,A17 Pro,1530
+Pad,iPad Pro 10.5-inch (2017) Wi-Fi,64GB,A1701,"10.5""",2017,A10X,150
+Pad,iPad Pro 10.5-inch (2017) Wi-Fi,256GB,A1701,"10.5""",2017,A10X,250
+Pad,iPad Pro 10.5-inch (2017) Wi-Fi,512GB,A1701,"10.5""",2017,A10X,300
+Pad,iPad Pro 10.5-inch (2017) Wi-Fi + Cellular,64GB,A1709 / A1852,"10.5""",2017,A10X,200
+Pad,iPad Pro 10.5-inch (2017) Wi-Fi + Cellular,256GB,A1709 / A1852,"10.5""",2017,A10X,300
+Pad,iPad Pro 10.5-inch (2017) Wi-Fi + Cellular,512GB,A1709 / A1852,"10.5""",2017,A10X,350
+Pad,iPad Pro 2 12.9-inch Wi-Fi,64GB,A1670,"12.9""",2017,A10X,380
+Pad,iPad Pro 2 12.9-inch Wi-Fi,256GB,A1670,"12.9""",2017,A10X,430
+Pad,iPad Pro 2 12.9-inch Wi-Fi,512GB,A1670,"12.9""",2017,A10X,560
+Pad,iPad Pro 2 12.9-inch Wi-Fi + Cellular,64GB,A1671 / A1821,"12.9""",2017,A10X,410
+Pad,iPad Pro 2 12.9-inch Wi-Fi + Cellular,256GB,A1671 / A1821,"12.9""",2017,A10X,480
+Pad,iPad Pro 2 12.9-inch Wi-Fi + Cellular,512GB,A1671 / A1821,"12.9""",2017,A10X,580
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi,64GB,A1980,"11""",2018,A12X,550
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi,256GB,A1980,"11""",2018,A12X,650
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi,512GB,A1980,"11""",2018,A12X,750
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi,1TB,A1980,"11""",2018,A12X,850
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi + Cellular,64GB,A1934 / A2013 / A1979,"11""",2018,A12X,650
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi + Cellular,256GB,A1934 / A2013 / A1979,"11""",2018,A12X,750
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi + Cellular,512GB,A1934 / A2013 / A1979,"11""",2018,A12X,850
+Pad,iPad Pro 11-inch (2018 1st Gen) Wi-Fi + Cellular,1TB,A1934 / A2013 / A1979,"11""",2018,A12X,950
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi,64GB,A1876,"12.9""",2018,A12X,650
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi,256GB,A1876,"12.9""",2018,A12X,750
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi,512GB,A1876,"12.9""",2018,A12X,850
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi,1TB,A1876,"12.9""",2018,A12X,950
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi + Cellular,64GB,A1895/ A2014 / A1983,"12.9""",2018,A12X,750
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi + Cellular,256GB,A1895/ A2014 / A1983,"12.9""",2018,A12X,850
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi + Cellular,512GB,A1895/ A2014 / A1983,"12.9""",2018,A12X,950
+Pad,iPad Pro 3 (12.9-inch) Wi-Fi + Cellular,1TB,A1895/ A2014 / A1983,"12.9""",2018,A12X,1050
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi,128GB,A2228,"11""",2020,A12Z,760
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi,256GB,A2228,"11""",2020,A12Z,840
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi,512GB,A2228,"11""",2020,A12Z,960
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi,1TB,A2228,"11""",2020,A12Z,1010
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi + Cellular,128GB,A2068 / A2230 / A2231,"11""",2020,A12Z,840
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi + Cellular,256GB,A2068 / A2230 / A2231,"11""",2020,A12Z,940
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi + Cellular,512GB,A2068 / A2230 / A2231,"11""",2020,A12Z,1110
+Pad,iPad Pro 11-inch (2020 2nd Gen) Wi-Fi + Cellular,1TB,A2068 / A2230 / A2231,"11""",2020,A12Z,1140
+Pad,iPad Pro 4 (12.9-inch) Wifi,128GB,A2229,"12.9""",2020,A12Z,940
+Pad,iPad Pro 4 (12.9-inch) Wifi,256GB,A2229,"12.9""",2020,A12Z,1110
+Pad,iPad Pro 4 (12.9-inch) Wifi,512GB,A2229,"12.9""",2020,A12Z,1240
+Pad,iPad Pro 4 (12.9-inch) Wifi,1TB,A2229,"12.9""",2020,A12Z,1320
+Pad,iPad Pro 4 (12.9-inch) Wifi + Cellular,128GB,A2069 / A2232 / A2233,"12.9""",2020,A12Z,1110
+Pad,iPad Pro 4 (12.9-inch) Wifi + Cellular,256GB,A2069 / A2232 / A2233,"12.9""",2020,A12Z,1240
+Pad,iPad Pro 4 (12.9-inch) Wifi + Cellular,512GB,A2069 / A2232 / A2233,"12.9""",2020,A12Z,1390
+Pad,iPad Pro 4 (12.9-inch) Wifi + Cellular,1TB,A2069 / A2232 / A2233,"12.9""",2020,A12Z,1460
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi,128GB,A2377,"11""",2021,M1,1040
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi,256GB,A2377,"11""",2021,M1,1210
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi,512GB,A2377,"11""",2021,M1,1340
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi,1TB,A2377,"11""",2021,M1,1380
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi,2TB,A2377,"11""",2021,M1,1570
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi + Cellular,128GB,A2301 / A2459 / A2460,"11""",2021,M1,1140
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi + Cellular,256GB,A2301 / A2459 / A2460,"11""",2021,M1,1330
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi + Cellular,512GB,A2301 / A2459 / A2460,"11""",2021,M1,1480
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi + Cellular,1TB,A2301 / A2459 / A2460,"11""",2021,M1,1570
+Pad,iPad Pro 11-inch (2021 3rd Gen) Wifi + Cellular,2TB,A2301 / A2459 / A2460,"11""",2021,M1,1760
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi,128GB,A2378,"12.9""",2021,M1,1190
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi,256GB,A2378,"12.9""",2021,M1,1310
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi,512GB,A2378,"12.9""",2021,M1,1410
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi,1TB,A2378,"12.9""",2021,M1,1520
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi,2TB,A2378,"12.9""",2021,M1,1750
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi + Cellular,128GB,A2379 / A2461 / A2462,"12.9""",2021,M1,1290
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi + Cellular,256GB,A2379 / A2461 / A2462,"12.9""",2021,M1,1390
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi + Cellular,512GB,A2379 / A2461 / A2462,"12.9""",2021,M1,1520
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi + Cellular,1TB,A2379 / A2461 / A2462,"12.9""",2021,M1,1670
+Pad,iPad Pro 5 (12.9-inch) Wi-Fi + Cellular,2TB,A2379 / A2461 / A2462,"12.9""",2021,M1,1820
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi,128GB,A2759,"11""",2022,M2,1340
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi,256GB,A2759,"11""",2022,M2,1390
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi,512GB,A2759,"11""",2022,M2,1530
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi,1TB,A2759,"11""",2022,M2,1660
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi,2TB,A2759,"11""",2022,M2,1900
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi + Cellular,128GB,A2435 / A2761 / A2762,"11""",2022,M2,1410
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi + Cellular,256GB,A2435 / A2761 / A2762,"11""",2022,M2,1540
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi + Cellular,512GB,A2435 / A2761 / A2762,"11""",2022,M2,1660
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi + Cellular,1TB,A2435 / A2761 / A2762,"11""",2022,M2,1760
+Pad,iPad Pro 11-inch (2022 4th Gen) Wi-Fi + Cellular,2TB,A2435 / A2761 / A2762,"11""",2022,M2,2030
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi,128GB,A2436,"12.9""",2022,M2,1440
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi,256GB,A2436,"12.9""",2022,M2,1560
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi,512GB,A2436,"12.9""",2022,M2,1690
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi,1TB,A2436,"12.9""",2022,M2,1890
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi,2TB,A2436,"12.9""",2022,M2,2090
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi + Cellular,128GB,A2437 / A2764 / A2766,"12.9""",2022,M2,1590
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi + Cellular,256GB,A2437 / A2764 / A2766,"12.9""",2022,M2,1710
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi + Cellular,512GB,A2437 / A2764 / A2766,"12.9""",2022,M2,1860
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi + Cellular,1TB,A2437 / A2764 / A2766,"12.9""",2022,M2,1940
+Pad,iPad Pro 12.9-inch (2022 6th Gen) Wi-Fi + Cellular,2TB,A2437 / A2764 / A2766,"12.9""",2022,M2,2140
+Pad,iPad Pro 11-inch (M4) Wi-Fi,256GB,A2836,"11""",2024,M4,1810
+Pad,iPad Pro 11-inch (M4) Wi-Fi,512GB,A2836,"11""",2024,M4,2190
+Pad,iPad Pro 11-inch (M4) Wi-Fi,1TB,A2836,"11""",2024,M4,2690
+Pad,iPad Pro 11-inch (M4) Wi-Fi,2TB,A2836,"11""",2024,M4,3220
+Pad,iPad Pro 11-inch (M4) Wi-Fi + Cellular,256GB,A2837 / A3006,"11""",2024,M4,2110
+Pad,iPad Pro 11-inch (M4) Wi-Fi + Cellular,512GB,A2837 / A3006,"11""",2024,M4,2440
+Pad,iPad Pro 11-inch (M4) Wi-Fi + Cellular,1TB,A2837 / A3006,"11""",2024,M4,2960
+Pad,iPad Pro 11-inch (M4) Wi-Fi + Cellular,2TB,A2837 / A3006,"11""",2024,M4,3510
+Pad,iPad Pro 13-inch (M4) Wi-Fi (2024 7th Gen),256GB,A2925,"13""",2024,M4,2240
+Pad,iPad Pro 13-inch (M4) Wi-Fi (2024 7th Gen),512GB,A2925,"13""",2024,M4,2660
+Pad,iPad Pro 13-inch (M4) Wi-Fi (2024 7th Gen),1TB,A2925,"13""",2024,M4,3220
+Pad,iPad Pro 13-inch (M4) Wi-Fi (2024 7th Gen),2TB,A2925,"13""",2024,M4,3790
+Pad,iPad Pro 13-inch (M4) Wi-Fi + Cellular,256GB,A2926/A3007,"13""",2024,M4,2630
+Pad,iPad Pro 13-inch (M4) Wi-Fi + Cellular,512GB,A2926/A3007,"13""",2024,M4,3010
+Pad,iPad Pro 13-inch (M4) Wi-Fi + Cellular,1TB,A2926/A3007,"13""",2024,M4,3610
+Pad,iPad Pro 13-inch (M4) Wi-Fi + Cellular,2TB,A2926/A3007,"13""",2024,M4,4160
+Pad,iPad Pro 11-inch (M5) Wi-Fi,256GB,A3357,"11""",2025,M5,2600
+Pad,iPad Pro 11-inch (M5) Wi-Fi,512GB,A3357,"11""",2025,M5,3150
+Pad,iPad Pro 11-inch (M5) Wi-Fi,1TB,A3357,"11""",2025,M5,4000
+Pad,iPad Pro 11-inch (M5) Wi-Fi,2TB,A3357,"11""",2025,M5,5000
+Pad,iPad Pro 11-inch (M5) Wi-Fi + Cellular,256GB,A3358 / A3359,"11""",2025,M5,3150
+Pad,iPad Pro 11-inch (M5) Wi-Fi + Cellular,512GB,A3358 / A3359,"11""",2025,M5,3630
+Pad,iPad Pro 11-inch (M5) Wi-Fi + Cellular,1TB,A3358 / A3359,"11""",2025,M5,4470
+Pad,iPad Pro 11-inch (M5) Wi-Fi + Cellular,2TB,A3358 / A3359,"11""",2025,M5,5480
+Pad,iPad Pro 13-inch (M5) Wi-Fi,256GB,A3360,"13""",2025,M5,3330
+Pad,iPad Pro 13-inch (M5) Wi-Fi,512GB,A3360,"13""",2025,M5,3850
+Pad,iPad Pro 13-inch (M5) Wi-Fi,1TB,A3360,"13""",2025,M5,4880
+Pad,iPad Pro 13-inch (M5) Wi-Fi,2TB,A3360,"13""",2025,M5,5880
+Pad,iPad Pro 13-inch (M5) Wi-Fi + Cellular,256GB,A3361 / A3362,"13""",2025,M5,3850
+Pad,iPad Pro 13-inch (M5) Wi-Fi + Cellular,512GB,A3361 / A3362,"13""",2025,M5,4350
+Pad,iPad Pro 13-inch (M5) Wi-Fi + Cellular,1TB,A3361 / A3362,"13""",2025,M5,5380
+Pad,iPad Pro 13-inch (M5) Wi-Fi + Cellular,2TB,A3361 / A3362,"13""",2025,M5,6380

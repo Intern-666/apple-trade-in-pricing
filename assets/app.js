@@ -57,10 +57,16 @@ const DEVICE_IMAGE_MAP = {
   },
   "apple-watch": {
     "watch-se": "watch/se.png",
+    "apple-watch-se": "watch/se.png",
+    "se": "watch/se.png",
     "watch-series": "watch/series.png",
+    "apple-watch-series": "watch/series.png",
+    "series": "watch/series.png",
     "watch-ultra": "watch/ultra.png",
+    "apple-watch-ultra": "watch/ultra.png",
+    "ultra": "watch/ultra.png",
     "default": "watch/base.png"
-},
+  },
   "airpods": {
     "airpods": "airpods/standard.png",
     "airpods-pro": "airpods/pro.png",
@@ -93,16 +99,29 @@ function resolveDeviceImage(device, subDevice) {
   if (!subDevice) return deviceMap["default"] || null;
 
   const key = slugify(subDevice);
-  const image = deviceMap[key] || deviceMap["default"] || null;
-
-  console.log("IMAGE DEBUG:", {
-    device,
-    subDevice,
-    slug: key,
-    image
-  });
+  const aliasKey = key
+    .replace(/^apple-watch-/, "")
+    .replace(/^watch-/, "");
+  const image =
+    deviceMap[key] ||
+    deviceMap[aliasKey] ||
+    deviceMap["default"] ||
+    null;
 
   return image;
+}
+
+function isMacDesktopSubDevice(subDevice) {
+  const value = String(subDevice || "").toLowerCase();
+
+  return (
+    value.includes("mini") ||
+    value.includes("studio") ||
+    value.includes("pro desktop") ||
+    value.includes("mac pro") ||
+    value.includes("mac-pro") ||
+    (value.includes("pro") && !value.includes("macbook"))
+  );
 }
 
 function updateDeviceImagePreview(device, subDevice) {
@@ -1214,14 +1233,9 @@ function showConditionProfile(
   } else if (selectedDevice === "Mac") {
 
     const subLower =
-      selectedSub.toLowerCase();
+      (selectedSub || "").toLowerCase();
 
-    if (
-      subLower.includes("mini") ||
-      subLower.includes("studio") ||
-      subLower.includes("pro desktop") ||
-      subLower.includes("mac pro")
-    ) {
+    if (isMacDesktopSubDevice(subLower)) {
 
       showProfile("profileMacDesktop");
 
@@ -1493,16 +1507,11 @@ function validateConditionSelections() {
   else if (selectedDevice === "Mac") {
 
     const subLower =
-      selectedSub.toLowerCase();
+      (selectedSub || "").toLowerCase();
 
     // Mac mini / Mac Studio / Mac Pro
     // have no screen or battery condition.
-    if (
-      subLower.includes("mini") ||
-      subLower.includes("studio") ||
-      subLower.includes("pro desktop") ||
-      subLower.includes("mac pro")
-    ) {
+    if (isMacDesktopSubDevice(subLower)) {
 
       requiredFields = [
         ["desktopBody", "body condition"]

@@ -58,6 +58,11 @@
 			<section id="add-section" class="card">
 				<h2> Add New Device </h2>
 				<p class="description"> Add a new Apple device or configuration to the trade-in database. </p>
+				<div class="admin-nav add-mode-toggle">
+					<button type="button" id="add-mode-model-btn" class="active"> Add Model </button>
+					<button type="button" id="add-mode-upload-btn"> Upload Dataset </button>
+				</div>
+				<div id="add-model-fields">
 				<div class="form-group">
 					<label for="add-device"> Device </label>
 					<select id="add-device">
@@ -156,7 +161,73 @@
 					<button type="button" id="add-submit" class="primary"> Submit </button>
 					<button type="button" id="add-cancel" class="secondary"> Cancel </button>
 				</div>
+				</div>
+				<!-- =================================================
+                 ADD — UPLOAD DATASET (bulk import preview)
+                 ================================================= -->
+				<div id="add-upload-fields" class="hidden">
+					<p class="description"> Upload a provider's CSV price list to preview how it maps against the current trade-in database. This is a read-only preview — nothing is imported or written until a later confirmation step. </p>
+					<div class="form-group">
+						<label for="upload-provider"> Provider </label>
+						<input id="upload-provider" type="text" value="Unknown" list="upload-provider-options">
+						<datalist id="upload-provider-options">
+							<option value="Unknown"></option>
+							<option value="CompAsia"></option>
+							<option value="3Cat"></option>
+							<option value="ATC"></option>
+						</datalist>
+					</div>
+					<div class="form-group">
+						<label> Date Mode </label>
+						<label>
+							<input type="radio" name="upload-date-mode" id="upload-date-mode-collection" value="collection_date" checked> Date of Collection </label>
+						<label>
+							<input type="radio" name="upload-date-mode" id="upload-date-mode-updated" value="price_last_updated"> Price Last Updated </label>
+					</div>
+					<div class="form-group" id="upload-collection-date-group">
+						<label for="upload-collection-date"> Date of Collection </label>
+						<input id="upload-collection-date" type="date" required>
+					</div>
+					<div class="form-group hidden" id="upload-price-updated-date-group">
+						<label for="upload-price-updated-date"> Price Last Updated </label>
+						<input id="upload-price-updated-date" type="date">
+					</div>
+					<div class="form-group">
+						<label for="upload-csv-file"> CSV File </label>
+						<input id="upload-csv-file" type="file" accept=".csv">
+					</div>
+					<div id="upload-result" class="result"></div>
+					<div class="buttons">
+						<button type="button" id="upload-preview-button" class="primary"> Preview Upload </button>
+						<button type="button" id="upload-cancel" class="secondary"> Cancel </button>
+					</div>
+					<p id="upload-loading-note" class="upload-loading-note hidden"> Preview generation may take several minutes depending on the dataset size. </p>
+				</div>
 			</section>
+			<!-- =================================================
+             BULK IMPORT PREVIEW MODAL (read-only)
+             ================================================= -->
+			<div id="bulk-import-modal" class="hidden">
+				<div class="bulk-import-modal-box">
+					<button type="button" id="bulk-import-close-button" class="modify-close-button"> × </button>
+					<div class="modify-modal-title"> Bulk Import Preview </div>
+					<p id="bulk-import-meta" class="modify-modal-info"></p>
+					<div id="bulk-import-summary" class="bulk-import-summary"></div>
+					<div id="bulk-import-unmapped-notice" class="notice hidden">
+						<strong> Unmapped columns </strong>
+						<p id="bulk-import-unmapped-text"></p>
+					</div>
+					<div class="bulk-import-table-wrapper">
+						<table class="forecast-table" id="bulk-import-table">
+							<thead id="bulk-import-table-head"></thead>
+							<tbody id="bulk-import-table-body"></tbody>
+						</table>
+					</div>
+					<div class="buttons">
+						<button type="button" id="bulk-import-close-footer" class="secondary"> Close </button>
+					</div>
+				</div>
+			</div>
 			<!-- =================================================
              MODIFY
              ================================================= -->
@@ -284,10 +355,6 @@
 							<select id="forecast-record" disabled>
 								<option value="">Select configuration</option>
 							</select>
-						</div>
-						<div class="add-btn-wrapper">
-							<button type="button" id="add-forecast-model" class="secondary" style="width: 100%; font-size: 13px; min-height: 38px;"> + ADD MODEL
-							</button>
 						</div>
 						<div class="selected-models-header">Selected Models</div>
 						<div id="selected-models-list" class="selected-models-list">
@@ -508,6 +575,19 @@
 				document.getElementById("add-result").className = "result";
 				document.getElementById("add-result").textContent = "";
 				updateAddFields();
+				// Reset Upload Dataset sub-form and return to Add Model mode
+				document.getElementById("upload-provider").value = "Unknown";
+				document.getElementById("upload-date-mode-collection").checked = true;
+				document.getElementById("upload-collection-date").value = "";
+				document.getElementById("upload-price-updated-date").value = "";
+				updateUploadDateModeFields();
+				document.getElementById("upload-csv-file").value = "";
+				document.getElementById("upload-result").className = "result";
+				document.getElementById("upload-result").textContent = "";
+				document.getElementById("upload-loading-note").classList.add("hidden");
+				document.getElementById("bulk-import-modal").classList.add("hidden");
+				unlockBackgroundScroll();
+				setAddMode("model");
 			}
 			// ============================================================
 			// RESET CUSTOMERS
@@ -697,38 +777,86 @@
 				showAdminToast("Unable to load configurations.", "error");
 			}
 		});
-		document.getElementById("add-forecast-model").addEventListener("click", () => {
-			const id = fRecord.value;
-			if (!id) {
-				showAdminToast("Please select a configuration.", "warning");
-				return;
-			}
-			const dev = fDevice.value;
-			const sub = fSubDevice.value;
-			const modelName = fModel.value;
-			const configText = fRecord.options[fRecord.selectedIndex].text;
-			const label = `${modelName} (${configText
-                        .split("→")[0]
-                        .trim()})`;
-			if (selectedForecastConfigs.length > 0) {
-				const existing = selectedForecastConfigs[0];
-				if (existing.device !== dev || existing.subDevice !== sub) {
-					showAdminToast(`All selected models must belong to the same product line (${existing.device} > ${existing.subDevice}).`, "warning", 4000);
-					return;
-				}
-			}
-			if (selectedForecastConfigs.some(config => config.id === id)) {
-				showAdminToast("This configuration is already selected.", "warning");
-				return;
-			}
-			selectedForecastConfigs.push({
-				id,
-				device: dev,
-				subDevice: sub,
-				label
-			});
-			renderSelectedModels();
-		});
+		
+        fRecord.addEventListener("change", () => {
+            const id = fRecord.value;
+
+            if (!id) {
+                return;
+            }
+
+            const dev = fDevice.value;
+            const sub = fSubDevice.value;
+            const modelName = fModel.value;
+            const selectedOption = fRecord.options[fRecord.selectedIndex];
+
+            if (!dev || !sub || !modelName || !selectedOption) {
+                return;
+            }
+
+            const configText = selectedOption.text;
+
+            const label = `${modelName} (${configText
+                .split("→")[0]
+                .trim()})`;
+
+            // --------------------------------------------------------
+            // SAME PRODUCT LINE RESTRICTION
+            // --------------------------------------------------------
+
+            if (selectedForecastConfigs.length > 0) {
+                const existing = selectedForecastConfigs[0];
+
+                if (
+                    existing.device !== dev ||
+                    existing.subDevice !== sub
+                ) {
+                    showAdminToast(
+                        `All selected models must belong to the same product line (${existing.device} > ${existing.subDevice}).`,
+                        "warning",
+                        4000
+                    );
+
+                    // Reset selection so the invalid configuration
+                    // is not left selected.
+                    fRecord.value = "";
+
+                    return;
+                }
+            }
+
+            // --------------------------------------------------------
+            // DUPLICATE PREVENTION
+            // --------------------------------------------------------
+
+            if (selectedForecastConfigs.some(config => config.id === id)) {
+                showAdminToast(
+                    "This configuration is already selected.",
+                    "warning"
+                );
+
+                fRecord.value = "";
+
+                return;
+            }
+
+            // --------------------------------------------------------
+            // ADD AUTOMATICALLY
+            // --------------------------------------------------------
+
+            selectedForecastConfigs.push({
+                id,
+                device: dev,
+                subDevice: sub,
+                label
+            });
+
+            renderSelectedModels();
+
+            // Reset configuration selector so another configuration
+            // can be selected immediately.
+            fRecord.value = "";
+        });
 
 		function renderSelectedModels() {
 			const list = document.getElementById("selected-models-list");
@@ -1435,6 +1563,251 @@
 				location.reload();
 			});
 		// ====================================================
+		// ADD — MODE TOGGLE (Add Model / Upload Dataset)
+		// ====================================================
+		function setAddMode(mode) {
+			const modelFields = document.getElementById("add-model-fields");
+			const uploadFields = document.getElementById("add-upload-fields");
+			const modelBtn = document.getElementById("add-mode-model-btn");
+			const uploadBtn = document.getElementById("add-mode-upload-btn");
+			modelFields.classList.toggle("hidden", mode !== "model");
+			uploadFields.classList.toggle("hidden", mode !== "upload");
+			modelBtn.classList.toggle("active", mode === "model");
+			uploadBtn.classList.toggle("active", mode === "upload");
+		}
+		document.getElementById("add-mode-model-btn").addEventListener("click", () => setAddMode("model"));
+		document.getElementById("add-mode-upload-btn").addEventListener("click", () => setAddMode("upload"));
+		// ====================================================
+		// ADD — UPLOAD DATASET — CANCEL
+		// ====================================================
+		document.getElementById("upload-cancel").addEventListener("click",
+			() => {
+				location.reload();
+			});
+		// ====================================================
+		// ADD — UPLOAD DATASET — DATE MODE (mutually exclusive)
+		//
+		// Exactly one of "Date of Collection" / "Price Last Updated"
+		// can be active. Selecting one hides+disables the other's
+		// input so it can never be submitted alongside the first --
+		// there is no "both" state. Purely a form-UX concern; does
+		// not touch classification/matching logic.
+		// ====================================================
+		function updateUploadDateModeFields() {
+			const mode = document.querySelector('input[name="upload-date-mode"]:checked').value;
+			const collectionGroup = document.getElementById("upload-collection-date-group");
+			const updatedGroup = document.getElementById("upload-price-updated-date-group");
+			const collectionInput = document.getElementById("upload-collection-date");
+			const updatedInput = document.getElementById("upload-price-updated-date");
+			if (mode === "collection_date") {
+				collectionGroup.classList.remove("hidden");
+				updatedGroup.classList.add("hidden");
+				collectionInput.disabled = false;
+				updatedInput.disabled = true;
+				updatedInput.value = "";
+			} else {
+				updatedGroup.classList.remove("hidden");
+				collectionGroup.classList.add("hidden");
+				updatedInput.disabled = false;
+				collectionInput.disabled = true;
+				collectionInput.value = "";
+			}
+		}
+		document.querySelectorAll('input[name="upload-date-mode"]').forEach(radio => {
+			radio.addEventListener("change", updateUploadDateModeFields);
+		});
+		updateUploadDateModeFields();
+		// ====================================================
+		// ADD — UPLOAD DATASET — PREVIEW
+		//
+		// Read-only: sends the CSV + provider (+ the selected date
+		// mode and its date, for display only) to the existing
+		// /admin/bulk-import/preview endpoint and renders the
+		// response in a modal. Nothing here writes to Sheets,
+		// master_msrp.csv, or the app's master data -- this only
+		// ever calls the preview endpoint.
+		// ====================================================
+		document.getElementById("upload-preview-button").addEventListener("click", async () => {
+			const fileInput = document.getElementById("upload-csv-file");
+			const provider = document.getElementById("upload-provider").value.trim() || "Unknown";
+			const dateMode = document.querySelector('input[name="upload-date-mode"]:checked').value;
+			const dateValue = dateMode === "collection_date"
+				? document.getElementById("upload-collection-date").value || ""
+				: document.getElementById("upload-price-updated-date").value || "";
+			const dateModeLabel = dateMode === "collection_date" ? "Date of Collection" : "Price Last Updated";
+			const uploadResult = document.getElementById("upload-result");
+			uploadResult.className = "result";
+			uploadResult.textContent = "";
+			if (!fileInput.files || fileInput.files.length === 0) {
+				showAdminToast("Please choose a CSV file first.", "warning");
+				return;
+			}
+			if (!dateValue) {
+				showAdminToast(`Please select the ${dateModeLabel} date.`, "warning");
+				return;
+			}
+			const file = fileInput.files[0];
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("provider", provider);
+			formData.append("date_mode", dateMode);
+			formData.append("date_value", dateValue);
+			const previewButton = document.getElementById("upload-preview-button");
+			const loadingNote = document.getElementById("upload-loading-note");
+			setActionLoading(previewButton, "Analyzing...");
+			loadingNote.classList.remove("hidden");
+			try {
+				const response = await fetch("/admin/bulk-import/preview", {
+					method: "POST",
+					body: formData
+				});
+				const data = await response.json();
+				if (!response.ok) {
+					throw new Error(data.detail || data.message || "Failed to preview upload.");
+				}
+				renderBulkImportPreview(data, {
+					provider,
+					dateMode,
+					dateModeLabel,
+					dateValue,
+					filename: file.name
+				});
+			} catch (error) {
+				console.error(error);
+				showAdminToast(error.message, "error");
+				uploadResult.className = "result error";
+				uploadResult.textContent = error.message;
+				uploadResult.style.display = "block";
+			} finally {
+				resetActionButton(previewButton, "Preview Upload");
+				loadingNote.classList.add("hidden");
+			}
+		});
+		// ====================================================
+		// ADD — UPLOAD DATASET — RENDER PREVIEW MODAL
+		// ====================================================
+		const BULK_IMPORT_STATUS_LABELS = {
+			existing: "Existing",
+			new: "New",
+			conflict: "Conflict",
+			needs_review: "Needs Review",
+			duplicate: "Duplicate",
+			multi_match: "Multi-match"
+		};
+		// ----------------------------------------------------
+		// BACKGROUND SCROLL LOCK
+		//
+		// Keeps the Admin page fixed in place behind the preview
+		// modal so only the modal's own content scrolls. Purely a
+		// visual/UX concern -- does not touch any preview data or
+		// request logic. The compensating right-padding avoids a
+		// layout shift from the scrollbar disappearing.
+		// ----------------------------------------------------
+		function lockBackgroundScroll() {
+			if (document.body.classList.contains("bulk-import-scroll-lock")) {
+				return;
+			}
+			const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+			if (scrollbarWidth > 0) {
+				document.body.style.paddingRight = `${scrollbarWidth}px`;
+			}
+			document.body.classList.add("bulk-import-scroll-lock");
+		}
+		function unlockBackgroundScroll() {
+			document.body.classList.remove("bulk-import-scroll-lock");
+			document.body.style.paddingRight = "";
+		}
+		function renderBulkImportPreview(data, meta) {
+			const summary = data.summary || {};
+			const rows = data.rows || [];
+			const totalRows = rows.length;
+			// -------------------------------------------------
+			// META LINE
+			// -------------------------------------------------
+			const metaParts = [
+				`Provider: ${meta.provider}`,
+				`${meta.dateModeLabel || "Date"}: ${meta.dateValue || "—"}`,
+				`File: ${meta.filename}`
+			];
+			document.getElementById("bulk-import-meta").textContent = metaParts.join("  •  ");
+			// -------------------------------------------------
+			// SUMMARY CHIPS
+			// -------------------------------------------------
+			const summaryOrder = ["existing", "new", "conflict", "needs_review", "duplicate", "multi_match"];
+			let summaryHTML = `
+				<div class="bulk-import-summary-item total">
+					<span class="bulk-import-summary-count">${totalRows}</span>
+					<span class="bulk-import-summary-label">Total Rows</span>
+				</div>
+			`;
+			summaryOrder.forEach(key => {
+				const count = summary[key] || 0;
+				summaryHTML += `
+					<div class="bulk-import-summary-item status-${key}">
+						<span class="bulk-import-summary-count">${count}</span>
+						<span class="bulk-import-summary-label">${BULK_IMPORT_STATUS_LABELS[key]}</span>
+					</div>
+				`;
+			});
+			document.getElementById("bulk-import-summary").innerHTML = summaryHTML;
+			// -------------------------------------------------
+			// UNMAPPED COLUMNS NOTICE
+			// -------------------------------------------------
+			const unmappedNotice = document.getElementById("bulk-import-unmapped-notice");
+			const unmapped = data.unmapped_raw_columns || [];
+			if (unmapped.length > 0) {
+				document.getElementById("bulk-import-unmapped-text").textContent = unmapped.join(", ");
+				unmappedNotice.classList.remove("hidden");
+			} else {
+				unmappedNotice.classList.add("hidden");
+			}
+			// -------------------------------------------------
+			// TABLE — columns = original uploaded columns (Provider
+			// included, since it was stamped onto the parsed rows
+			// before analysis) + Status + Edit action.
+			// -------------------------------------------------
+			const rawColumns = totalRows > 0 ? Object.keys(rows[0].raw || {}) : [];
+			let headHTML = "<tr>";
+			rawColumns.forEach(col => {
+				headHTML += `<th>${col}</th>`;
+			});
+			headHTML += "<th>Status</th><th></th></tr>";
+			document.getElementById("bulk-import-table-head").innerHTML = headHTML;
+			let bodyHTML = "";
+			rows.forEach(row => {
+				const status = row.display_classification || "existing";
+				const statusLabel = BULK_IMPORT_STATUS_LABELS[status] || status;
+				bodyHTML += "<tr>";
+				rawColumns.forEach(col => {
+					const value = row.raw ? row.raw[col] : null;
+					bodyHTML += `<td>${value === null || value === undefined ? "—" : value}</td>`;
+				});
+				bodyHTML += `<td><span class="status-badge status-${status}">${statusLabel}</span></td>`;
+				if (status !== "existing") {
+					bodyHTML += `<td><button type="button" class="bulk-import-edit-row secondary" data-row-index="${row.row_index}"> Edit Row </button></td>`;
+				} else {
+					bodyHTML += "<td></td>";
+				}
+				bodyHTML += "</tr>";
+			});
+			document.getElementById("bulk-import-table-body").innerHTML = bodyHTML;
+			document.querySelectorAll(".bulk-import-edit-row").forEach(button => {
+				button.addEventListener("click", () => {
+					showAdminToast("Manual row editing will be available in a later step.", "warning");
+				});
+			});
+			lockBackgroundScroll();
+			document.getElementById("bulk-import-modal").classList.remove("hidden");
+		}
+		document.getElementById("bulk-import-close-button").addEventListener("click", () => {
+			document.getElementById("bulk-import-modal").classList.add("hidden");
+			unlockBackgroundScroll();
+		});
+		document.getElementById("bulk-import-close-footer").addEventListener("click", () => {
+			document.getElementById("bulk-import-modal").classList.add("hidden");
+			unlockBackgroundScroll();
+		});
+		// ====================================================
 		// MODIFY — LOAD MODELS
 		// ====================================================
 		async function loadModifyModels() {
@@ -1659,17 +2032,9 @@
 					const header = document.createElement("button");
 					header.type = "button";
 					header.className = "admin-status-category-header";
-					header.innerHTML = `
+					const displayFieldName = category.field.replace(/_/g, " ");
 
-                            <span>
-                                ${category.field}
-                            </span>
-
-                            <span>
-                                ${category.count}
-                            </span>
-
-                        `;
+					header.innerHTML = `<span>${displayFieldName}</span><span>${category.count}</span>`;
 					header.addEventListener("click",
 						() => {
 							window.location.href = `/admin/status-page?field=${
