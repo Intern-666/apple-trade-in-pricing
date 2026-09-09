@@ -2108,30 +2108,46 @@ def classify_incoming_row(
     Classify one incoming row as exactly one of:
 
         new
-        duplicate
-        needs_review
-        invalid_data
+        update
+        conflict
+            (conflict_type: duplicate | needs_review | invalid_data)
 
     Admin-facing hierarchy:
 
         NEW
+
+        UPDATE
 
         CONFLICT
         ├── Duplicate
         ├── Needs Review
         └── Invalid Data
 
+    `classification` is always one of {"new", "update", "conflict"}.
+    `conflict_type` is set only when classification == "conflict"
+    (one of {"duplicate", "needs_review", "invalid_data"}); it is
+    None otherwise.
+
     Internal multi_match handling never becomes a classification.
 
     Business rules:
 
-    1. Invalid supplied data -> invalid_data.
+    1. Invalid supplied data -> conflict / invalid_data.
     2. No Master configuration counterpart -> new.
     3. Configuration counterpart exists but required comparison
-       information contains Unknown -> needs_review.
-    4. Exact Master-relevant row match with no Unknown -> duplicate.
-    5. Same Apple configuration but different valid Provider -> new.
-    6. Any other valid, non-duplicate row is new.
+       information contains Unknown -> conflict / needs_review.
+    4. Exact Master-relevant row match with no Unknown -> conflict /
+       duplicate.
+    5. Same Apple configuration but different valid Provider -> new,
+       regardless of any pricing difference.
+    6. Same Provider + same Apple configuration + Retail Price
+       changed (with or without a Trade-In change too) -> conflict /
+       needs_review. Retail Price always takes precedence over
+       Trade-In.
+    7. Same Provider + same Apple configuration + only other mutable
+       value(s) changed (Trade-In Value and/or similar), Retail
+       Price unchanged -> update.
+    8. Any other valid, non-duplicate row is new.
     """
     reasons = []
     warnings = []
@@ -2145,7 +2161,8 @@ def classify_incoming_row(
 
     if validation_errors:
         return {
-            "classification": "invalid_data",
+            "classification": "conflict",
+            "conflict_type": "invalid_data",
             "reasons": validation_errors,
             "warnings": [],
             "match": None,
@@ -2165,7 +2182,8 @@ def classify_incoming_row(
 
     if _is_unknown(incoming_device):
         return {
-            "classification": "needs_review",
+            "classification": "conflict",
+            "conflict_type": "needs_review",
             "reasons": [
                 "Device could not be identified."
             ],
@@ -2195,6 +2213,7 @@ def classify_incoming_row(
     if not candidates:
         return {
             "classification": "new",
+            "conflict_type": None,
             "reasons": [
                 "No Master counterpart exists for this "
                 "Apple model/configuration."
@@ -2238,7 +2257,8 @@ def classify_incoming_row(
         )
 
         return {
-            "classification": "needs_review",
+            "classification": "conflict",
+            "conflict_type": "needs_review",
             "reasons": reasons,
             "warnings": warnings,
             "match": best_candidate,
@@ -2277,6 +2297,7 @@ def classify_incoming_row(
 
         return {
             "classification": "new",
+            "conflict_type": None,
             "reasons": reasons,
             "warnings": warnings,
             "match": best_candidate,
@@ -2323,7 +2344,8 @@ def classify_incoming_row(
         )
 
         return {
-            "classification": "needs_review",
+            "classification": "conflict",
+            "conflict_type": "needs_review",
             "reasons": reasons,
             "warnings": warnings,
             "match": best_candidate,
@@ -2389,7 +2411,8 @@ def classify_incoming_row(
             )
 
             return {
-                "classification": "duplicate",
+                "classification": "update",
+                "conflict_type": None,
                 "reasons": reasons,
                 "warnings": warnings,
                 "match": best_candidate,
@@ -2405,7 +2428,7 @@ def classify_incoming_row(
             }
 
     # --------------------------------------------------------
-    # 9. Exact full row -> Duplicate.
+    # 9. Exact full row -> Conflict / Duplicate.
     # --------------------------------------------------------
     if full_comparison["exact"]:
         reasons.append(
@@ -2413,7 +2436,8 @@ def classify_incoming_row(
         )
 
         return {
-            "classification": "duplicate",
+            "classification": "conflict",
+            "conflict_type": "duplicate",
             "reasons": reasons,
             "warnings": warnings,
             "match": best_candidate,
@@ -2427,14 +2451,30 @@ def classify_incoming_row(
         }
 
     # --------------------------------------------------------
-    # 10. Configuration is the same but at least one valid
-    #     Master-relevant value differs.
+    # 10. Configuration and Provider both match the reference
+    #     candidate, but at least one other Master-relevant
+    #     value differs.
     #
-    #     Because Duplicate requires an exact row and there is
-    #     no generic conflict classification, this is NEW.
+    #     Rule: a different valid Provider is always NEW,
+    #     regardless of any pricing difference (checked first,
+    #     independent of price).
     #
-    #     This includes:
-    #       same configuration + different valid Provider
+    #     Model Number differences are preserved exactly as
+    #     before this change: a Model Number that could not be
+    #     cleanly appended (i.e. it differs alongside something
+    #     else) is NEW, not part of the Retail Price / Trade-In
+    #     handling below.
+    #
+    #     For the SAME Provider with the SAME Model Number, the
+    #     remaining Master-relevant fields are mutable pricing
+    #     data:
+    #
+    #       Retail Price changed (with or without a Trade-In
+    #       change too) -> CONFLICT / needs_review. Retail Price
+    #       always takes precedence over Trade-In.
+    #
+    #       Only other mutable value(s) changed (Trade-In Value
+    #       and/or similar), Retail Price unchanged -> UPDATE.
     # --------------------------------------------------------
     different_fields = full_comparison[
         "different_fields"
@@ -2445,14 +2485,90 @@ def classify_incoming_row(
             "The Apple configuration exists, but the "
             "Provider is different."
         )
-    else:
+
+        return {
+            "classification": "new",
+            "conflict_type": None,
+            "reasons": reasons,
+            "warnings": warnings,
+            "match": best_candidate,
+            "match_index": best_candidate["index"],
+            "multi_match": multi_match,
+            "unknown_fields": [],
+            "different_fields": different_fields,
+            "model_numbers_to_append": [],
+            "model_number_update_required": False,
+            "model_number_flag": compare_model_numbers(
+                incoming_norm,
+                best_candidate["norm"],
+            ),
+        }
+
+    if "Model Number" in different_fields:
         reasons.append(
             "The Apple configuration exists, but the "
             "incoming Master-relevant row is different."
         )
 
+        return {
+            "classification": "new",
+            "conflict_type": None,
+            "reasons": reasons,
+            "warnings": warnings,
+            "match": best_candidate,
+            "match_index": best_candidate["index"],
+            "multi_match": multi_match,
+            "unknown_fields": [],
+            "different_fields": different_fields,
+            "model_numbers_to_append": [],
+            "model_number_update_required": False,
+            "model_number_flag": compare_model_numbers(
+                incoming_norm,
+                best_candidate["norm"],
+            ),
+        }
+
+    if "Retail Price" in different_fields:
+        # Retail Price always requires Admin review, whether or
+        # not Trade-In Value (or anything else) also changed.
+        reasons.append(
+            "Retail Price differs from the existing Master row "
+            "for this Provider and configuration; this requires "
+            "Admin review before Master is updated."
+        )
+
+        return {
+            "classification": "conflict",
+            "conflict_type": "needs_review",
+            "reasons": reasons,
+            "warnings": warnings,
+            "match": best_candidate,
+            "match_index": best_candidate["index"],
+            "multi_match": multi_match,
+            "unknown_fields": [],
+            "different_fields": different_fields,
+            "model_numbers_to_append": [],
+            "model_number_update_required": False,
+            "model_number_flag": compare_model_numbers(
+                incoming_norm,
+                best_candidate["norm"],
+            ),
+        }
+
+    # Only mutable value(s) other than Retail Price changed (e.g.
+    # Trade-In Value) -> the existing Master row should be
+    # updated rather than treated as a new row or an Admin
+    # conflict.
+    reasons.append(
+        "The Apple configuration, Provider, and Retail Price "
+        "match the existing Master row; only mutable value(s) "
+        "such as Trade-In Value differ, so the Master row "
+        "should be updated."
+    )
+
     return {
-        "classification": "new",
+        "classification": "update",
+        "conflict_type": None,
         "reasons": reasons,
         "warnings": warnings,
         "match": best_candidate,
@@ -2666,30 +2782,44 @@ def build_summary(classifications):
     """
     Build Admin-facing counts.
 
-    conflict is the umbrella:
-        Duplicate
-        Needs Review
-        Invalid Data
+    `classifications` is a list of (classification, conflict_type)
+    tuples. classification is one of {"new", "update", "conflict"}.
+    conflict_type is one of {"duplicate", "needs_review",
+    "invalid_data"} when classification == "conflict", else None.
 
-    multi_match is intentionally absent.
+    Top-level counts:
+        new
+        update
+        conflict   <- umbrella total
+
+    conflict is broken down further into its sub-type counts
+    (duplicate / needs_review / invalid_data) for convenience, but
+    those sub-counts are not separate Admin-facing top-level
+    categories on their own.
+
+    multi_match is intentionally absent -- it is internal metadata
+    only and must never be Admin-facing.
     """
     summary = {
         "new": 0,
+        "update": 0,
+        "conflict": 0,
         "duplicate": 0,
         "needs_review": 0,
         "invalid_data": 0,
-        "conflict": 0,
     }
 
-    for classification in classifications:
-        if classification in summary:
+    for classification, conflict_type in classifications:
+        if classification in ("new", "update"):
             summary[classification] += 1
-
-    summary["conflict"] = (
-        summary["duplicate"]
-        + summary["needs_review"]
-        + summary["invalid_data"]
-    )
+        elif classification == "conflict":
+            summary["conflict"] += 1
+            if conflict_type in (
+                "duplicate",
+                "needs_review",
+                "invalid_data",
+            ):
+                summary[conflict_type] += 1
 
     return summary
 
@@ -2733,9 +2863,11 @@ def analyze_upload(
         Business classification
             |
             +--> new
-            +--> duplicate
-            +--> needs_review
-            +--> invalid_data
+            +--> update
+            +--> conflict
+                    +--> duplicate
+                    +--> needs_review
+                    +--> invalid_data
 
     Extra/unrecognized columns are returned separately for the
     Admin modal.
@@ -2939,7 +3071,8 @@ def analyze_upload(
 
         if is_within_file_duplicate:
             classification_result = {
-                "classification": "duplicate",
+                "classification": "conflict",
+                "conflict_type": "duplicate",
                 "reasons": [
                     "This row is an identical duplicate of an "
                     "earlier row in the uploaded file and will "
@@ -2969,13 +3102,18 @@ def analyze_upload(
             "classification"
         ]
 
+        conflict_type = classification_result.get(
+            "conflict_type"
+        )
+
         classifications.append(
-            classification
+            (classification, conflict_type)
         )
 
         row_result = {
             "row_index": index,
             "classification": classification,
+            "conflict_type": conflict_type,
             "reasons": classification_result["reasons"],
             "warnings": classification_result["warnings"],
             "match_index": classification_result["match_index"],
@@ -2985,6 +3123,12 @@ def analyze_upload(
             "model_number_flag": classification_result[
                 "model_number_flag"
             ],
+            "model_numbers_to_append": classification_result.get(
+                "model_numbers_to_append", []
+            ),
+            "model_number_update_required": classification_result.get(
+                "model_number_update_required", False
+            ),
             "within_file_duplicate": (
                 within_file_info.get(
                     "within_file_duplicate",

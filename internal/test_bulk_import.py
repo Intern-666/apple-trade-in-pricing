@@ -4,8 +4,10 @@ Regression tests for internal/bulk_import.py.
 These tests exercise the CURRENT implementation and CURRENT result
 structure directly:
 
-    classification: "new" | "duplicate" | "needs_review"
-                     | "invalid_data"
+    classification: "new" | "update" | "conflict"
+    conflict_type:  None | "duplicate" | "needs_review" | "invalid_data"
+                    (set only when classification == "conflict")
+
     reasons, warnings, match, match_index, multi_match,
     unknown_fields, different_fields, model_number_flag,
     model_numbers_to_append, model_number_update_required
@@ -27,6 +29,7 @@ or directly:
 
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -84,6 +87,29 @@ def _df(rows):
     return pd.DataFrame(rows, columns=bi.CANONICAL_FIELDS)
 
 
+def _assert_valid_result_shape(testcase, row):
+    """
+    Shared invariant: classification is always one of the three
+    top-level values, conflict_type is populated if and only if
+    classification == "conflict", and multi_match never leaks out
+    as a classification or conflict_type.
+    """
+    testcase.assertIn(
+        row["classification"], {"new", "update", "conflict"}
+    )
+    testcase.assertNotIn(
+        row["classification"], {"multi_match"}
+    )
+
+    if row["classification"] == "conflict":
+        testcase.assertIn(
+            row["conflict_type"],
+            {"duplicate", "needs_review", "invalid_data"},
+        )
+    else:
+        testcase.assertIsNone(row["conflict_type"])
+
+
 class TestFixtureFiles(unittest.TestCase):
     """Sanity checks that the fixtures exist and load as expected."""
 
@@ -116,13 +142,21 @@ class TestAnalyzeUploadAgainstRealFixtures(unittest.TestCase):
     The 18-row fixture represents six conceptual cases repeated
     across iPhone / iPad / Mac rows:
 
-        rows 0-2   fabricated models with no Master counterpart -> new
-        rows 3-5   existing configuration, different Provider    -> new
-        rows 6-8   exact Provider + configuration match          -> duplicate
-        rows 9-11  Unknown Provider                              -> needs_review
+        rows 0-2   fabricated models with no Master counterpart
+                   -> new
+        rows 3-5   existing configuration for that same Provider
+                   -> row 3 is an exact duplicate, row 4 has only
+                   its Trade-In Value changed (-> update), row 5
+                   is a genuinely new Provider (-> new); see below
+        rows 6-8   exact Provider + configuration match
+                   -> conflict / duplicate
+        rows 9-11  Unknown Provider
+                   -> conflict / needs_review
         rows 12-14 Unknown relevant value (storage/connectivity/
-                   storage type)                                 -> needs_review
-        rows 15-17 malformed supplied value                      -> invalid_data
+                   storage type)
+                   -> conflict / needs_review
+        rows 15-17 malformed supplied value
+                   -> conflict / invalid_data
     """
 
     @classmethod
@@ -139,27 +173,25 @@ class TestAnalyzeUploadAgainstRealFixtures(unittest.TestCase):
     def test_result_shape(self):
         self.assertEqual(len(self.rows), len(self.incoming_df))
         for row in self.rows:
-            self.assertIn(
-                row["classification"],
-                {"new", "duplicate", "needs_review", "invalid_data"},
-            )
-            # multi_match must never leak out as a classification.
-            self.assertNotEqual(row["classification"], "multi_match")
+            _assert_valid_result_shape(self, row)
 
     def test_current_api_keys_present(self):
-        # Guards against silently regressing to the old API shape.
+        # Guards against silently regressing to an older API shape.
         self.assertIn("mapping", self.result)
         self.assertIn("unmapped_columns", self.result)
         self.assertIn("missing_required", self.result)
         for row in self.rows:
             for key in (
                 "classification",
+                "conflict_type",
                 "reasons",
                 "match_index",
                 "multi_match",
                 "unknown_fields",
                 "different_fields",
                 "model_number_flag",
+                "model_numbers_to_append",
+                "model_number_update_required",
             ):
                 self.assertIn(key, row)
 
@@ -169,26 +201,47 @@ class TestAnalyzeUploadAgainstRealFixtures(unittest.TestCase):
                 self.assertEqual(
                     self.rows[index]["classification"], "new"
                 )
+                self.assertIsNone(self.rows[index]["conflict_type"])
 
-    def test_same_configuration_different_provider_is_new(self):
-        for index in (3, 4, 5):
-            with self.subTest(index=index):
-                self.assertIn(
-                    self.rows[index]["classification"],
-                    {"new", "duplicate"},
-                )
+    def test_row_3_machines_exact_match_is_duplicate(self):
         # Row 3 (Machines iPhone 11) has an EXACT Machines
         # counterpart in Master (this is the confirmed
         # Provider-selection bug fixture) so it must resolve as an
         # exact duplicate against that row, not "new" against an
         # unrelated Provider's row.
-        self.assertEqual(self.rows[3]["classification"], "duplicate")
+        self.assertEqual(self.rows[3]["classification"], "conflict")
+        self.assertEqual(self.rows[3]["conflict_type"], "duplicate")
+
+    def test_row_4_switch_trade_in_only_change_is_update(self):
+        # Row 4 (Switch iPad 10) matches Switch's OWN existing
+        # Master row once Provider-aware candidate selection picks
+        # the correct reference: same Provider, same Apple
+        # configuration, same Retail Price, only Trade-In Value
+        # differs -> update, not new.
+        row = self.rows[4]
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
+        self.assertEqual(
+            row["different_fields"], ["Max. Trade-In Value (RM)"]
+        )
+
+    def test_row_5_mac_city_new_provider_is_new(self):
+        # Row 5 (Mac City iMac) has no prior Mac City counterpart
+        # at all for this configuration -> a genuinely new Provider,
+        # regardless of pricing.
+        row = self.rows[5]
+        self.assertEqual(row["classification"], "new")
+        self.assertIsNone(row["conflict_type"])
+        self.assertIn("Provider", row["different_fields"])
 
     def test_exact_matches_are_duplicate(self):
         for index in (6, 7, 8):
             with self.subTest(index=index):
                 self.assertEqual(
-                    self.rows[index]["classification"], "duplicate"
+                    self.rows[index]["classification"], "conflict"
+                )
+                self.assertEqual(
+                    self.rows[index]["conflict_type"], "duplicate"
                 )
                 self.assertEqual(self.rows[index]["unknown_fields"], [])
                 self.assertEqual(self.rows[index]["different_fields"], [])
@@ -197,7 +250,10 @@ class TestAnalyzeUploadAgainstRealFixtures(unittest.TestCase):
         for index in (9, 10, 11):
             with self.subTest(index=index):
                 self.assertEqual(
-                    self.rows[index]["classification"], "needs_review"
+                    self.rows[index]["classification"], "conflict"
+                )
+                self.assertEqual(
+                    self.rows[index]["conflict_type"], "needs_review"
                 )
                 self.assertIn("Provider", self.rows[index]["unknown_fields"])
 
@@ -205,7 +261,10 @@ class TestAnalyzeUploadAgainstRealFixtures(unittest.TestCase):
         for index in (12, 13, 14):
             with self.subTest(index=index):
                 self.assertEqual(
-                    self.rows[index]["classification"], "needs_review"
+                    self.rows[index]["classification"], "conflict"
+                )
+                self.assertEqual(
+                    self.rows[index]["conflict_type"], "needs_review"
                 )
                 self.assertTrue(self.rows[index]["unknown_fields"])
 
@@ -213,7 +272,10 @@ class TestAnalyzeUploadAgainstRealFixtures(unittest.TestCase):
         for index in (15, 16, 17):
             with self.subTest(index=index):
                 self.assertEqual(
-                    self.rows[index]["classification"], "invalid_data"
+                    self.rows[index]["classification"], "conflict"
+                )
+                self.assertEqual(
+                    self.rows[index]["conflict_type"], "invalid_data"
                 )
 
     def test_within_file_duplicate_flag_well_formed(self):
@@ -234,7 +296,7 @@ class TestProviderAwareCandidateSelection(unittest.TestCase):
     file than the correct Machines row. Before the fix, the
     incoming Machines row was incorrectly matched to the CompAsia
     row (wrong Provider) and misclassified as "new" instead of
-    "duplicate".
+    "conflict" / "duplicate".
     """
 
     def setUp(self):
@@ -259,7 +321,8 @@ class TestProviderAwareCandidateSelection(unittest.TestCase):
 
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "duplicate")
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "duplicate")
         self.assertEqual(row["match_index"], 1)  # the Machines row
         self.assertEqual(row["different_fields"], [])
         self.assertEqual(row["unknown_fields"], [])
@@ -280,6 +343,7 @@ class TestProviderAwareCandidateSelection(unittest.TestCase):
 
         self.assertEqual(row["match_index"], 0)  # first candidate
         self.assertEqual(row["classification"], "new")
+        self.assertIsNone(row["conflict_type"])
         self.assertIn("Provider", row["different_fields"])
 
     def test_choose_reference_candidate_prefers_provider_directly(self):
@@ -322,8 +386,11 @@ class TestProviderAwareCandidateSelection(unittest.TestCase):
 class TestModelNumberAppend(unittest.TestCase):
     """
     Model Number is special: a new Model Number on an otherwise
-    identical row should be appended to the existing Master row,
-    not treated as a brand-new Master row.
+    identical row should be appended to the existing Master row
+    (classification "update"), not treated as a brand-new Master
+    row and not treated as an Admin conflict. An overlapping Model
+    Number on an otherwise identical row is simply an ordinary
+    conflict / duplicate.
     """
 
     def test_new_model_number_is_flagged_for_append(self):
@@ -340,13 +407,17 @@ class TestModelNumberAppend(unittest.TestCase):
 
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "duplicate")
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
         self.assertEqual(row["model_number_flag"], "append")
+        self.assertTrue(row["model_number_update_required"])
+        self.assertEqual(row["model_numbers_to_append"], ["A9999"])
 
     def test_overlapping_model_number_is_a_plain_match(self):
         # Incoming model number "A2111" is a subset of the Master
         # row's existing "A2111, A2221, A2223" -> already
-        # represented, ordinary duplicate, nothing to append.
+        # represented, ordinary conflict/duplicate, nothing to
+        # append.
         master_df = _df(
             [_master_row(model_number="A2111, A2221, A2223")]
         )
@@ -360,7 +431,8 @@ class TestModelNumberAppend(unittest.TestCase):
 
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "duplicate")
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "duplicate")
         self.assertEqual(row["model_number_flag"], "match")
 
     def test_append_uses_provider_aware_candidate(self):
@@ -391,23 +463,49 @@ class TestModelNumberAppend(unittest.TestCase):
 
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "duplicate")
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
         self.assertEqual(row["model_number_flag"], "append")
         self.assertEqual(row["match_index"], 1)  # the Machines row
 
 
-class TestRetailPriceAndTradeInValueChanges(unittest.TestCase):
+class TestUpdateAndConflictClassification(unittest.TestCase):
     """
-    Documents current behavior for same-Provider, same-configuration
-    rows where a mutable value changes. (See final report: the
-    business-rules brief describes a richer UPDATE / Retail Price
-    Conflict classification scheme that the current flat
-    new/duplicate/needs_review/invalid_data implementation does not
-    yet contain; these tests pin down what the code actually does
-    today so future work has a baseline.)
+    Same-Provider, same-Apple-configuration Retail Price / Trade-In
+    Value handling.
+
+        1. No relevant changes                        -> conflict / duplicate
+        2. Trade-In Value changed (only)               -> update
+        3. Other mutable value(s) changed, including
+           Trade-In                                    -> update
+        4. Retail Price changed                        -> conflict / needs_review
+        5. Retail Price AND Trade-In changed            -> conflict / needs_review
+           (Retail Price takes precedence)
+        6. Different valid Provider, regardless of
+           pricing                                     -> new
+        7. Unknown Provider / Unknown relevant value    -> conflict / needs_review
+        8. Malformed supplied value                     -> conflict / invalid_data
     """
 
-    def test_trade_in_value_change_same_provider(self):
+    # ---- Rule 1: exact duplicate --------------------------------
+
+    def test_exact_duplicate_is_conflict_duplicate(self):
+        master_df = _df([_master_row()])
+        incoming_df = _df([_master_row()])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "duplicate")
+        self.assertEqual(row["different_fields"], [])
+        self.assertEqual(row["unknown_fields"], [])
+
+    # ---- Rule 2: Trade-In-only change ---------------------------
+
+    def test_trade_in_only_change_is_update(self):
         master_df = _df([_master_row(trade_in=390.0)])
         incoming_df = _df([_master_row(trade_in=420.0)])
 
@@ -416,12 +514,70 @@ class TestRetailPriceAndTradeInValueChanges(unittest.TestCase):
         )
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "new")
-        self.assertIn(
-            "Max. Trade-In Value (RM)", row["different_fields"]
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
+        self.assertEqual(
+            row["different_fields"], ["Max. Trade-In Value (RM)"]
         )
 
-    def test_retail_price_change_same_provider(self):
+    # ---- Rule 3: multiple mutable values, including Trade-In ----
+
+    def test_multiple_mutable_values_including_trade_in_is_update(self):
+        # The current canonical schema only exposes Retail Price
+        # and Trade-In Value as fields that can genuinely differ
+        # once Provider and the full Apple configuration already
+        # match (every other comparable field uses the identical
+        # normalized equality check in both the coarse
+        # configuration match and the full row comparison, so they
+        # can never disagree between the two stages; Chipset is a
+        # documented "ghost field" that never participates in the
+        # comparison at all). To exercise the general "any set of
+        # non-Retail-Price mutable fields -> update" rule (as
+        # opposed to the Trade-In-specific case above), this test
+        # calls classify_incoming_row() directly and patches
+        # compare_master_relevant_fields() to report a second,
+        # hypothetical mutable field changing alongside Trade-In.
+        # This is a unit-level test of the branching logic, not a
+        # claim that "Chipset" differences are reachable today.
+        master_df = _df([_master_row()])
+        incoming_df = _df([_master_row()])
+
+        (
+            master_norm_by_index,
+            master_device_by_index,
+            master_provider_by_index,
+        ) = bi.build_master_indexes(master_df)
+
+        incoming_norm = bi.normalize_row_for_matching(
+            incoming_df.iloc[0]
+        )
+
+        fake_full_comparison = {
+            "exact": False,
+            "unknown_fields": [],
+            "different_fields": ["Max. Trade-In Value (RM)", "Chipset"],
+        }
+
+        with mock.patch.object(
+            bi,
+            "compare_master_relevant_fields",
+            return_value=fake_full_comparison,
+        ):
+            result = bi.classify_incoming_row(
+                incoming_row_canonical=incoming_df.iloc[0],
+                incoming_norm=incoming_norm,
+                master_df=master_df,
+                master_norm_by_index=master_norm_by_index,
+                master_device_by_index=master_device_by_index,
+                master_provider_by_index=master_provider_by_index,
+            )
+
+        self.assertEqual(result["classification"], "update")
+        self.assertIsNone(result["conflict_type"])
+
+    # ---- Rule 4: Retail Price change -----------------------------
+
+    def test_retail_price_change_is_conflict_needs_review(self):
         master_df = _df([_master_row(retail_price=3599.0)])
         incoming_df = _df([_master_row(retail_price=3699.0)])
 
@@ -430,8 +586,158 @@ class TestRetailPriceAndTradeInValueChanges(unittest.TestCase):
         )
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "new")
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
         self.assertIn("Retail Price", row["different_fields"])
+
+    # ---- Rule 5: Retail Price AND Trade-In change ----------------
+
+    def test_retail_price_and_trade_in_change_is_conflict_needs_review(self):
+        master_df = _df(
+            [_master_row(retail_price=3599.0, trade_in=390.0)]
+        )
+        incoming_df = _df(
+            [_master_row(retail_price=3699.0, trade_in=420.0)]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        # Retail Price takes precedence: still needs_review, not
+        # update, even though Trade-In changed too.
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
+        self.assertIn("Retail Price", row["different_fields"])
+        self.assertIn(
+            "Max. Trade-In Value (RM)", row["different_fields"]
+        )
+
+    # ---- Rule 6: different Provider, regardless of pricing -------
+
+    def test_different_provider_with_different_pricing_is_new(self):
+        master_df = _df(
+            [
+                _master_row(
+                    provider="CompAsia",
+                    retail_price=3599.0,
+                    trade_in=390.0,
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    provider="Machines",
+                    retail_price=3699.0,
+                    trade_in=420.0,
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "new")
+        self.assertIsNone(row["conflict_type"])
+        self.assertIn("Provider", row["different_fields"])
+
+    # ---- Rule 7: Unknown Provider ---------------------------------
+
+    def test_unknown_provider_is_conflict_needs_review(self):
+        master_df = _df([_master_row(provider="CompAsia")])
+        incoming_df = _df([_master_row(provider=None)])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
+        self.assertIn("Provider", row["unknown_fields"])
+
+    # ---- Rule 7: Unknown relevant value ----------------------------
+
+    def test_unknown_relevant_value_is_conflict_needs_review(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="iMac",
+                    model="iMac 27-inch",
+                    storage_type="SSD",
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="iMac",
+                    model="iMac 27-inch",
+                    storage_type=None,
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
+        self.assertTrue(row["unknown_fields"])
+
+    # ---- Rule 8: malformed Retail Price ----------------------------
+
+    def test_malformed_retail_price_is_conflict_invalid_data(self):
+        master_df = _df([_master_row()])
+        incoming_df = _df([_master_row(retail_price="RM 3599")])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "invalid_data")
+
+    # ---- Model Number overlap/append, revisited under this rule set
+
+    def test_model_number_overlap_is_conflict_duplicate(self):
+        master_df = _df(
+            [_master_row(model_number="A2111, A2221, A2223")]
+        )
+        incoming_df = _df([_master_row(model_number="A2221")])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "duplicate")
+        self.assertEqual(row["model_number_flag"], "match")
+
+    def test_model_number_append_is_update(self):
+        master_df = _df(
+            [_master_row(model_number="A2111, A2221, A2223")]
+        )
+        incoming_df = _df([_master_row(model_number="A9999")])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
+        self.assertEqual(row["model_number_flag"], "append")
 
 
 class TestModelIdentityConflict(unittest.TestCase):
@@ -506,7 +812,8 @@ class TestBlankModelNumberEquality(unittest.TestCase):
         )
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "needs_review")
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
         self.assertIn("Model Number", row["unknown_fields"])
 
     def test_this_matches_behavior_of_other_optional_fields(self):
@@ -540,7 +847,8 @@ class TestBlankModelNumberEquality(unittest.TestCase):
         )
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "needs_review")
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
         self.assertIn("Storage Type", row["unknown_fields"])
 
 
@@ -565,10 +873,12 @@ class TestWithinFileDuplicates(unittest.TestCase):
         # but only the second (non-first) occurrence is actually
         # classified as a duplicate and withheld from Master.
         self.assertEqual(rows[0]["classification"], "new")
+        self.assertIsNone(rows[0]["conflict_type"])
         self.assertTrue(rows[0]["within_file_duplicate"])
         self.assertIn(0, rows[0]["within_file_duplicate_group"])
 
-        self.assertEqual(rows[1]["classification"], "duplicate")
+        self.assertEqual(rows[1]["classification"], "conflict")
+        self.assertEqual(rows[1]["conflict_type"], "duplicate")
         self.assertTrue(rows[1]["within_file_duplicate"])
 
 
@@ -583,6 +893,7 @@ class TestNewClassification(unittest.TestCase):
         row = result["rows"][0]
 
         self.assertEqual(row["classification"], "new")
+        self.assertIsNone(row["conflict_type"])
         self.assertIsNone(row["match_index"])
 
 
@@ -596,7 +907,8 @@ class TestInvalidData(unittest.TestCase):
         )
         row = result["rows"][0]
 
-        self.assertEqual(row["classification"], "invalid_data")
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "invalid_data")
 
 
 if __name__ == "__main__":
