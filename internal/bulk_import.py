@@ -451,10 +451,20 @@ def build_row_search_text(raw_row):
     """
     Concatenate all meaningful incoming cells so Device/Sub-device
     can be inferred from the row when explicit columns are absent.
+
+    `raw_row` is a pandas Series at its one real call site
+    (`canonical_df.loc[index]`). `.values()` is a dict method, not a
+    Series one -- Series exposes `.values` as a plain ndarray
+    attribute, so calling it raised TypeError. This previously went
+    unnoticed because the caller only ever reached this line when
+    Device was blank, which essentially never happened for real
+    uploads that already supplied Device. `.items()` works
+    identically for a Series and for a plain dict, so it is used
+    here instead of `.values()`.
     """
     parts = []
 
-    for value in raw_row.values():
+    for _, value in raw_row.items():
         if _is_blank(value):
             continue
 
@@ -515,6 +525,55 @@ def infer_device_subdevice(row_text, vocabulary):
 
     if len(sub_matches) == 1:
         return device, sub_matches[0]
+
+    if len(sub_matches) > 1:
+        # A shorter match (e.g. "ipad", "pro") is often just a
+        # component word of a longer match that also matched (e.g.
+        # "ipad pro") -- both are legitimate vocabulary phrases, so
+        # both end up in sub_matches, even though only the longer
+        # one is actually specific. Drop any candidate whose words
+        # are a strict subset of another candidate's words; if that
+        # leaves exactly one, it is the unambiguous, most specific
+        # match. Still no fuzzy matching: this only ever discards a
+        # candidate that is a word-for-word subset of another actual
+        # match, it never invents or scores partial matches.
+        word_sets = {
+            candidate: set(normalize_text(candidate).split())
+            for candidate in sub_matches
+        }
+
+        most_specific = [
+            candidate
+            for candidate, words in word_sets.items()
+            if not any(
+                other != candidate
+                and words < word_sets[other]
+                for other in sub_matches
+            )
+        ]
+
+        if len(most_specific) == 1:
+            return device, most_specific[0]
+
+        # Still tied after specificity filtering (e.g. a bare
+        # vocabulary word like "pro" leaking in from a field such
+        # as Chipset or the model string itself, alongside the
+        # genuinely correct compound like "ipad mini"). Narrow
+        # using Device+Sub-device co-occurrence actually observed
+        # in Master: if only one of the tied candidates has ever
+        # been paired with this already-determined Device, that is
+        # the unambiguous answer. This uses only data Master already
+        # contains (vocabulary["pairs"]) -- no fuzzy matching, no
+        # invented tie-break, and it never fires unless specificity
+        # filtering alone could not decide.
+        paired_with_device = [
+            candidate
+            for candidate in most_specific
+            if (device, candidate) in vocabulary.get("pairs", set())
+        ]
+
+        if len(paired_with_device) == 1:
+            return device, paired_with_device[0]
 
     return device, None
 
@@ -2969,15 +3028,41 @@ def analyze_upload(
     #
     # Only infer when the explicit field is missing.
     # Never silently overwrite an explicit value.
+    #
+    # Device and Sub-device are inferred independently of each
+    # other: a row that already has an explicit Device but no
+    # Sub-device must still get a chance at Sub-device inference.
+    # (Root cause of the reported bug: this used to be gated on
+    # `Device` being blank only, so any row that already supplied
+    # Device -- the overwhelming majority of real uploads -- never
+    # even attempted Sub-device inference, regardless of whether
+    # Sub-device itself was blank.)
     # --------------------------------------------------------
     vocabulary = build_device_vocabulary(
         master_df
     )
 
+    # Fields that started out absent from the raw upload (no
+    # source column mapped to them) but were subsequently
+    # populated programmatically, row by row, below. These must
+    # be treated as available for normalization/matching/
+    # duplicate-detection from this point on -- otherwise a
+    # correctly-inferred value sits in canonical_df but every
+    # downstream consumer still treats the field as unmapped and
+    # discards it back to Unknown. This is intentionally general
+    # (not hardcoded to "Sub-device"): any canonical field this
+    # loop assigns gets recorded here.
+    inferred_fields = set()
+
     for index in canonical_df.index:
         row = canonical_df.loc[index]
 
-        if _is_blank(row.get("Device")):
+        device_is_blank = _is_blank(row.get("Device"))
+        sub_device_is_blank = _is_blank(
+            row.get("Sub-device")
+        )
+
+        if device_is_blank or sub_device_is_blank:
             row_text = build_row_search_text(row)
 
             inferred_device, inferred_sub_device = (
@@ -2987,25 +3072,22 @@ def analyze_upload(
                 )
             )
 
-            if inferred_device:
+            if device_is_blank and inferred_device:
                 canonical_df.at[
                     index,
                     "Device",
                 ] = inferred_device
+                inferred_fields.add("Device")
 
             if (
-                _is_blank(
-                    canonical_df.at[
-                        index,
-                        "Sub-device",
-                    ]
-                )
+                sub_device_is_blank
                 and inferred_sub_device
             ):
                 canonical_df.at[
                     index,
                     "Sub-device",
                 ] = inferred_sub_device
+                inferred_fields.add("Sub-device")
 
     # --------------------------------------------------------
     # 6. Build Master indexes once.
@@ -3023,9 +3105,20 @@ def analyze_upload(
     #
     # Subsequent identical rows are classified as duplicates
     # and prevented from being added to Master.
+    #
+    # mapped_canonical_fields drives _get_mapped_value() inside
+    # normalize_row_for_matching(): it decides whether a
+    # canonical field is trusted at all, independent of whether
+    # any particular row's value in it happens to be blank. A
+    # field the raw upload never supplied but that step 5 above
+    # populated via inference is just as legitimate a source as
+    # an explicitly mapped raw column, so it must be included
+    # here too -- otherwise normalization, duplicate detection,
+    # and classification would all silently discard the inferred
+    # value and treat the field as still unmapped.
     # --------------------------------------------------------
-    mapped_canonical_fields = set(
-        mapping.values()
+    mapped_canonical_fields = (
+        set(mapping.values()) | inferred_fields
     )
 
     within_file_duplicates = detect_duplicates(

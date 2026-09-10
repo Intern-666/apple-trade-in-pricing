@@ -1419,6 +1419,12 @@ def admin_bulk_import_preview(
     result["date_mode"] = date_mode
     result["date_value"] = date_value
 
+    result.pop("canonical_df", None)
+    result.pop("master_norm_by_index", None)
+    result.pop("master_device_by_index", None)
+    result.pop("master_provider_by_index", None)
+    result.pop("within_file_duplicates", None)
+
     return JSONResponse(content=result)
 
 

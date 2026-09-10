@@ -1687,12 +1687,12 @@
 		// ADD — UPLOAD DATASET — RENDER PREVIEW MODAL
 		// ====================================================
 		const BULK_IMPORT_STATUS_LABELS = {
-			existing: "Existing",
 			new: "New",
+			update: "Update",
 			conflict: "Conflict",
-			needs_review: "Needs Review",
 			duplicate: "Duplicate",
-			multi_match: "Multi-match"
+			needs_review: "Needs Review",
+			invalid_data: "Invalid Data"
 		};
 		// ----------------------------------------------------
 		// BACKGROUND SCROLL LOCK
@@ -1733,7 +1733,7 @@
 			// -------------------------------------------------
 			// SUMMARY CHIPS
 			// -------------------------------------------------
-			const summaryOrder = ["existing", "new", "conflict", "needs_review", "duplicate", "multi_match"];
+			const summaryOrder = ["new", "update", "conflict"];
 			let summaryHTML = `
 				<div class="bulk-import-summary-item total">
 					<span class="bulk-import-summary-count">${totalRows}</span>
@@ -1775,19 +1775,30 @@
 			document.getElementById("bulk-import-table-head").innerHTML = headHTML;
 			let bodyHTML = "";
 			rows.forEach(row => {
-				const status = row.display_classification || "existing";
-				const statusLabel = BULK_IMPORT_STATUS_LABELS[status] || status;
+				const status = row.classification || "conflict";
+				const conflictType = row.conflict_type || null;
+
+				let statusLabel = BULK_IMPORT_STATUS_LABELS[status] || status;
+
+				if (status === "conflict" && conflictType) {
+					statusLabel = BULK_IMPORT_STATUS_LABELS[conflictType] || conflictType;
+				}
+
 				bodyHTML += "<tr>";
+
 				rawColumns.forEach(col => {
 					const value = row.raw ? row.raw[col] : null;
 					bodyHTML += `<td>${value === null || value === undefined ? "—" : value}</td>`;
 				});
+
 				bodyHTML += `<td><span class="status-badge status-${status}">${statusLabel}</span></td>`;
-				if (status !== "existing") {
+
+				if (status !== "conflict" || conflictType !== "duplicate") {
 					bodyHTML += `<td><button type="button" class="bulk-import-edit-row secondary" data-row-index="${row.row_index}"> Edit Row </button></td>`;
 				} else {
 					bodyHTML += "<td></td>";
 				}
+
 				bodyHTML += "</tr>";
 			});
 			document.getElementById("bulk-import-table-body").innerHTML = bodyHTML;

@@ -882,6 +882,178 @@ class TestWithinFileDuplicates(unittest.TestCase):
         self.assertTrue(rows[1]["within_file_duplicate"])
 
 
+class TestSubDeviceInference(unittest.TestCase):
+    """
+    Regression coverage for a confirmed production bug: Sub-device
+    inference was gated entirely on Device being blank, so any row
+    that already supplied an explicit Device (the overwhelming
+    majority of real uploads) never even attempted Sub-device
+    inference -- regardless of whether Sub-device itself was blank.
+    This made Sub-device come back "Unknown" for essentially every
+    real-world row, forcing conflict/needs_review far more than the
+    data actually warranted.
+
+    A second, previously-unreachable bug was exposed by fixing the
+    first one: build_row_search_text() called `.values()` on its
+    argument, which is a dict method, not a pandas Series one (the
+    real call site always passes a Series). This line was never
+    executed before because the caller only reached it when Device
+    was blank, which never happened for rows that already supplied
+    Device.
+    """
+
+    def _master_df_with_iphone_variants(self):
+        return _df(
+            [
+                _master_row(
+                    sub_device="Standard", model="iPhone 13"
+                ),
+                _master_row(
+                    sub_device="Mini", model="iPhone 13 Mini"
+                ),
+            ]
+        )
+
+    def test_sub_device_is_inferred_even_when_device_is_explicit(self):
+        # Device is already explicit ("iPhone"); Sub-device is
+        # blank. Before the fix, the entire inference block was
+        # skipped because it only ran when Device was blank.
+        master_df = self._master_df_with_iphone_variants()
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device=None, model="iPhone 13 Mini"
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertNotIn("Sub-device", row["unknown_fields"])
+        self.assertEqual(
+            result["canonical_df"].iloc[0]["Sub-device"], "mini"
+        )
+
+    def test_explicit_device_is_never_overwritten_by_inference(self):
+        # Even though Sub-device inference now also runs for rows
+        # with an explicit Device, that Device value must never be
+        # silently replaced.
+        master_df = self._master_df_with_iphone_variants()
+        incoming_df = _df(
+            [
+                _master_row(
+                    device="iPhone",
+                    sub_device=None,
+                    model="iPhone 13 Mini",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+
+        self.assertEqual(
+            result["canonical_df"].iloc[0]["Device"], "iPhone"
+        )
+
+    def test_specificity_rule_resolves_word_subset_ambiguity(self):
+        # "Pro" is a substring token of "Pro Max" too, so a model
+        # name containing "Pro Max" matches both "Pro" and "Pro Max"
+        # in the vocabulary. Since "Pro"'s words ({"pro"}) are a
+        # strict subset of "Pro Max"'s words ({"pro", "max"}), the
+        # Group B specificity fix drops "Pro" and keeps "Pro Max" as
+        # the unique most-specific match, so Sub-device now resolves
+        # correctly instead of staying Unknown. (Previously this
+        # test asserted the pre-fix conservative fallback; that
+        # premise no longer holds now that the ambiguity is
+        # resolvable.)
+        master_df = _df(
+            [
+                _master_row(
+                    sub_device="Pro", model="iPhone 13 Pro"
+                ),
+                _master_row(
+                    sub_device="Pro Max",
+                    model="iPhone 13 Pro Max",
+                ),
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device=None, model="iPhone 13 Pro Max"
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertNotIn("Sub-device", row["unknown_fields"])
+        self.assertEqual(
+            result["canonical_df"].iloc[0]["Sub-device"], "pro max"
+        )
+
+    def test_genuine_tie_between_equally_specific_candidates_stays_unknown(
+        self,
+    ):
+        # Two candidates of equal specificity, neither a subset of
+        # the other ("special edition" vs "deluxe edition" -- same
+        # word count, no containment relationship) must still fall
+        # back to Unknown. The specificity fix only ever resolves a
+        # candidate that strictly subsumes another; it must never
+        # guess between two unrelated, equally-specific candidates.
+        master_df = _df(
+            [
+                _master_row(
+                    sub_device="Special Edition",
+                    model="iPhone Special Edition",
+                ),
+                _master_row(
+                    sub_device="Deluxe Edition",
+                    model="iPhone Deluxe Edition",
+                ),
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device=None,
+                    model="iPhone Special Edition Deluxe Edition",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertIn("Sub-device", row["unknown_fields"])
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "needs_review")
+
+    def test_build_row_search_text_accepts_a_pandas_series(self):
+        # Direct regression test for the `.values()` crash: the
+        # real call site always passes a pandas Series, never a
+        # plain dict.
+        row = pd.Series(
+            {
+                "Device": "iPhone",
+                "Standardized Model": "iPhone 13 Mini",
+                "Sub-device": None,
+            }
+        )
+        text = bi.build_row_search_text(row)
+        self.assertIn("mini", text)
+
+
 class TestNewClassification(unittest.TestCase):
     def test_no_master_counterpart_is_new(self):
         master_df = _df([])
