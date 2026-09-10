@@ -192,6 +192,7 @@ COLUMN_SYNONYMS = {
     "Model Number": [
         "model number",
         "model no",
+        "model no.",
         "model num",
         "part number",
         "part no",
@@ -210,7 +211,6 @@ COLUMN_SYNONYMS = {
     ],
     "Retail Price": [
         "retail price",
-        "price",
         "msrp",
         "retail",
         "sell price",
@@ -246,6 +246,7 @@ COLUMN_SYNONYMS = {
         "buyback price",
         "trade value",
         "max. trade-in value (rm)",
+        "price",
     ],
     "Model_Year": [
         "year",
@@ -267,6 +268,8 @@ COLUMN_SYNONYMS = {
         "charging method",
         "charging",
         "charging case",
+        "specification",
+        "specifications",
     ],
 }
 
@@ -859,6 +862,7 @@ def extract_apple_model_identity(model_text):
             "variant": None,
             "generations": set(),
             "model_designations": set(),
+            "screen_sizes": set(),
             "identity_tokens": set(),
         }
 
@@ -887,6 +891,7 @@ def extract_apple_model_identity(model_text):
     variants = set()
     generations = set()
     model_designations = set()
+    screen_sizes = set()
 
     for token in tokens:
         if token in _VARIANT_TOKENS:
@@ -912,6 +917,18 @@ def extract_apple_model_identity(model_text):
                     f"{match.group(1)}{match.group(2)}"
                 )
 
+    # Physical screen/display size is part of model identity.
+    # Examples:
+    #   "11-inch" -> "11"
+    #   "13-inch" -> "13"
+    # This prevents otherwise-similar configurations such as
+    # iPad Air 11-inch and iPad Air 13-inch from matching.
+    for match in re.finditer(
+        r"\b(\d+(?:\.\d+)?)\s*[- ]?inch\b",
+        text,
+    ):
+        screen_sizes.add(match.group(1))
+
     identity_tokens = set(tokens)
 
     return {
@@ -919,6 +936,7 @@ def extract_apple_model_identity(model_text):
         "variant": " ".join(sorted(variants)) if variants else None,
         "generations": generations,
         "model_designations": model_designations,
+        "screen_sizes": screen_sizes,
         "identity_tokens": identity_tokens,
     }
 
@@ -979,6 +997,24 @@ def model_identity_conflict(incoming_model, master_model):
         and master["model_designations"]
         and incoming["model_designations"].isdisjoint(
             master["model_designations"]
+        )
+    ):
+        return True
+
+    # Physical screen/display size is a hard model-identity distinction
+    # when both sides explicitly provide a size.
+    #
+    # Examples:
+    #   13-inch vs 11-inch -> conflict
+    #   11-inch vs 11-inch -> compatible
+    #
+    # This prevents models such as iPad Air 13-inch and iPad Air
+    # 11-inch from being treated as the same configuration.
+    if (
+        incoming["screen_sizes"]
+        and master["screen_sizes"]
+        and incoming["screen_sizes"].isdisjoint(
+            master["screen_sizes"]
         )
     ):
         return True
@@ -1958,6 +1994,13 @@ def compare_master_relevant_fields(
 
     Non-applicable device fields are ignored.
 
+    Retail Price special rule:
+        - If incoming Retail Price is supplied, compare it normally.
+        - If incoming Retail Price is missing, use the Master's
+          Retail Price as the effective incoming value.
+        - Missing incoming Retail Price therefore does NOT create
+          an Unknown or a difference.
+
     Returns:
         {
             "exact": bool,
@@ -1972,6 +2015,30 @@ def compare_master_relevant_fields(
 
     for field in DUPLICATE_FIELDS:
         if not is_field_applicable(device, field):
+            continue
+
+        # ----------------------------------------------------
+        # Retail Price is optional in incoming uploads.
+        #
+        # If the incoming source did not provide a Retail Price,
+        # inherit the Master's Retail Price for comparison.
+        # ----------------------------------------------------
+        if field == "Retail Price":
+            incoming = incoming_norm.get("retail_price")
+            master = master_norm.get("retail_price")
+
+            if _is_unknown(incoming):
+                if _is_unknown(master):
+                    unknown_fields.append(field)
+                continue
+
+            if _is_unknown(master):
+                unknown_fields.append(field)
+                continue
+
+            if incoming != master:
+                different_fields.append(field)
+
             continue
 
         equal = _values_equal(
@@ -2299,6 +2366,35 @@ def classify_incoming_row(
     )
 
     multi_match = len(candidates) > 1
+
+    # --------------------------------------------------------
+    # 4a. Retail Price inheritance.
+    #
+    # Incoming datasets may omit Retail Price entirely because
+    # their generic "Price" field represents Trade-In Value.
+    #
+    # If the incoming Retail Price is missing, inherit the
+    # selected Master's Retail Price. This prevents a missing
+    # source value from being treated as a change.
+    #
+    # An explicitly supplied Retail Price is never overwritten.
+    # --------------------------------------------------------
+    incoming_retail_price = incoming_norm.get("retail_price")
+    master_retail_price = best_candidate["norm"].get(
+        "retail_price"
+    )
+
+    if (
+        _is_unknown(incoming_retail_price)
+        and not _is_unknown(master_retail_price)
+    ):
+        incoming_norm["retail_price"] = master_retail_price
+
+        # Keep the canonical incoming row consistent with the
+        # effective value used for classification.
+        incoming_row_canonical["Retail Price"] = (
+            master_retail_price
+        )
 
     incoming_master_comparison = configuration_matches(
         incoming_norm,
@@ -3054,6 +3150,9 @@ def analyze_upload(
     # loop assigns gets recorded here.
     inferred_fields = set()
 
+    canonical_df["Device"] = canonical_df["Device"].astype(object)
+    canonical_df["Sub-device"] = canonical_df["Sub-device"].astype(object)
+
     for index in canonical_df.index:
         row = canonical_df.loc[index]
 
@@ -3190,6 +3289,17 @@ def analyze_upload(
                 master_device_by_index=master_device_by_index,
                 master_provider_by_index=master_provider_by_index,
             )
+
+            # The classifier may enrich the canonical incoming row
+            # with inherited values, such as Retail Price from the
+            # selected Master counterpart. Persist those mutations
+            # back into canonical_df so previews and downstream
+            # consumers see the same effective incoming data used
+            # during classification.
+            canonical_df.loc[
+                index,
+                "Retail Price",
+            ] = row.get("Retail Price")
 
         classification = classification_result[
             "classification"
