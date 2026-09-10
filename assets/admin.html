@@ -1721,6 +1721,7 @@
 			const summary = data.summary || {};
 			const rows = data.rows || [];
 			const totalRows = rows.length;
+
 			// -------------------------------------------------
 			// META LINE
 			// -------------------------------------------------
@@ -1729,95 +1730,359 @@
 				`${meta.dateModeLabel || "Date"}: ${meta.dateValue || "—"}`,
 				`File: ${meta.filename}`
 			];
-			document.getElementById("bulk-import-meta").textContent = metaParts.join("  •  ");
+
+			document.getElementById("bulk-import-meta").textContent =
+				metaParts.join("  •  ");
+
 			// -------------------------------------------------
 			// SUMMARY CHIPS
 			// -------------------------------------------------
 			const summaryOrder = ["new", "update", "conflict"];
+
 			let summaryHTML = `
 				<div class="bulk-import-summary-item total">
 					<span class="bulk-import-summary-count">${totalRows}</span>
 					<span class="bulk-import-summary-label">Total Rows</span>
 				</div>
 			`;
+
 			summaryOrder.forEach(key => {
 				const count = summary[key] || 0;
+
 				summaryHTML += `
 					<div class="bulk-import-summary-item status-${key}">
 						<span class="bulk-import-summary-count">${count}</span>
-						<span class="bulk-import-summary-label">${BULK_IMPORT_STATUS_LABELS[key]}</span>
+						<span class="bulk-import-summary-label">
+							${BULK_IMPORT_STATUS_LABELS[key]}
+						</span>
 					</div>
 				`;
 			});
-			document.getElementById("bulk-import-summary").innerHTML = summaryHTML;
+
+			document.getElementById("bulk-import-summary").innerHTML =
+				summaryHTML;
+
+			// -------------------------------------------------
+			// CONFLICT BREAKDOWN
+			// -------------------------------------------------
+			const conflictCount = summary.conflict || 0;
+
+			const conflictBreakdown = document.createElement("div");
+			conflictBreakdown.className = "bulk-import-conflict-breakdown";
+
+			const breakdownLabel = document.createElement("span");
+			breakdownLabel.className = "bulk-import-conflict-label";
+			breakdownLabel.textContent = "Conflict breakdown";
+
+			conflictBreakdown.appendChild(breakdownLabel);
+
+			[
+				["duplicate", "Duplicate"],
+				["needs_review", "Needs Review"],
+				["invalid_data", "Invalid Data"]
+			].forEach(([key, label]) => {
+				let count = 0;
+
+				rows.forEach(row => {
+					if (
+						row.classification === "conflict" &&
+						row.conflict_type === key
+					) {
+						count++;
+					}
+				});
+
+				const item = document.createElement("span");
+				item.className = "bulk-import-conflict-item";
+
+				const countElement = document.createElement("strong");
+				countElement.textContent = count;
+
+				item.appendChild(countElement);
+				item.appendChild(
+					document.createTextNode(` ${label}`)
+				);
+
+				conflictBreakdown.appendChild(item);
+			});
+
+			// Replace any previous breakdown.
+			const existingBreakdown =
+				document.querySelector(".bulk-import-conflict-breakdown");
+
+			if (existingBreakdown) {
+				existingBreakdown.remove();
+			}
+
+			const summaryElement =
+				document.getElementById("bulk-import-summary");
+
+			summaryElement.insertAdjacentElement(
+				"afterend",
+				conflictBreakdown
+			);
+
 			// -------------------------------------------------
 			// UNMAPPED COLUMNS NOTICE
 			// -------------------------------------------------
-			const unmappedNotice = document.getElementById("bulk-import-unmapped-notice");
+			const unmappedNotice =
+				document.getElementById("bulk-import-unmapped-notice");
+
 			const unmapped = data.unmapped_raw_columns || [];
+
 			if (unmapped.length > 0) {
-				document.getElementById("bulk-import-unmapped-text").textContent = unmapped.join(", ");
+				document.getElementById(
+					"bulk-import-unmapped-text"
+				).textContent = unmapped.join(", ");
+
 				unmappedNotice.classList.remove("hidden");
 			} else {
 				unmappedNotice.classList.add("hidden");
 			}
+
 			// -------------------------------------------------
-			// TABLE — columns = original uploaded columns (Provider
-			// included, since it was stamped onto the parsed rows
-			// before analysis) + Status + Edit action.
+			// FILTER BAR
 			// -------------------------------------------------
-			const rawColumns = totalRows > 0 ? Object.keys(rows[0].raw || {}) : [];
+			const existingFilters =
+				document.querySelector(".bulk-import-filters");
+
+			if (existingFilters) {
+				existingFilters.remove();
+			}
+
+			const filters = document.createElement("div");
+			filters.className = "bulk-import-filters";
+
+			const filterDefinitions = [
+				["all", `All ${totalRows}`],
+				["new", `New ${summary.new || 0}`],
+				["update", `Update ${summary.update || 0}`],
+				["conflict", `Conflict ${conflictCount}`]
+			];
+
+			filterDefinitions.forEach(([filter, label], index) => {
+				const button = document.createElement("button");
+
+				button.type = "button";
+				button.className =
+					"bulk-import-filter" +
+					(index === 0 ? " active" : "");
+
+				button.dataset.filter = filter;
+				button.textContent = label;
+
+				filters.appendChild(button);
+			});
+
+			const tableWrapper =
+				document.querySelector(".bulk-import-table-wrapper");
+
+			tableWrapper.insertAdjacentElement(
+				"beforebegin",
+				filters
+			);
+
+			// -------------------------------------------------
+			// TABLE — original uploaded columns + Status + Details
+			// -------------------------------------------------
+			const rawColumns =
+				totalRows > 0
+					? Object.keys(rows[0].raw || {})
+					: [];
+
 			let headHTML = "<tr>";
+
 			rawColumns.forEach(col => {
 				headHTML += `<th>${col}</th>`;
 			});
+
 			headHTML += "<th>Status</th><th></th></tr>";
-			document.getElementById("bulk-import-table-head").innerHTML = headHTML;
+
+			document.getElementById(
+				"bulk-import-table-head"
+			).innerHTML = headHTML;
+
 			let bodyHTML = "";
+
 			rows.forEach(row => {
 				const status = row.classification || "conflict";
 				const conflictType = row.conflict_type || null;
 
-				let statusLabel = BULK_IMPORT_STATUS_LABELS[status] || status;
+				let statusLabel =
+					BULK_IMPORT_STATUS_LABELS[status] || status;
 
 				if (status === "conflict" && conflictType) {
-					statusLabel = BULK_IMPORT_STATUS_LABELS[conflictType] || conflictType;
+					statusLabel =
+						BULK_IMPORT_STATUS_LABELS[conflictType] ||
+						conflictType;
 				}
 
-				bodyHTML += "<tr>";
+				bodyHTML += `
+					<tr data-classification="${status}"
+						data-conflict-type="${conflictType || ""}">
+				`;
 
 				rawColumns.forEach(col => {
-					const value = row.raw ? row.raw[col] : null;
-					bodyHTML += `<td>${value === null || value === undefined ? "—" : value}</td>`;
+					const value = row.raw
+						? row.raw[col]
+						: null;
+
+					bodyHTML += `
+						<td>
+							${
+								value === null ||
+								value === undefined ||
+								value === ""
+									? "—"
+									: value
+							}
+						</td>
+					`;
 				});
 
-				bodyHTML += `<td><span class="status-badge status-${status}">${statusLabel}</span></td>`;
+				bodyHTML += `
+					<td>
+						<span class="status-badge status-${status}">
+							${statusLabel}
+						</span>
+					</td>
+				`;
 
-				if (status !== "conflict" || conflictType !== "duplicate") {
-					bodyHTML += `<td><button type="button" class="bulk-import-edit-row secondary" data-row-index="${row.row_index}"> Edit Row </button></td>`;
-				} else {
-					bodyHTML += "<td></td>";
-				}
+				bodyHTML += `
+					<td>
+						<button
+							type="button"
+							class="bulk-import-view-row secondary"
+							data-row-index="${row.row_index}">
+							View
+						</button>
+					</td>
+				`;
 
 				bodyHTML += "</tr>";
 			});
-			document.getElementById("bulk-import-table-body").innerHTML = bodyHTML;
-			document.querySelectorAll(".bulk-import-edit-row").forEach(button => {
-				button.addEventListener("click", () => {
-					showAdminToast("Manual row editing will be available in a later step.", "warning");
+
+			document.getElementById(
+				"bulk-import-table-body"
+			).innerHTML = bodyHTML;
+
+			// -------------------------------------------------
+			// FILTER BEHAVIOR
+			// -------------------------------------------------
+			document
+				.querySelectorAll(".bulk-import-filter")
+				.forEach(button => {
+					button.addEventListener("click", () => {
+						const filter = button.dataset.filter;
+
+						document
+							.querySelectorAll(".bulk-import-filter")
+							.forEach(item => {
+								item.classList.toggle(
+									"active",
+									item === button
+								);
+							});
+
+						document
+							.querySelectorAll(
+								"#bulk-import-table-body tr"
+							)
+							.forEach(row => {
+								const classification =
+									row.dataset.classification;
+
+								const conflictType =
+									row.dataset.conflictType;
+
+								let visible = true;
+
+								if (filter === "new") {
+									visible =
+										classification === "new";
+								} else if (filter === "update") {
+									visible =
+										classification === "update";
+								} else if (filter === "conflict") {
+									visible =
+										classification === "conflict";
+								}
+
+								// All = everything.
+								if (filter === "all") {
+									visible = true;
+								}
+
+								row.style.display =
+									visible ? "" : "none";
+							});
+					});
 				});
-			});
+
+			// -------------------------------------------------
+			// VIEW ROW — TEMPORARY DETAIL OUTPUT
+			// -------------------------------------------------
+			document
+				.querySelectorAll(".bulk-import-view-row")
+				.forEach(button => {
+					button.addEventListener("click", () => {
+						const rowIndex =
+							Number(button.dataset.rowIndex);
+
+						const row = rows.find(
+							item => item.row_index === rowIndex
+						);
+
+						if (!row) {
+							return;
+						}
+
+						const reasonText =
+							Array.isArray(row.reasons) &&
+							row.reasons.length > 0
+								? row.reasons.join("\n")
+								: "No additional reason provided.";
+
+						const unknownText =
+							Array.isArray(row.unknown_fields) &&
+							row.unknown_fields.length > 0
+								? row.unknown_fields.join(", ")
+								: "None";
+
+						const differentText =
+							Array.isArray(row.different_fields) &&
+							row.different_fields.length > 0
+								? row.different_fields.join(", ")
+								: "None";
+
+						showAdminToast(
+							`${BULK_IMPORT_STATUS_LABELS[
+								row.conflict_type || row.classification
+							] || row.classification}\n\n` +
+							`Reason: ${reasonText}\n` +
+							`Unknown fields: ${unknownText}\n` +
+							`Different fields: ${differentText}\n` +
+							`Match confidence: ${
+								row.match_confidence !== null &&
+								row.match_confidence !== undefined
+									? `${Math.round(
+										row.match_confidence * 100
+									)}%`
+									: "—"
+							}`,
+							"warning"
+						);
+					});
+				});
+
 			lockBackgroundScroll();
-			document.getElementById("bulk-import-modal").classList.remove("hidden");
-		}
-		document.getElementById("bulk-import-close-button").addEventListener("click", () => {
-			document.getElementById("bulk-import-modal").classList.add("hidden");
-			unlockBackgroundScroll();
-		});
-		document.getElementById("bulk-import-close-footer").addEventListener("click", () => {
-			document.getElementById("bulk-import-modal").classList.add("hidden");
-			unlockBackgroundScroll();
-		});
+
+			document
+				.getElementById("bulk-import-modal")
+				.classList.remove("hidden");
+
+			}
+
 		// ====================================================
 		// MODIFY — LOAD MODELS
 		// ====================================================
