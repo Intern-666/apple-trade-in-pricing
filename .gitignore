@@ -5,4 +5,3 @@ __pycache__/
 .gitignore
 internal/service_account.json
 .env
-data/master_msrp.csv
