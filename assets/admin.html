@@ -227,6 +227,82 @@
 						<button type="button" id="bulk-import-close-footer" class="secondary"> Close </button>
 					</div>
 				</div>
+				<!-- =================================================
+					BULK IMPORT ROW DETAIL MODAL
+					================================================= -->
+				<div id="bulk-import-row-detail-modal" class="hidden">
+					<div class="bulk-import-row-detail-box">
+
+						<button
+							type="button"
+							id="bulk-import-row-detail-close"
+							class="modify-close-button">
+							×
+						</button>
+
+						<div class="modify-modal-title">
+							Import Review
+						</div>
+
+						<div class="bulk-import-detail-heading">
+							<div>
+								<div
+									id="bulk-import-detail-model"
+									class="bulk-import-detail-model">
+									Device
+								</div>
+
+								<div class="bulk-import-detail-subtitle">
+									Incoming row compared with the existing database
+								</div>
+							</div>
+
+							<span
+								id="bulk-import-detail-status"
+								class="status-badge">
+								Review
+							</span>
+						</div>
+
+						<div class="bulk-import-detail-columns">
+
+							<!-- INCOMING -->
+							<section class="bulk-import-detail-card">
+								<h3>Incoming information</h3>
+
+								<div
+									id="bulk-import-detail-incoming"
+									class="bulk-import-detail-fields">
+								</div>
+							</section>
+
+							<!-- MASTER -->
+							<section class="bulk-import-detail-card">
+								<h3>Existing database record</h3>
+
+								<div
+									id="bulk-import-detail-master"
+									class="bulk-import-detail-fields">
+								</div>
+							</section>
+
+						</div>
+
+						<div class="bulk-import-detail-explanation">
+							<div class="bulk-import-detail-explanation-title">
+								What this means
+							</div>
+
+							<p id="bulk-import-detail-explanation">
+								This row has been compared with the current
+								trade-in database.
+							</p>
+						</div>
+
+					</div>
+				</div>
+
+
 			</div>
 			<!-- =================================================
              MODIFY
@@ -1713,10 +1789,12 @@
 			}
 			document.body.classList.add("bulk-import-scroll-lock");
 		}
+
 		function unlockBackgroundScroll() {
 			document.body.classList.remove("bulk-import-scroll-lock");
 			document.body.style.paddingRight = "";
 		}
+
 		function renderBulkImportPreview(data, meta) {
 			const summary = data.summary || {};
 			const rows = data.rows || [];
@@ -1881,19 +1959,63 @@
 				"beforebegin",
 				filters
 			);
-
 			// -------------------------------------------------
-			// TABLE — original uploaded columns + Status + Details
+			// TABLE — Model + Trade-In Value first, then uploaded columns
 			// -------------------------------------------------
 			const rawColumns =
 				totalRows > 0
-					? Object.keys(rows[0].raw || {})
+					? Object.keys(rows[0].incoming_row || {})
 					: [];
+
+			// Prefer these columns at the front of the preview.
+			// Support common incoming column names.
+			const modelColumn =
+				rawColumns.find(col =>
+					[
+						"Standardized Model",
+						"Model",
+						"Model Name"
+					].includes(col)
+				) || null;
+
+			const tradeInColumn =
+				rawColumns.find(col =>
+					[
+						"Max. Trade-In Value (RM)",
+						"Trade-In Value",
+						"Trade-In Price",
+						"Price"
+					].includes(col)
+				) || null;
+
+			const priorityColumns = [
+				modelColumn,
+				tradeInColumn
+			].filter(Boolean);
+
+			const remainingColumns = rawColumns.filter(
+				col => !priorityColumns.includes(col)
+			);
+
+			const displayColumns = [
+				...priorityColumns,
+				...remainingColumns
+			];
 
 			let headHTML = "<tr>";
 
-			rawColumns.forEach(col => {
-				headHTML += `<th>${col}</th>`;
+			displayColumns.forEach(col => {
+				let label = col;
+
+				if (col === tradeInColumn) {
+					label = "Trade-In Value";
+				}
+
+				if (col === modelColumn) {
+					label = "Model";
+				}
+
+				headHTML += `<th>${label}</th>`;
 			});
 
 			headHTML += "<th>Status</th><th></th></tr>";
@@ -1918,25 +2040,49 @@
 				}
 
 				bodyHTML += `
-					<tr data-classification="${status}"
+					<tr
+						data-classification="${status}"
 						data-conflict-type="${conflictType || ""}">
 				`;
 
-				rawColumns.forEach(col => {
-					const value = row.raw
-						? row.raw[col]
+				displayColumns.forEach(col => {
+					const value = row.incoming_row
+						? row.incoming_row[col]
 						: null;
 
+					let displayValue =
+						value === null ||
+						value === undefined ||
+						value === ""
+							? "—"
+							: value;
+
+					// Make the trade-in value visually clearer.
+					if (
+						col === tradeInColumn &&
+						displayValue !== "—"
+					) {
+						const numericValue = Number(
+							String(displayValue)
+								.replace(/RM/gi, "")
+								.replace(/,/g, "")
+								.trim()
+						);
+
+						if (!Number.isNaN(numericValue)) {
+							displayValue =
+								`RM ${numericValue.toLocaleString(
+									"en-MY",
+									{
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2
+									}
+								)}`;
+						}
+					}
+
 					bodyHTML += `
-						<td>
-							${
-								value === null ||
-								value === undefined ||
-								value === ""
-									? "—"
-									: value
-							}
-						</td>
+						<td>${displayValue}</td>
 					`;
 				});
 
@@ -1966,6 +2112,7 @@
 				"bulk-import-table-body"
 			).innerHTML = bodyHTML;
 
+
 			// -------------------------------------------------
 			// FILTER BEHAVIOR
 			// -------------------------------------------------
@@ -1992,9 +2139,6 @@
 								const classification =
 									row.dataset.classification;
 
-								const conflictType =
-									row.dataset.conflictType;
-
 								let visible = true;
 
 								if (filter === "new") {
@@ -2008,19 +2152,15 @@
 										classification === "conflict";
 								}
 
-								// All = everything.
-								if (filter === "all") {
-									visible = true;
-								}
-
 								row.style.display =
 									visible ? "" : "none";
 							});
 					});
 				});
 
+
 			// -------------------------------------------------
-			// VIEW ROW — TEMPORARY DETAIL OUTPUT
+			// VIEW ROW — OPEN DETAIL MODAL
 			// -------------------------------------------------
 			document
 				.querySelectorAll(".bulk-import-view-row")
@@ -2037,41 +2177,8 @@
 							return;
 						}
 
-						const reasonText =
-							Array.isArray(row.reasons) &&
-							row.reasons.length > 0
-								? row.reasons.join("\n")
-								: "No additional reason provided.";
-
-						const unknownText =
-							Array.isArray(row.unknown_fields) &&
-							row.unknown_fields.length > 0
-								? row.unknown_fields.join(", ")
-								: "None";
-
-						const differentText =
-							Array.isArray(row.different_fields) &&
-							row.different_fields.length > 0
-								? row.different_fields.join(", ")
-								: "None";
-
-						showAdminToast(
-							`${BULK_IMPORT_STATUS_LABELS[
-								row.conflict_type || row.classification
-							] || row.classification}\n\n` +
-							`Reason: ${reasonText}\n` +
-							`Unknown fields: ${unknownText}\n` +
-							`Different fields: ${differentText}\n` +
-							`Match confidence: ${
-								row.match_confidence !== null &&
-								row.match_confidence !== undefined
-									? `${Math.round(
-										row.match_confidence * 100
-									)}%`
-									: "—"
-							}`,
-							"warning"
-						);
+						console.log("BULK IMPORT ROW:", row);
+						openBulkImportRowDetail(row);
 					});
 				});
 
@@ -2080,8 +2187,296 @@
 			document
 				.getElementById("bulk-import-modal")
 				.classList.remove("hidden");
-
 			}
+
+		// ====================================================
+		// BULK IMPORT — ROW DETAIL MODAL
+		// ====================================================
+		function openBulkImportRowDetail(row) {
+			const modal =
+				document.getElementById("bulk-import-row-detail-modal");
+
+			const incoming = row.incoming_row || {};
+
+			// -------------------------------------------------
+			// STATUS
+			// -------------------------------------------------
+			const statusKey =
+				row.conflict_type || row.classification;
+
+			const statusLabel =
+				BULK_IMPORT_STATUS_LABELS[statusKey] ||
+				"Review";
+
+			const statusElement =
+				document.getElementById("bulk-import-detail-status");
+
+			statusElement.textContent = statusLabel;
+			statusElement.className =
+				`status-badge status-${row.classification || "conflict"}`;
+
+			// -------------------------------------------------
+			// MODEL TITLE
+			// -------------------------------------------------
+			const model =
+				incoming["Standardized Model"] ||
+				incoming["Model"] ||
+				incoming["Model Name"] ||
+				"Unnamed device";
+
+			document.getElementById(
+				"bulk-import-detail-model"
+			).textContent = model;
+
+			// -------------------------------------------------
+			// INCOMING INFORMATION
+			// -------------------------------------------------
+			const incomingContainer =
+				document.getElementById(
+					"bulk-import-detail-incoming"
+				);
+
+			incomingContainer.innerHTML = "";
+
+			const incomingFields = [
+				["Device", "Device"],
+				["Sub-device", "Sub-device"],
+				["Model", "Standardized Model"],
+				["Model Number", "Model Number"],
+				["Storage", "Storage (GB)"],
+				["Storage Type", "Storage Type"],
+				["Connectivity", "Connectivity"],
+				["Provider", "Provider"],
+				["Trade-in value", "Max. Trade-In Value (RM)"]
+			];
+
+			incomingFields.forEach(([label, key]) => {
+				let value = incoming[key];
+
+				if (
+					value === null ||
+					value === undefined ||
+					value === ""
+				) {
+					value = "Not provided";
+				}
+
+				if (
+					key === "Max. Trade-In Value (RM)" &&
+					value !== "Not provided"
+				) {
+					const numericValue = Number(
+						String(value)
+							.replace(/RM/gi, "")
+							.replace(/,/g, "")
+							.trim()
+					);
+
+					if (!Number.isNaN(numericValue)) {
+						value =
+							`RM ${numericValue.toLocaleString(
+								"en-MY",
+								{
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2
+								}
+							)}`;
+					}
+				}
+
+				if (key === "Storage (GB)" && value !== "Not provided") {
+					value = `${value} GB`;
+				}
+
+				const item = document.createElement("div");
+				item.className =
+					"bulk-import-detail-field";
+
+				item.innerHTML = `
+					<span class="bulk-import-detail-field-label">
+						${label}
+					</span>
+					<span class="bulk-import-detail-field-value">
+						${value}
+					</span>
+				`;
+
+				incomingContainer.appendChild(item);
+			});
+
+			// -------------------------------------------------
+			// MASTER INFORMATION
+			// -------------------------------------------------
+			const masterContainer =
+				document.getElementById(
+					"bulk-import-detail-master"
+				);
+
+			masterContainer.innerHTML = "";
+
+			/*
+			* The backend needs to provide the actual matched
+			* Master row for this section.
+			*
+			* Expected shape:
+			*
+			* row.matched_master = {
+			*     "Device": "...",
+			*     "Sub-device": "...",
+			*     "Standardized Model": "...",
+			*     ...
+			* }
+			*/
+
+			const master = row.matched_master || null;
+
+			if (master) {
+				const masterFields = [
+					["Device", "Device"],
+					["Sub-device", "Sub-device"],
+					["Model", "Standardized Model"],
+					["Model Number", "Model Number"],
+					["Storage", "Storage (GB)"],
+					["Storage Type", "Storage Type"],
+					["Connectivity", "Connectivity"],
+					["Provider", "Provider"],
+					["Trade-in value", "Max. Trade-In Value (RM)"]
+				];
+
+				masterFields.forEach(([label, key]) => {
+					let value = master[key];
+
+					if (
+						value === null ||
+						value === undefined ||
+						value === ""
+					) {
+						value = "Not provided";
+					}
+
+					if (
+						key === "Max. Trade-In Value (RM)" &&
+						value !== "Not provided"
+					) {
+						const numericValue = Number(
+							String(value)
+								.replace(/RM/gi, "")
+								.replace(/,/g, "")
+								.trim()
+						);
+
+						if (!Number.isNaN(numericValue)) {
+							value =
+								`RM ${numericValue.toLocaleString(
+									"en-MY",
+									{
+										minimumFractionDigits: 2,
+										maximumFractionDigits: 2
+									}
+								)}`;
+						}
+					}
+
+					if (
+						key === "Storage (GB)" &&
+						value !== "Not provided"
+					) {
+						value = `${value} GB`;
+					}
+
+					const item = document.createElement("div");
+					item.className =
+						"bulk-import-detail-field";
+
+					item.innerHTML = `
+						<span class="bulk-import-detail-field-label">
+							${label}
+						</span>
+						<span class="bulk-import-detail-field-value">
+							${value}
+						</span>
+					`;
+
+					masterContainer.appendChild(item);
+				});
+			} else {
+				masterContainer.innerHTML = `
+					<div class="bulk-import-detail-empty">
+						The existing database record could not be
+						displayed for this preview.
+					</div>
+				`;
+			}
+
+			// -------------------------------------------------
+			// HUMAN-READABLE EXPLANATION
+			// -------------------------------------------------
+			const explanation =
+				document.getElementById(
+					"bulk-import-detail-explanation"
+				);
+
+			let explanationText =
+				"This row has been compared with the current trade-in database.";
+
+			if (row.classification === "new") {
+				explanationText =
+					"No matching provider record currently exists for this device, so this row can be added as a new entry.";
+			} else if (row.classification === "update") {
+				explanationText =
+					"This device already exists in the database, but some information has changed and may require an update.";
+			} else if (
+				row.classification === "conflict"
+			) {
+				if (row.conflict_type === "duplicate") {
+					explanationText =
+						"This row matches an existing record with the same information, so it is already represented in the database.";
+				} else if (
+					row.conflict_type === "needs_review"
+				) {
+					explanationText =
+						"This device matches an existing record, but some information could not be confirmed automatically and should be reviewed.";
+				} else if (
+					row.conflict_type === "invalid_data"
+				) {
+					explanationText =
+						"Some information in this uploaded row does not match the expected format and needs to be corrected.";
+				}
+			}
+
+			explanation.textContent = explanationText;
+
+			// -------------------------------------------------
+			// OPEN
+			// -------------------------------------------------
+			modal.classList.remove("hidden");
+		}
+
+
+		// ====================================================
+		// BULK IMPORT — ROW DETAIL MODAL CLOSE
+		// ====================================================
+		document
+			.getElementById("bulk-import-row-detail-close")
+			.addEventListener("click", () => {
+				document
+					.getElementById(
+						"bulk-import-row-detail-modal"
+					)
+					.classList.add("hidden");
+			});
+
+		document
+			.getElementById("bulk-import-row-detail-modal")
+			.addEventListener("click", event => {
+				if (
+					event.target.id ===
+					"bulk-import-row-detail-modal"
+				) {
+					event.currentTarget.classList.add("hidden");
+				}
+			});
+
 
 		// ====================================================
 		// MODIFY — LOAD MODELS

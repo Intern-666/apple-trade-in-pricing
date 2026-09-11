@@ -475,6 +475,26 @@ def build_row_search_text(raw_row):
 
     return normalize_text(" ".join(parts)) or ""
 
+def infer_model_year_from_text(value):
+    """
+    Extract a 4-digit model year from model text.
+
+    Examples:
+      "MacBook Air i5 1.6GHz 13 inch (Mid 2019)" -> 2019
+      "MacBook Air i3 1.1GHz 13 inch (Early 2020)" -> 2020
+
+    Returns None when no plausible year is present.
+    """
+    if _is_blank(value):
+        return None
+
+    text = str(value)
+
+    match = re.search(r"\b(20\d{2})\b", text)
+    if not match:
+        return None
+
+    return int(match.group(1))
 
 def infer_device_subdevice(row_text, vocabulary):
     """
@@ -706,6 +726,130 @@ def normalize_model_numbers(value):
 
 
 # ============================================================
+# MODEL NUMBER -> SUB-DEVICE INFERENCE
+#
+# Supplements the generic keyword-based Sub-device inference
+# (infer_device_subdevice) for rows where the incoming text has
+# no recognizable Sub-device keyword at all (e.g. a plain
+# "iPhone 17" row with no "Pro"/"Plus"/etc token to match), by
+# using the authoritative Model Number -> Sub-device relationship
+# already present in Master, instead of assuming "no qualifier
+# means Standard".
+# ============================================================
+
+_TRUSTED_APPLE_MODEL_NUMBER_RE = re.compile(r"^A\d{4}$")
+
+
+def _is_trusted_apple_model_number(token):
+    """
+    Return True for a token that looks like a genuine Apple
+    regulatory model number: the letter "A" followed by exactly
+    four digits (e.g. "A2111", "A3258").
+
+    Master contains a handful of fictional/test rows with Model
+    Number values such as "2", "3", "Test123", or blank. None of
+    those match this shape, so they are never trusted as an
+    inference source -- without needing to special-case each
+    fictional value by name.
+    """
+    return bool(_TRUSTED_APPLE_MODEL_NUMBER_RE.match(token))
+
+
+def build_model_number_subdevice_map(master_df, device):
+    """
+    Build a trusted Model Number -> Sub-device mapping from Master
+    rows, scoped to a single Device.
+
+    Only Master rows whose Model Number tokens look like genuine
+    Apple regulatory model numbers (see
+    _is_trusted_apple_model_number) contribute to the mapping.
+    Master's fictional/test rows are therefore silently excluded
+    as inference sources, rather than trusted.
+
+    If trusted Master rows disagree about which Sub-device a given
+    Model Number token belongs to, that token is mapped to None so
+    downstream inference treats it as ambiguous rather than
+    guessing.
+
+    Scoped to iPhone only: this reuses the same "A" + four digits
+    regulatory model number shape that other Apple devices (iPad,
+    Mac, etc.) also use, so without this restriction it would
+    start influencing Sub-device inference -- and therefore
+    candidate matching -- for those other devices too, which is
+    outside what this inference was introduced to fix.
+    """
+    mapping = {}
+
+    if (
+        master_df is None
+        or "Device" not in master_df.columns
+        or "Model Number" not in master_df.columns
+        or "Sub-device" not in master_df.columns
+    ):
+        return mapping
+
+    target_device = normalize_device_value(device)
+    if target_device != "iPhone":
+        return mapping
+
+    for _, master_row in master_df.iterrows():
+        if (
+            normalize_device_value(master_row.get("Device"))
+            != target_device
+        ):
+            continue
+
+        sub_device = master_row.get("Sub-device")
+        if _is_blank(sub_device):
+            continue
+
+        tokens = normalize_model_numbers(
+            master_row.get("Model Number")
+        )
+
+        for token in tokens:
+            if not _is_trusted_apple_model_number(token):
+                continue
+
+            if token not in mapping:
+                mapping[token] = sub_device
+            elif mapping[token] != sub_device:
+                mapping[token] = None
+
+    return mapping
+
+
+def infer_subdevice_from_model_numbers(
+    incoming_model_numbers,
+    model_number_map,
+):
+    """
+    Given the incoming row's normalized Model Number tokens and a
+    trusted Model Number -> Sub-device mapping (see
+    build_model_number_subdevice_map), return the single Sub-device
+    every matching, trusted token agrees on.
+
+    Returns None (leave Unknown) when no incoming token has a
+    trusted mapping, or when matching tokens disagree.
+    """
+    if not incoming_model_numbers or not model_number_map:
+        return None
+
+    matched_sub_devices = set()
+
+    for token in incoming_model_numbers:
+        sub_device = model_number_map.get(token)
+        if sub_device is None:
+            continue
+        matched_sub_devices.add(sub_device)
+
+    if len(matched_sub_devices) == 1:
+        return next(iter(matched_sub_devices))
+
+    return None
+
+
+# ============================================================
 # CONNECTIVITY NORMALIZATION
 # ============================================================
 
@@ -815,6 +959,160 @@ def extract_model_connectivity(model_text):
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
 
     return cleaned, connectivity
+
+
+# ============================================================
+# INCOMING ROW DISPLAY CANONICALIZATION
+#
+# Matching normalization (normalize_text, normalize_row_for_matching,
+# normalize_device_value, extract_model_connectivity, etc.) already
+# correctly resolves an incoming row's *meaning* for comparison
+# purposes -- but it only ever produces lowercase, comparison-safe
+# text, and that text is never written back to canonical_df. As a
+# result the incoming row an Admin actually sees/imports can retain
+# raw, inconsistently-cased, or provider-formatted values (e.g.
+# Device "Pad" instead of "iPad", Sub-device "ipad" instead of
+# "iPad", or a Standardized Model still carrying an embedded
+# connectivity suffix such as "iPad 7 Wi-Fi + Cellular" instead of
+# "iPad 7" with Connectivity populated separately).
+#
+# This section builds small Master-derived lookups from the same
+# normalized representation back to Master's own properly-cased
+# spelling, and canonicalize_incoming_row() below uses them to
+# rewrite ONLY the incoming row's own Device / Sub-device /
+# Standardized Model / Connectivity fields to that canonical
+# spelling. It never substitutes any other field (Provider,
+# Storage, Retail Price, Trade-In value, Model Number, ...) and it
+# never copies values from any *specific* matched Master row --
+# only the generic naming/casing convention Master uses across all
+# of its rows for a given Device.
+#
+# Lookups are scoped per-Device to avoid cross-device collisions
+# (for example a bare "cellular" token means something different
+# for an Apple Watch GPS + Cellular model than it would for an
+# iPad, so the two must not share one global lookup).
+# ============================================================
+
+def build_canonical_display_maps(master_df):
+    """
+    Build Master-derived (Device, normalized_value) -> canonical
+    display value lookups for Sub-device, Standardized Model (with
+    any embedded connectivity stripped, matching
+    extract_model_connectivity's comparison text), and Connectivity.
+    """
+    sub_device_map = {}
+    model_map = {}
+    connectivity_map = {}
+
+    if master_df is None or master_df.empty:
+        return {
+            "sub_device": sub_device_map,
+            "model": model_map,
+            "connectivity": connectivity_map,
+        }
+
+    for _, row in master_df.iterrows():
+        device = normalize_device_value(row.get("Device"))
+        if not device:
+            continue
+
+        raw_sub = row.get("Sub-device")
+        if not _is_blank(raw_sub):
+            normalized_sub = normalize_text(raw_sub)
+            if normalized_sub:
+                sub_device_map.setdefault((device, normalized_sub), raw_sub)
+
+        raw_model = row.get("Standardized Model")
+        if not _is_blank(raw_model):
+            model_text = normalize_text(raw_model)
+            model_text = strip_brand_words(model_text)
+            stripped_model, _ = extract_model_connectivity(model_text)
+            if stripped_model:
+                model_map.setdefault((device, stripped_model), raw_model)
+
+        raw_connectivity = row.get("Connectivity")
+        if not _is_blank(raw_connectivity):
+            normalized_connectivity = normalize_connectivity_value(
+                raw_connectivity
+            )
+            if normalized_connectivity:
+                connectivity_map.setdefault(
+                    (device, normalized_connectivity), raw_connectivity
+                )
+
+    return {
+        "sub_device": sub_device_map,
+        "model": model_map,
+        "connectivity": connectivity_map,
+    }
+
+
+def canonicalize_incoming_row_display_values(row, display_maps):
+    """
+    Given a canonical_df row (after Device/Sub-device inference has
+    already run), return the display-canonical values this row's
+    OWN Device, Sub-device, Standardized Model, and Connectivity
+    should have -- using Master's naming/casing conventions as the
+    source of truth, without altering the row's own factual
+    content (Provider, Storage, Retail Price, Trade-In value, etc.
+    are never touched here).
+
+    Returns a dict of only the fields that should be updated.
+    """
+    updates = {}
+
+    # --- Device: fix aliases/casing, e.g. "Pad" -> "iPad" ---
+    raw_device = row.get("Device")
+    canonical_device = normalize_device_value(raw_device)
+    if canonical_device and canonical_device != raw_device:
+        updates["Device"] = canonical_device
+
+    device_key = canonical_device or normalize_device_value(raw_device)
+
+    # --- Sub-device: fix casing using Master's own spelling ---
+    raw_sub = row.get("Sub-device")
+    if not _is_blank(raw_sub):
+        normalized_sub = normalize_text(raw_sub)
+        if normalized_sub:
+            canonical_sub = display_maps["sub_device"].get(
+                (device_key, normalized_sub)
+            )
+            if canonical_sub and canonical_sub != raw_sub:
+                updates["Sub-device"] = canonical_sub
+
+    # --- Standardized Model + Connectivity ---
+    raw_model = row.get("Standardized Model")
+    if not _is_blank(raw_model):
+        model_text = normalize_text(raw_model)
+        model_text = strip_brand_words(model_text)
+        stripped_model, embedded_connectivity = extract_model_connectivity(
+            model_text
+        )
+
+        canonical_model = display_maps["model"].get(
+            (device_key, stripped_model)
+        )
+        if canonical_model and canonical_model != raw_model:
+            updates["Standardized Model"] = canonical_model
+
+        raw_connectivity = row.get("Connectivity")
+        explicit_connectivity = normalize_connectivity_value(
+            raw_connectivity
+        )
+
+        connectivity_token = explicit_connectivity or embedded_connectivity
+
+        if connectivity_token:
+            canonical_connectivity = display_maps["connectivity"].get(
+                (device_key, connectivity_token)
+            )
+            if (
+                canonical_connectivity
+                and canonical_connectivity != raw_connectivity
+            ):
+                updates["Connectivity"] = canonical_connectivity
+
+    return updates
 
 
 # ============================================================
@@ -1631,6 +1929,179 @@ def _has_invalid_normalized_value(norm):
 
     return False
 
+def extract_mac_configuration(model_text):
+    """
+    Extract configuration-level details from Mac model text.
+
+    This is used only for candidate matching. It does not decide
+    the final business classification.
+
+    Examples of configuration differences this can detect:
+      - i3 vs i5 vs i7 vs i9
+      - 1.1GHz vs 1.2GHz
+      - M1 vs M2
+      - M1 Pro vs M1 Max
+      - 8-Core CPU vs 10-Core CPU
+      - 7-Core GPU vs 8-Core GPU
+      - 24-Core GPU vs 32-Core GPU
+    """
+    if _is_blank(model_text):
+        return {
+            "chip": None,
+            "cpu_tier": None,
+            "cpu_frequency": None,
+            "cpu_cores": None,
+            "gpu_cores": None,
+        }
+
+    text = normalize_text(model_text) or ""
+
+    chip = None
+    cpu_tier = None
+    cpu_frequency = None
+    cpu_cores = None
+    gpu_cores = None
+
+    # Apple Silicon chip/family.
+    #
+    # Examples:
+    #   M1
+    #   M1 Pro
+    #   M1 Max
+    #   M2
+    #   M2 Pro
+    #   M2 Max
+    chip_match = re.search(
+        r"\bm[1-4](?:\s+(?:pro|max|ultra))?\b",
+        text,
+    )
+
+    if chip_match:
+        chip = chip_match.group(0)
+
+    # Intel CPU tier.
+    #
+    # Examples:
+    #   i3
+    #   i5
+    #   i7
+    #   i9
+    cpu_tier_match = re.search(
+        r"\bi[3579]\b",
+        text,
+    )
+
+    if cpu_tier_match:
+        cpu_tier = cpu_tier_match.group(0)
+
+    # CPU frequency.
+    #
+    # Example:
+    #   1.1GHz -> 1.1
+    #   2.6GHz -> 2.6
+    frequency_match = re.search(
+        r"\b(\d+(?:\.\d+)?)\s*ghz\b",
+        text,
+    )
+
+    if frequency_match:
+        cpu_frequency = float(
+            frequency_match.group(1)
+        )
+
+    # CPU core count.
+    #
+    # Example:
+    #   8-Core CPU -> 8
+    #   10-Core CPU -> 10
+    cpu_core_match = re.search(
+        r"\b(\d+)\s*core\s+cpu\b",
+        text,
+    )
+
+    if cpu_core_match:
+        cpu_cores = int(
+            cpu_core_match.group(1)
+        )
+
+    # GPU core count.
+    #
+    # Example:
+    #   7-Core GPU -> 7
+    #   8-Core GPU -> 8
+    #   10-Core GPU -> 10
+    #   32-Core GPU -> 32
+    gpu_core_match = re.search(
+        r"\b(\d+)\s*core\s+gpu\b",
+        text,
+    )
+
+    if gpu_core_match:
+        gpu_cores = int(
+            gpu_core_match.group(1)
+        )
+
+    return {
+        "chip": chip,
+        "cpu_tier": cpu_tier,
+        "cpu_frequency": cpu_frequency,
+        "cpu_cores": cpu_cores,
+        "gpu_cores": gpu_cores,
+    }
+
+def _mac_configuration_match_score(
+    incoming_model,
+    master_model,
+):
+    """
+    Compare configuration-level Mac details extracted from
+    Standardized Model text.
+
+    Known matching attributes contribute positively.
+    A known disagreement contributes negatively by receiving
+    a zero for that attribute.
+
+    Missing information on either side is neutral.
+
+    Returns:
+        None when there is no comparable configuration data.
+        Otherwise a score from 0.0 to 1.0.
+    """
+    incoming = extract_mac_configuration(
+        incoming_model
+    )
+
+    master = extract_mac_configuration(
+        master_model
+    )
+
+    comparisons = [
+        "chip",
+        "cpu_tier",
+        "cpu_frequency",
+        "cpu_cores",
+        "gpu_cores",
+    ]
+
+    score = 0.0
+    weight = 0.0
+
+    for key in comparisons:
+        incoming_value = incoming.get(key)
+        master_value = master.get(key)
+
+        if incoming_value is None or master_value is None:
+            continue
+
+        weight += 1.0
+
+        if incoming_value == master_value:
+            score += 1.0
+
+    if weight == 0:
+        return None
+
+    return score / weight
 
 # ============================================================
 # MODEL MATCH SCORING
@@ -1686,10 +2157,37 @@ def _model_similarity(incoming_model, master_model):
     else:
         token_score = 0.0
 
-    return max(
+    generic_score = max(
         sequence_score,
         token_score,
     )
+
+    # --------------------------------------------------------
+    # Mac configuration-aware scoring.
+    #
+    # Generic text similarity is not sufficient for Mac models
+    # because materially different configurations can have nearly
+    # identical names.
+    #
+    # Example:
+    #   M2 / 8-core CPU / 8-core GPU
+    #   M2 / 8-core CPU / 10-core GPU
+    #
+    # The configuration score makes those differences meaningful
+    # during candidate selection.
+    # --------------------------------------------------------
+    configuration_score = _mac_configuration_match_score(
+        incoming,
+        master,
+    )
+
+    if configuration_score is not None:
+        return (
+            (generic_score * 0.60)
+            + (configuration_score * 0.40)
+        )
+
+    return generic_score
 
 
 def _structured_field_match_score(
@@ -2169,24 +2667,14 @@ def choose_reference_candidate(candidates, incoming_provider=None):
     """
     Select the Master row to use as the reference configuration.
 
-    Candidate discovery (find_master_candidates) deliberately does
-    NOT use Provider to find the underlying Apple configuration.
-    However, once candidates exist, a same-Provider candidate must
-    be preferred over Master file order: the incoming row should be
-    compared against its own Provider's existing entry whenever one
-    exists, per the established Provider sequence:
+    Candidate discovery does not use Provider as a hard filter.
 
-        Find Apple configuration candidates
-                ↓
-        Check Provider among those candidates
-                ↓
-        If same Provider exists, use that candidate
-                ↓
-        Compare/classify against that row
-
-    If no candidate shares the incoming Provider (or the incoming
-    Provider is Unknown), fall back to the previous behavior of
-    using the first suitable candidate in Master file order.
+    Selection priority:
+        1. Prefer candidates from the same Provider.
+        2. Within the same Provider group, choose the highest-confidence
+           candidate.
+        3. If no same-Provider candidate exists, choose the
+           highest-confidence candidate overall.
 
     Multiple matches remain internal only (multi_match).
     """
@@ -2207,15 +2695,15 @@ def choose_reference_candidate(candidates, incoming_provider=None):
         ]
 
         if same_provider_candidates:
-            # Among same-Provider candidates, prefer the one that
-            # best represents the same Apple configuration rather
-            # than simply the first in Master file order.
             return max(
                 same_provider_candidates,
                 key=lambda candidate: candidate["confidence"],
             )
 
-    return candidates[0]
+    return max(
+        candidates,
+        key=lambda candidate: candidate["confidence"],
+    )
 
 
 # ============================================================
@@ -2229,6 +2717,7 @@ def classify_incoming_row(
     master_norm_by_index,
     master_device_by_index,
     master_provider_by_index,
+    mapped_canonical_fields=None,
 ):
     """
     Classify one incoming row as exactly one of:
@@ -2277,6 +2766,10 @@ def classify_incoming_row(
     """
     reasons = []
     warnings = []
+
+    mapped_canonical_fields = (
+        mapped_canonical_fields or set()
+    )
 
     # --------------------------------------------------------
     # 1. Validate supplied values
@@ -2394,6 +2887,32 @@ def classify_incoming_row(
         # effective value used for classification.
         incoming_row_canonical["Retail Price"] = (
             master_retail_price
+        )
+
+    incoming_storage_type = incoming_norm.get(
+        "storage_type"
+    )
+    master_storage_type = best_candidate["norm"].get(
+        "storage_type"
+    )
+
+    # Only inherit Storage Type when the incoming source file
+    # did not provide a Storage Type field at all.
+    #
+    # If the source contains the field but this particular row
+    # has a blank/Unknown value, preserve Unknown so that the
+    # row correctly becomes Needs Review.
+    if (
+        "Storage Type" not in mapped_canonical_fields
+        and _is_unknown(incoming_storage_type)
+        and not _is_unknown(master_storage_type)
+    ):
+        incoming_norm["storage_type"] = master_storage_type
+
+        # Keep the canonical incoming row consistent with the
+        # effective value used for classification.
+        incoming_row_canonical["Storage Type"] = (
+            master_storage_type
         )
 
     incoming_master_comparison = configuration_matches(
@@ -2978,6 +3497,29 @@ def build_summary(classifications):
 
     return summary
 
+def _serialize_preview_row(row):
+    """
+    Convert a pandas row/dict-like object into a JSON-safe
+    dictionary for the Admin bulk-import preview.
+    """
+    if row is None:
+        return None
+
+    if hasattr(row, "to_dict"):
+        row = row.to_dict()
+
+    result = {}
+
+    for key, value in row.items():
+        if pd.isna(value):
+            result[key] = None
+        elif isinstance(value, np.generic):
+            result[key] = value.item()
+        else:
+            result[key] = value
+
+    return result
+
 
 # ============================================================
 # MAIN ORCHESTRATION
@@ -3189,6 +3731,128 @@ def analyze_upload(
                 inferred_fields.add("Sub-device")
 
     # --------------------------------------------------------
+    # 5a. Infer any still-missing Sub-device from the authoritative
+    # Model Number -> Sub-device relationship in Master.
+    #
+    # This only ever runs for rows the generic keyword-based
+    # inference above left blank (e.g. "iPhone 17" with no
+    # qualifier word to match), and it never overwrites an
+    # explicit Sub-device. See build_model_number_subdevice_map /
+    # infer_subdevice_from_model_numbers for the trust rules that
+    # keep Master's fictional/test rows from being used as a
+    # source.
+    # --------------------------------------------------------
+    model_number_maps_by_device = {}
+
+    for index in canonical_df.index:
+        if not _is_blank(canonical_df.at[index, "Sub-device"]):
+            continue
+
+        device_value = canonical_df.at[index, "Device"]
+        if _is_blank(device_value):
+            continue
+
+        if device_value not in model_number_maps_by_device:
+            model_number_maps_by_device[device_value] = (
+                build_model_number_subdevice_map(
+                    master_df,
+                    device_value,
+                )
+            )
+
+        model_number_map = model_number_maps_by_device[
+            device_value
+        ]
+        if not model_number_map:
+            continue
+
+        incoming_tokens = normalize_model_numbers(
+            canonical_df.at[index, "Model Number"]
+        )
+
+        inferred_sub_device = infer_subdevice_from_model_numbers(
+            incoming_tokens,
+            model_number_map,
+        )
+
+        if inferred_sub_device:
+            canonical_df.at[
+                index, "Sub-device"
+            ] = inferred_sub_device
+            inferred_fields.add("Sub-device")
+
+    # --------------------------------------------------------
+    # 5b. Infer Model_Year from the model text when missing.
+    #
+    # Some provider files do not have a dedicated Year column,
+    # but the year is explicitly included in the model name.
+    # Example:
+    # "MacBook Air i5 1.6GHz 13 inch (Mid 2019)"
+    # -> Model_Year = 2019
+    #
+    # Never overwrite an explicitly supplied Model_Year.
+    # --------------------------------------------------------
+    canonical_df["Model_Year"] = canonical_df["Model_Year"].astype(object)
+
+    for index in canonical_df.index:
+        if _is_blank(canonical_df.at[index, "Model_Year"]):
+            inferred_year = infer_model_year_from_text(
+                canonical_df.at[index, "Standardized Model"]
+            )
+
+            if inferred_year is not None:
+                canonical_df.at[index, "Model_Year"] = inferred_year
+                inferred_fields.add("Model_Year")
+
+    # --------------------------------------------------------
+    # 5b. Canonicalize the incoming row's OWN display values
+    # (Device, Sub-device, Standardized Model, Connectivity)
+    # using Master's naming/casing conventions as the source of
+    # truth.
+    #
+    # This runs after inference (so an inferred Sub-device such
+    # as the lowercase "ipad mini" produced by infer_device_
+    # subdevice's comparison-safe vocabulary also gets re-cased),
+    # but it only ever rewrites the four fields above, and only
+    # to the extent Master's own data can confirm a canonical
+    # spelling for this Device. It never touches Provider,
+    # Storage, Retail Price, Trade-In value, or Model Number, and
+    # it never copies values from a specific matched Master row --
+    # matching itself still happens later, against whichever
+    # Master row this canonicalized incoming row turns out to
+    # correspond to.
+    #
+    # Same "trusted field" principle as step 5 above applies here:
+    # a field this step newly populates (most notably Connectivity,
+    # which the raw upload frequently never supplies a column for
+    # at all -- it only ever lived embedded inside the model text)
+    # must be recorded in inferred_fields, or every downstream
+    # consumer that reads through _get_mapped_value() /
+    # mapped_canonical_fields would keep treating that field as
+    # unmapped and discard the now-correct value back to Unknown.
+    # Concretely: once this step strips "Wi-Fi + Cellular" out of
+    # Standardized Model and moves it into Connectivity, the old
+    # fallback of re-extracting connectivity from the model text
+    # at classification time no longer has anything left to find --
+    # so Connectivity must itself be trusted from this point on.
+    # --------------------------------------------------------
+    display_maps = build_canonical_display_maps(master_df)
+
+    canonical_df["Standardized Model"] = canonical_df["Standardized Model"].astype(object)
+    canonical_df["Connectivity"] = canonical_df["Connectivity"].astype(object)
+
+    for index in canonical_df.index:
+        row = canonical_df.loc[index]
+
+        updates = canonicalize_incoming_row_display_values(
+            row, display_maps
+        )
+
+        for field, value in updates.items():
+            canonical_df.at[index, field] = value
+            inferred_fields.add(field)
+
+    # --------------------------------------------------------
     # 6. Build Master indexes once.
     # --------------------------------------------------------
     (
@@ -3288,6 +3952,7 @@ def analyze_upload(
                 master_norm_by_index=master_norm_by_index,
                 master_device_by_index=master_device_by_index,
                 master_provider_by_index=master_provider_by_index,
+                mapped_canonical_fields=mapped_canonical_fields,
             )
 
             # The classifier may enrich the canonical incoming row
@@ -3344,6 +4009,14 @@ def analyze_upload(
                     [],
                 )
             ),
+
+            # Human-readable data for the Admin preview.
+            # These are added to the preview response only;
+            # they do not affect classification.
+            "incoming_row": _serialize_preview_row(row),
+
+            # Filled below when a Master counterpart exists.
+            "matched_master": None,
         }
 
         selected_match = classification_result.get(
@@ -3351,15 +4024,28 @@ def analyze_upload(
         )
 
         if selected_match is not None:
+            matched_index = selected_match.get("index")
+
             row_result["match_confidence"] = (
                 selected_match.get("confidence")
             )
+
             row_result["matched_master_row"] = (
-                selected_match.get("index")
+                matched_index
             )
+
+            # Include the actual Master record for the Admin
+            # detail modal. This is display data only.
+            if matched_index is not None and matched_index in master_df.index:
+                master_row = master_df.loc[matched_index]
+
+                row_result["matched_master"] = (
+                    _serialize_preview_row(master_row)
+                )
         else:
             row_result["match_confidence"] = None
             row_result["matched_master_row"] = None
+
 
         row_results.append(row_result)
 

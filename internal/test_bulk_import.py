@@ -933,8 +933,11 @@ class TestSubDeviceInference(unittest.TestCase):
         row = result["rows"][0]
 
         self.assertNotIn("Sub-device", row["unknown_fields"])
+        # Sub-device is inferred as the comparison-safe "mini", then
+        # display-canonicalized to Master's own casing ("Mini") by
+        # canonicalize_incoming_row_display_values().
         self.assertEqual(
-            result["canonical_df"].iloc[0]["Sub-device"], "mini"
+            result["canonical_df"].iloc[0]["Sub-device"], "Mini"
         )
 
     def test_explicit_device_is_never_overwritten_by_inference(self):
@@ -996,8 +999,11 @@ class TestSubDeviceInference(unittest.TestCase):
         row = result["rows"][0]
 
         self.assertNotIn("Sub-device", row["unknown_fields"])
+        # Sub-device is inferred as the comparison-safe "pro max",
+        # then display-canonicalized to Master's own casing
+        # ("Pro Max") by canonicalize_incoming_row_display_values().
         self.assertEqual(
-            result["canonical_df"].iloc[0]["Sub-device"], "pro max"
+            result["canonical_df"].iloc[0]["Sub-device"], "Pro Max"
         )
 
     def test_genuine_tie_between_equally_specific_candidates_stays_unknown(
@@ -1052,6 +1058,355 @@ class TestSubDeviceInference(unittest.TestCase):
         )
         text = bi.build_row_search_text(row)
         self.assertIn("mini", text)
+
+
+class TestModelNumberSubDeviceInference(unittest.TestCase):
+    """
+    Coverage for the Model Number -> Sub-device inference that
+    supplements the generic keyword-based Sub-device inference for
+    iPhone rows with no qualifier word at all (e.g. plain "iPhone
+    17", with nothing for the keyword matcher to latch onto).
+
+    This must only ever trust Master Model Number -> Sub-device
+    relationships that look like genuine Apple regulatory model
+    numbers, never overwrite an explicit incoming Sub-device, and
+    back off to Unknown on any ambiguity -- it must never guess
+    "no qualifier means Standard".
+    """
+
+    def test_legitimate_iphone_model_number_infers_sub_device(self):
+        # Master default fixture is exactly this shape: iPhone,
+        # Standard, "A2111, A2221, A2223", "iPhone 11".
+        master_df = _df([_master_row()])
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device=None,
+                    model_number="A2111 / A2223 / A2221",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertNotIn("Sub-device", row["unknown_fields"])
+        self.assertEqual(
+            result["canonical_df"].iloc[0]["Sub-device"], "Standard"
+        )
+
+    def test_garbage_model_number_is_not_trusted(self):
+        # "Test123" is one of Master's known fictional/test rows.
+        # It must never be trusted as an inference source, even
+        # though the incoming row matches it exactly.
+        master_df = _df(
+            [
+                _master_row(
+                    model_number="Test123",
+                    model="testing iphone",
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device=None,
+                    model_number="Test123",
+                    model="testing iphone",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertIn("Sub-device", row["unknown_fields"])
+        self.assertTrue(
+            bi._is_blank(
+                result["canonical_df"].iloc[0]["Sub-device"]
+            )
+        )
+
+    def test_ambiguous_model_number_mapping_stays_unknown(self):
+        # The same Model Number maps to two different Sub-devices
+        # across Master rows -- the mapping must be treated as
+        # untrustworthy rather than guessed.
+        master_df = _df(
+            [
+                _master_row(
+                    model_number="A1234",
+                    sub_device="Standard",
+                    model="iPhone Ambiguous",
+                ),
+                _master_row(
+                    model_number="A1234",
+                    sub_device="Pro",
+                    model="iPhone Ambiguous",
+                ),
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device=None,
+                    model_number="A1234",
+                    model="iPhone Ambiguous",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+
+        self.assertTrue(
+            bi._is_blank(
+                result["canonical_df"].iloc[0]["Sub-device"]
+            )
+        )
+
+    def test_explicit_incoming_sub_device_is_never_overwritten(self):
+        # Master's trusted mapping for this Model Number says
+        # "Standard", but the incoming row explicitly states "Pro".
+        # The explicit value must win.
+        master_df = _df([_master_row()])
+        incoming_df = _df(
+            [
+                _master_row(
+                    sub_device="Pro",
+                    model_number="A2111 / A2223 / A2221",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+
+        self.assertEqual(
+            result["canonical_df"].iloc[0]["Sub-device"], "Pro"
+        )
+
+
+class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
+    """
+    Regression tests for canonicalize_incoming_row_display_values()
+    / build_canonical_display_maps().
+
+    Root cause: matching normalization (normalize_text,
+    normalize_row_for_matching, normalize_device_value,
+    extract_model_connectivity) already correctly resolved an
+    incoming row's *meaning* for comparison, but that resolved,
+    properly-cased form was never written back to canonical_df --
+    only ever a transient lowercase comparison value. So the row an
+    Admin actually previewed/imported could still show raw values
+    like Device "Pad", Sub-device "ipad", or a Standardized Model
+    still carrying an embedded connectivity suffix ("iPad 7 Wi-Fi +
+    Cellular") with Connectivity left at "Unknown".
+    """
+
+    def _master_df_with_ipad7(self):
+        return _df(
+            [
+                _master_row(
+                    provider="CompAsia",
+                    device="iPad",
+                    sub_device="iPad",
+                    model_number="A2197, A2198, A2200",
+                    model="iPad 7",
+                    retail_price=1849.0,
+                    storage=128.0,
+                    connectivity="Wi-Fi",
+                    trade_in=225.0,
+                    model_year=2019.0,
+                    chipset="A10",
+                ),
+                _master_row(
+                    provider="CompAsia",
+                    device="iPad",
+                    sub_device="iPad",
+                    model_number="A2197, A2198, A2200",
+                    model="iPad 7",
+                    retail_price=1999.0,
+                    storage=32.0,
+                    connectivity="Wi-Fi + Cellular",
+                    trade_in=280.0,
+                    model_year=2019.0,
+                    chipset="A10",
+                ),
+            ]
+        )
+
+    def test_ipad_bug_report_example_is_canonicalized(self):
+        # Exact scenario reported: Device "Pad" (raw Category
+        # text), Sub-device "ipad" (lowercase), Standardized Model
+        # still carrying its connectivity suffix, and Connectivity
+        # left at "Unknown" because nothing had extracted it yet.
+        master_df = self._master_df_with_ipad7()
+        incoming_df = _df(
+            [
+                _master_row(
+                    provider="3Cat",
+                    device="Pad",
+                    sub_device="ipad",
+                    model_number=None,
+                    model="iPad 7 Wi-Fi + Cellular",
+                    retail_price=None,
+                    storage=32.0,
+                    connectivity="Unknown",
+                    trade_in=180.0,
+                    model_year=2019.0,
+                    chipset="A10",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        canonical_row = result["canonical_df"].iloc[0]
+
+        self.assertEqual(canonical_row["Device"], "iPad")
+        self.assertEqual(canonical_row["Sub-device"], "iPad")
+        self.assertEqual(
+            canonical_row["Standardized Model"], "iPad 7"
+        )
+        self.assertEqual(
+            canonical_row["Connectivity"], "Wi-Fi + Cellular"
+        )
+
+    def test_incoming_row_own_values_are_preserved_not_master_values(
+        self,
+    ):
+        # The incoming row's own Provider, Storage, and Trade-In
+        # value must survive untouched, even though they differ
+        # from every candidate Master row's values. Canonicalization
+        # must never copy a matched Master row wholesale.
+        master_df = self._master_df_with_ipad7()
+        incoming_df = _df(
+            [
+                _master_row(
+                    provider="3Cat",
+                    device="Pad",
+                    sub_device="ipad",
+                    model_number=None,
+                    model="iPad 7 Wi-Fi + Cellular",
+                    retail_price=None,
+                    storage=32.0,
+                    connectivity="Unknown",
+                    trade_in=180.0,
+                    model_year=2019.0,
+                    chipset="A10",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        canonical_row = result["canonical_df"].iloc[0]
+
+        # Neither Master candidate has Provider "3Cat", Storage 32,
+        # or Trade-In 180 -- if these came back unchanged, the
+        # canonicalization step did not overwrite them from a
+        # matched Master row.
+        self.assertEqual(canonical_row["Provider"], "3Cat")
+        self.assertEqual(
+            float(canonical_row["Storage (GB)"]), 32.0
+        )
+        self.assertEqual(
+            canonical_row["Max. Trade-In Value (RM)"], 180.0
+        )
+
+    def test_canonicalization_is_generic_not_hardcoded_to_ipad_7(self):
+        # A different Device/Sub-device/generation (Mac mini) run
+        # through the exact same mechanism, to confirm this isn't a
+        # special case for "iPad 7".
+        master_df = _df(
+            [
+                _master_row(
+                    provider="CompAsia",
+                    device="Mac",
+                    sub_device="Mac mini",
+                    model_number="A2686",
+                    model="Mac mini",
+                    retail_price=2199.0,
+                    storage=256.0,
+                    connectivity="Unknown",
+                    trade_in=650.0,
+                    model_year=2023.0,
+                    chipset="M2",
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    provider="Switch",
+                    device="mac",
+                    sub_device="mac mini",
+                    model_number=None,
+                    model="Mac Mini",
+                    retail_price=None,
+                    storage=256.0,
+                    connectivity="Unknown",
+                    trade_in=700.0,
+                    model_year=2023.0,
+                    chipset="M2",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        canonical_row = result["canonical_df"].iloc[0]
+
+        self.assertEqual(canonical_row["Device"], "Mac")
+        self.assertEqual(canonical_row["Sub-device"], "Mac mini")
+        # Its own Provider/Trade-In must still survive untouched.
+        self.assertEqual(canonical_row["Provider"], "Switch")
+        self.assertEqual(
+            canonical_row["Max. Trade-In Value (RM)"], 700.0
+        )
+
+    def test_unrecognized_model_left_untouched(self):
+        # A model/connectivity combination Master has no
+        # counterpart for at all must not be forcibly rewritten --
+        # canonicalization only acts when Master can confirm a
+        # spelling for this Device.
+        master_df = self._master_df_with_ipad7()
+        incoming_df = _df(
+            [
+                _master_row(
+                    provider="3Cat",
+                    device="iPad",
+                    sub_device="iPad",
+                    model_number=None,
+                    model="iPad Quantum Wi-Fi + Cellular",
+                    retail_price=None,
+                    storage=32.0,
+                    connectivity="Unknown",
+                    trade_in=180.0,
+                    model_year=2019.0,
+                    chipset="A10",
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        canonical_row = result["canonical_df"].iloc[0]
+
+        self.assertEqual(
+            canonical_row["Standardized Model"],
+            "iPad Quantum Wi-Fi + Cellular",
+        )
 
 
 class TestNewClassification(unittest.TestCase):
