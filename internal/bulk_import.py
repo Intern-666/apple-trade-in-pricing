@@ -22,7 +22,6 @@ CANONICAL_FIELDS = [
     "Material",
     "Max. Trade-In Value (RM)",
     "Model_Year",
-    "Chipset",
     "Case Size",
     "Charging Method",
     "Collection Date",
@@ -38,7 +37,6 @@ CONFIGURATION_FIELDS = [
     "Connectivity",
     "Material",
     "Model_Year",
-    "Chipset",
     "Case Size",
     "Charging Method",
 ]
@@ -67,7 +65,6 @@ OPTIONAL_FIELDS = {
     "Max. Trade-In Value (RM)",
     "Case Size",
     "Charging Method",
-    "Chipset",
 }
 
 DEVICE_APPLICABLE_FIELDS = {
@@ -111,9 +108,6 @@ def is_field_applicable(device, field):
     }:
         return True
 
-    if field == "Chipset":
-        return False
-
     applicable_fields = DEVICE_APPLICABLE_FIELDS.get(
         device,
         set(),
@@ -135,7 +129,6 @@ COLUMN_SYNONYMS = {
     "Material": ["material", "case material", "band material", "finish"],
     "Max. Trade-In Value (RM)": ["trade-in value", "trade in value", "trade-in", "buyback", "buyback price", "trade value", "max. trade-in value (rm)", "price"],
     "Model_Year": ["year", "model year", "release year"],
-    "Chipset": ["chipset", "chip", "processor", "soc"],
     "Case Size": ["case size", "size", "case (mm)"],
     "Charging Method": ["charging method", "charging", "charging case", "specification", "specifications"],
 }
@@ -595,17 +588,6 @@ def model_identity_conflict(incoming_model, master_model):
     return False
 
 
-def chipset_similarity(incoming, master):
-    if _is_unknown(incoming) or _is_unknown(master):
-        return None
-    i_text, m_text = normalize_text(incoming), normalize_text(master)
-    if i_text == m_text:
-        return 1.0
-    i_code, m_code = _CHIPSET_CODE_RE.search(i_text or ""), _CHIPSET_CODE_RE.search(m_text or "")
-    if i_code and m_code:
-        if (re.match(r"([am]\d+)", i_code.group(0), re.I) or [None])[0] == (re.match(r"([am]\d+)", m_code.group(0), re.I) or [None])[0]:
-            return 1.0
-    return difflib.SequenceMatcher(None, i_text, m_text).ratio()
 
 
 def propose_column_mapping(raw_columns):
@@ -671,7 +653,6 @@ def normalize_row_for_matching(row, mapped_fields=None):
         "material": normalize_text(_get_mapped_value(row, "Material", mapped_fields)) or UNKNOWN,
         "model_year": normalize_numeric_for_comparison(_get_mapped_value(row, "Model_Year", mapped_fields), "Model_Year"),
         "provider": normalize_text(_get_mapped_value(row, "Provider", mapped_fields)) or UNKNOWN,
-        "chipset": normalize_text(_get_mapped_value(row, "Chipset", mapped_fields)) or UNKNOWN,
         "case_size": normalize_numeric_for_comparison(_get_mapped_value(row, "Case Size", mapped_fields), "Case Size"),
         "charging_method": normalize_text(_get_mapped_value(row, "Charging Method", mapped_fields)) or UNKNOWN,
         "retail_price": normalize_numeric_for_comparison(_get_mapped_value(row, "Retail Price", mapped_fields), "Retail Price"),
@@ -691,7 +672,7 @@ def validate_row_data(row):
     return errors
 
 
-def validate_new_row_fields(device, sub_device, model_name, msrp, trade_in_value, storage, storage_type, chipset, connectivity, material, case_size, charging_method, model_year):
+def validate_new_row_fields(device, sub_device, model_name, msrp, trade_in_value, storage, storage_type, connectivity, material, case_size, charging_method, model_year):
     errors = []
     if _is_blank(device): errors.append("Device is required.")
     if _is_blank(sub_device): errors.append("Sub-device is required.")
@@ -706,7 +687,7 @@ def _field_value(norm, field):
     mapping = {
         "Device": "device", "Sub-device": "sub_device", "Standardized Model": "model_text",
         "Storage (GB)": "storage", "Storage Type": "storage_type", "Connectivity": "connectivity",
-        "Material": "material", "Model_Year": "model_year", "Chipset": "chipset", "Case Size": "case_size",
+        "Material": "material", "Model_Year": "model_year", "Case Size": "case_size",
         "Charging Method": "charging_method", "Provider": "provider", "Retail Price": "retail_price",
         "Max. Trade-In Value (RM)": "trade_in_value",
     }
@@ -1226,6 +1207,10 @@ def apply_classified_rows(canonical_df, row_results, master_df):
             # value never overwrites an existing Master date.
             incoming_collection_date = canonical_df.at[idx, "Collection Date"] if "Collection Date" in canonical_df.columns else None
             if not _is_blank(incoming_collection_date):
+                # Guard against a float64 Collection Date column (e.g.
+                # still entirely blank) rejecting a string value.
+                if "Collection Date" in working_df.columns and working_df["Collection Date"].dtype != object:
+                    working_df["Collection Date"] = working_df["Collection Date"].astype(object)
                 working_df.at[m_idx, "Collection Date"] = incoming_collection_date
             outcomes.append({"row_index": idx, "action": APPLY_UPDATE, "match_index": m_idx, "row_result": rr})
             continue

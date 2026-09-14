@@ -160,7 +160,7 @@ def storage_to_gb(value):
         return np.nan
 
 
-TEXT_COLUMNS = ["Device", "Sub-device", "Standardized Model", "Provider", "Storage Type", "Connectivity", "Chipset"]
+TEXT_COLUMNS = ["Device", "Sub-device", "Standardized Model", "Provider", "Storage Type", "Connectivity"]
 
 
 def clean_dataset(raw_df):
@@ -210,6 +210,16 @@ def clean_dataset(raw_df):
 
     if "Collection Date" not in cleaned.columns:
         cleaned["Collection Date"] = np.nan
+
+    # A column that is missing (backfilled as np.nan above) or that
+    # happens to be entirely blank when read from CSV is inferred by
+    # pandas as float64. Collection Date holds date *strings*, so a
+    # float64 column here makes any later `df.at[i, "Collection Date"]
+    # = "2026-09-01"` raise TypeError: Invalid value ... for dtype
+    # 'float64'. Force object dtype unconditionally so every
+    # downstream write path (Admin Modify, Bulk Import apply) can
+    # safely store a string, regardless of how this column arrived.
+    cleaned["Collection Date"] = cleaned["Collection Date"].astype(object)
 
     return cleaned
 
@@ -946,7 +956,6 @@ class AdminAddDevice(BaseModel):
 
     ModelYear: Optional[int] = None
 
-    Chipset: Optional[str] = None
     Connectivity: Optional[str] = None
 
     Material: Optional[str] = None
@@ -1060,12 +1069,6 @@ def admin_add_device(item: AdminAddDevice):
     # DEVICE-SPECIFIC VALUES
     # ========================================================
 
-    chipset = item.Chipset.strip() if item.Chipset else np.nan
-
-    if device in ("iPhone", "iPad", "Mac") and pd.isna(chipset):
-
-        raise HTTPException(status_code=400, detail="Chipset is required.")
-
     connectivity = item.Connectivity.strip() if item.Connectivity else np.nan
 
     if device in ("iPad", "Apple Watch") and pd.isna(connectivity):
@@ -1110,7 +1113,7 @@ def admin_add_device(item: AdminAddDevice):
     # CREATE NEW ROW
     # ========================================================
 
-    new_row = {"Provider": provider, "Device": device, "Sub-device": sub_device, "Standardized Model": model_name, "Model Number": model_number, "Retail Price": msrp, "Storage (GB)": storage, "Storage Type": storage_type, "Connectivity": connectivity, "Material": (item.Material.strip() if item.Material else np.nan), "Max. Trade-In Value (RM)": trade_in_value, "Model_Year": model_year, "Chipset": chipset, "Case Size": case_size, "Charging Method": charging_method, "Collection Date": collection_date}
+    new_row = {"Provider": provider, "Device": device, "Sub-device": sub_device, "Standardized Model": model_name, "Model Number": model_number, "Retail Price": msrp, "Storage (GB)": storage, "Storage Type": storage_type, "Connectivity": connectivity, "Material": (item.Material.strip() if item.Material else np.nan), "Max. Trade-In Value (RM)": trade_in_value, "Model_Year": model_year, "Case Size": case_size, "Charging Method": charging_method, "Collection Date": collection_date}
 
     # ========================================================
     # APPEND TO DATAFRAME
@@ -1176,7 +1179,6 @@ def admin_add_device(item: AdminAddDevice):
 def admin_status():
     refresh_data_if_stale()
 
-    print(df["Device"].value_counts(dropna=False))
     # --------------------------------------------------------
     # DEVICE-SPECIFIC INTENTIONAL MISSING FIELDS
     # --------------------------------------------------------
@@ -1187,7 +1189,7 @@ def admin_status():
     # COLUMNS ACTUALLY USED BY THE APPLICATION
     # --------------------------------------------------------
 
-    fields = ["Provider", "Device", "Sub-device", "Standardized Model", "Retail Price", "Storage (GB)", "Storage Type", "Connectivity", "Material", "Max. Trade-In Value (RM)", "Model_Year", "Chipset", "Case Size", "Charging Method"]
+    fields = ["Provider", "Device", "Sub-device", "Standardized Model", "Retail Price", "Storage (GB)", "Storage Type", "Connectivity", "Material", "Max. Trade-In Value (RM)", "Model_Year", "Case Size", "Charging Method"]
 
     # --------------------------------------------------------
     # MISSING VALUE CHECK
@@ -1238,9 +1240,6 @@ def admin_status():
             if not is_missing(row[field]):
                 continue
 
-            if field == "Charging Method":
-                print("CHARGING METHOD MISSING:", device, "|", row["Charging Method"])
-
             affected_records.append(
                 {
                     "id": int(cast(int, index)),
@@ -1252,7 +1251,6 @@ def admin_status():
                     "storage_type": (None if pd.isna(row["Storage Type"]) else str(row["Storage Type"]).strip()),
                     "connectivity": (None if pd.isna(row["Connectivity"]) else str(row["Connectivity"]).strip()),
                     "material": (None if pd.isna(row["Material"]) else str(row["Material"]).strip()),
-                    "chipset": (None if pd.isna(row["Chipset"]) else str(row["Chipset"]).strip()),
                     "case_size": (None if pd.isna(row["Case Size"]) else str(row["Case Size"]).strip()),
                     "charging_method": (None if pd.isna(row["Charging Method"]) else str(row["Charging Method"]).strip()),
                     "trade_in_value": (None if pd.isna(row["Max. Trade-In Value (RM)"]) else float(row["Max. Trade-In Value (RM)"])),
@@ -1435,7 +1433,7 @@ def admin_records(device: str, model: str, sub_device: Optional[str] = None):
         # BUILD RECORD
         # ------------------------------------------------
 
-        records.append({"id": record_id, "model": clean_value("Standardized Model", row), "sub_device": clean_value("Sub-device", row), "storage": storage, "storage_type": clean_value("Storage Type", row), "connectivity": clean_value("Connectivity", row), "material": clean_value("Material", row), "chipset": clean_value("Chipset", row), "provider": clean_value("Provider", row), "msrp": (None if pd.isna(row["Retail Price"]) else float(row["Retail Price"])), "trade_in_value": value, "collection_date": clean_value("Collection Date", row)})
+        records.append({"id": record_id, "model": clean_value("Standardized Model", row), "sub_device": clean_value("Sub-device", row), "storage": storage, "storage_type": clean_value("Storage Type", row), "connectivity": clean_value("Connectivity", row), "material": clean_value("Material", row), "provider": clean_value("Provider", row), "msrp": (None if pd.isna(row["Retail Price"]) else float(row["Retail Price"])), "trade_in_value": value, "collection_date": clean_value("Collection Date", row)})
 
     records = clean_json_value(records)
 
@@ -1949,6 +1947,11 @@ def admin_modify_device(item: AdminModifyDevice):
         collection_date = item.CollectionDate.strip()
 
         old_collection_date = df.at[item.id, "Collection Date"] if "Collection Date" in df.columns else np.nan
+
+        # Guard against a float64 Collection Date column (e.g. still
+        # entirely blank on disk) rejecting a string value.
+        if "Collection Date" in df.columns and df["Collection Date"].dtype != object:
+            df["Collection Date"] = df["Collection Date"].astype(object)
 
         df.at[item.id, "Collection Date"] = collection_date if collection_date else np.nan
 

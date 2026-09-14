@@ -104,10 +104,6 @@
 					<label for="add-storage-type"> Storage Type </label>
 					<input id="add-storage-type" type="text" placeholder="e.g. SSD">
 				</div>
-				<div class="form-group" id="add-chipset-group">
-					<label for="add-chipset"> Chipset / Processor </label>
-					<input id="add-chipset" type="text" placeholder="e.g. A20 Pro">
-				</div>
 				<div class="form-group" id="add-connectivity-group">
 					<label for="add-connectivity"> Connectivity </label>
 					<select id="add-connectivity">
@@ -792,7 +788,6 @@
 				document.getElementById("add-msrp").value = "";
 				document.getElementById("add-storage").value = "";
 				document.getElementById("add-storage-type").value = "";
-				document.getElementById("add-chipset").value = "";
 				document.getElementById("add-connectivity").value = "";
 				document.getElementById("add-case-size").value = "";
 				document.getElementById("add-charging-method").value = "";
@@ -888,7 +883,6 @@
 					modelSelect.appendChild(option);
 				});
 			} catch (error) {
-				console.error("Unable to load DELETE models:", error);
 			}
 		}
 		// When Device changes
@@ -925,7 +919,6 @@
 				}
 				forecastHierarchy = await res.json();
 			} catch (err) {
-				console.error("Failed to load forecast hierarchy:", err);
 			}
 		}
 		const fDevice = document.getElementById("forecast-device");
@@ -1005,7 +998,6 @@
 				});
 				fRecord.disabled = false;
 			} catch (err) {
-				console.error("Error loading configurations:", err);
 				fRecord.innerHTML = '<option value="">Unable to load configurations</option>';
 				showAdminToast("Unable to load configurations.", "error");
 			}
@@ -1564,7 +1556,6 @@
 					container.appendChild(div);
 				});
 			} catch (error) {
-				console.error("Unable to refresh DELETE records:", error);
 				showAdminToast("Unable to refresh device records.", "error");
 			}
 		}
@@ -1573,7 +1564,6 @@
 		// ============================================================
 		document.getElementById("delete-confirm-button").addEventListener("click", async () => {
 			if (selectedDeleteRecordId === null) {
-				console.error("No record selected.");
 				return;
 			}
 			const deleteButton = document.getElementById("delete-confirm-button");
@@ -1612,7 +1602,6 @@
 				selectedDeleteDataVersion = null;
 				await refreshDeleteRecords();
 			} catch (error) {
-				console.error("DELETE ERROR:", error);
 				showAdminToast(error.message || "Failed to delete record.", "error");
 			} finally {
 				const deleteButton = document.getElementById("delete-confirm-button");
@@ -1634,7 +1623,6 @@
 			const device = document.getElementById("add-device").value;
 			document.getElementById("add-storage-group").classList.toggle("hidden", device === "AirPods");
 			document.getElementById("add-storage-type-group").classList.toggle("hidden", device !== "Mac");
-			document.getElementById("add-chipset-group").classList.toggle("hidden", !["iPhone", "iPad", "Mac"].includes(device));
 			document.getElementById("add-connectivity-group").classList.toggle("hidden", !["iPad", "Apple Watch"].includes(device));
 			document.getElementById("add-charging-method-group").classList.toggle("hidden", device !== "AirPods");
 			document.getElementById("add-case-size-group").classList.toggle("hidden", device !== "Apple Watch");
@@ -1677,7 +1665,6 @@
 			const collectionDate = document.getElementById("add-collection-date").value;
 			const storage = document.getElementById("add-storage").value;
 			const storageType = document.getElementById("add-storage-type").value.trim();
-			const chipset = document.getElementById("add-chipset").value.trim();
 			const connectivity = document.getElementById("add-connectivity").value;
 			const chargingMethod = document.getElementById("add-charging-method").value;
 			const caseSize = document.getElementById("add-case-size").value;
@@ -1705,11 +1692,6 @@
 			}
 			if (device === "Mac" && !storageType) {
 				showAdminToast("Please enter the storage type.", "warning");
-				return;
-			}
-			if (
-				["iPhone", "iPad", "Mac"].includes(device) && !chipset) {
-				showAdminToast("Please enter the chipset.", "warning");
 				return;
 			}
 			if (
@@ -1754,7 +1736,6 @@
 				Storage: device === "AirPods" ? null : (storage ? parseFloat(storage) : null),
 				StorageType: device === "Mac" ? (storageType || null) : null,
 				ModelYear: year ? parseInt(year, 10) : null,
-				Chipset: chipset || null,
 				Material: document.getElementById("add-material").value.trim() || null,
 				Connectivity: ["iPad", "Apple Watch"].includes(device) ? (connectivity || null) : null,
 				Specification: null,
@@ -1779,7 +1760,6 @@
 				showAdminToast("Device added successfully.");
 				showSection("add");
 			} catch (error) {
-				console.error(error);
 				showAdminToast(error.message, "error");
 				const result = document.getElementById("add-result");
 				result.className = "result error";
@@ -1896,11 +1876,6 @@
 
 				return raw ? JSON.parse(raw) : [];
 			} catch (error) {
-				console.error(
-					"Failed to load Bulk Import history:",
-					error
-				);
-
 				return [];
 			}
 		}
@@ -1914,10 +1889,6 @@
 					)
 				);
 			} catch (error) {
-				console.error(
-					"Failed to save Bulk Import history:",
-					error
-				);
 			}
 		}
 
@@ -2074,7 +2045,6 @@
 				reviewQueueItems = data.items || [];
 				renderReviewQueue();
 			} catch (error) {
-				console.error("Failed to load the Review Queue:", error);
 				errorBox.textContent =
 					error.message ||
 					"Failed to load the Admin Review Queue.";
@@ -2295,7 +2265,6 @@
 					lastBulkImportPreviewMeta
 				);
 			} catch (error) {
-				console.error(error);
 				showAdminToast(error.message, "error");
 				uploadResult.className = "result error";
 				uploadResult.textContent = error.message;
@@ -3312,7 +3281,6 @@
 						);
 					}
 				} catch (error) {
-					console.error("Bulk import row re-analyze failed:", error);
 					showAdminToast(
 						error.message || "Failed to re-analyze this row.",
 						"error"
@@ -3402,7 +3370,6 @@
 
 					loadReviewQueue();
 				} catch (error) {
-					console.error("Review queue discard failed:", error);
 					showAdminToast(
 						error.message || "Failed to discard this row.",
 						"error"
@@ -3588,7 +3555,6 @@
 						}
 					}
 				} catch (error) {
-					console.error("Bulk import row resolve failed:", error);
 					showAdminToast(
 						error.message || "Failed to resolve this row.",
 						"error"
@@ -3688,11 +3654,6 @@
 
 				} catch (error) {
 
-					console.error(
-						"Bulk import apply failed:",
-						error
-					);
-
 					showAdminToast(
 						error.message ||
 						"Failed to apply bulk import.",
@@ -3787,7 +3748,6 @@
 					modelSelect.appendChild(option);
 				});
 			} catch (error) {
-				console.error("Unable to load models:", error);
 			}
 		}
 		document.getElementById("modify-device").addEventListener("change", loadModifyModels);
@@ -3861,7 +3821,6 @@
 					container.appendChild(div);
 				});
 			} catch (error) {
-				console.error("Unable to refresh records:", error);
 			}
 		}
 		// ====================================================
@@ -3931,7 +3890,6 @@
 				await refreshModifyRecords();
 				loadAdminStatus();
 			} catch (error) {
-				console.error(error);
 				showAdminToast(error.message, "error");
 				const result = document.getElementById("modify-result");
 				result.className = "result error";
@@ -4003,7 +3961,6 @@
 					categories.appendChild(section);
 				});
 			} catch (error) {
-				console.error("ADMIN STATUS ERROR:", error);
 				categories.innerHTML = `
                     <p>
                         Unable to load data status.
@@ -4044,7 +4001,6 @@
 				localStorage.removeItem("adminStatusRecord");
 				openStatusRecord(record);
 			} catch (error) {
-				console.error("Unable to open status record:", error);
 			}
 		}
 		document.getElementById("admin-status-button").addEventListener("click",
@@ -4089,7 +4045,6 @@
 				// Best-effort: a missed poll just tries again next
 				// interval, same fail-safe spirit as the backend's
 				// own Sheets sync.
-				console.error("Data-version poll failed:", error);
 			}
 		}
 		setInterval(pollForDataChanges, AUTO_REFRESH_POLL_MS);
@@ -4237,7 +4192,6 @@
 				customerRecords = data.customers || [];
 				renderCustomerList();
 			} catch (error) {
-				console.error("Unable to load customers:", error);
 				container.innerHTML = `
                     <p class="empty-state">
                         Unable to load customer data.
@@ -4427,7 +4381,6 @@
 				// in the Sheet after deletion.
 				await loadCustomers();
 			} catch (error) {
-				console.error("CUSTOMER DELETE ERROR:", error);
 				showAdminToast(error.message || "Failed to delete customer record(s).", "error");
 			} finally {
 				resetActionButton(button, "Delete Permanently");
@@ -4437,7 +4390,6 @@
 		function showAdminToast(message, type = "success", duration = 3000) {
 			const container = document.getElementById("admin-toast-container");
 			if (!container) {
-				console.error("Toast container not found.");
 				return;
 			}
 			const toast = document.createElement("div");

@@ -59,7 +59,6 @@ def _master_row(
     material=None,
     trade_in=390.0,
     model_year=2019.0,
-    chipset="A13 Bionic",
     case_size=None,
     charging_method=None,
     collection_date=None,
@@ -78,7 +77,6 @@ def _master_row(
         "Material": material,
         "Max. Trade-In Value (RM)": trade_in,
         "Model_Year": model_year,
-        "Chipset": chipset,
         "Case Size": case_size,
         "Charging Method": charging_method,
         "Collection Date": collection_date,
@@ -557,7 +555,7 @@ class TestUpdateAndConflictClassification(unittest.TestCase):
         fake_full_comparison = {
             "exact": False,
             "unknown_fields": [],
-            "different_fields": ["Max. Trade-In Value (RM)", "Chipset"],
+            "different_fields": ["Max. Trade-In Value (RM)", "Storage Type"],
         }
 
         with mock.patch.object(
@@ -1225,7 +1223,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Wi-Fi",
                     trade_in=225.0,
                     model_year=2019.0,
-                    chipset="A10",
                 ),
                 _master_row(
                     provider="CompAsia",
@@ -1238,7 +1235,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Wi-Fi + Cellular",
                     trade_in=280.0,
                     model_year=2019.0,
-                    chipset="A10",
                 ),
             ]
         )
@@ -1262,7 +1258,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Unknown",
                     trade_in=180.0,
                     model_year=2019.0,
-                    chipset="A10",
                 )
             ]
         )
@@ -1302,7 +1297,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Unknown",
                     trade_in=180.0,
                     model_year=2019.0,
-                    chipset="A10",
                 )
             ]
         )
@@ -1341,7 +1335,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Unknown",
                     trade_in=650.0,
                     model_year=2023.0,
-                    chipset="M2",
                 )
             ]
         )
@@ -1358,7 +1351,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Unknown",
                     trade_in=700.0,
                     model_year=2023.0,
-                    chipset="M2",
                 )
             ]
         )
@@ -1395,7 +1387,6 @@ class TestIncomingRowDisplayCanonicalization(unittest.TestCase):
                     connectivity="Unknown",
                     trade_in=180.0,
                     model_year=2019.0,
-                    chipset="A10",
                 )
             ]
         )
