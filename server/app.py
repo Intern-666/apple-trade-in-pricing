@@ -200,6 +200,17 @@ def clean_dataset(raw_df):
         if col in cleaned.columns:
             cleaned[col] = cleaned[col].fillna("Unknown").astype(str).str.strip()
 
+    # ------------------------------------------------------------
+    # COLLECTION DATE
+    #
+    # Metadata, not a matching/business field -- guarantee the
+    # column exists so every downstream read/write path can rely on
+    # it, but never invent a value for a row that doesn't have one.
+    # ------------------------------------------------------------
+
+    if "Collection Date" not in cleaned.columns:
+        cleaned["Collection Date"] = np.nan
+
     return cleaned
 
 
@@ -943,6 +954,8 @@ class AdminAddDevice(BaseModel):
 
     ChargingMethod: Optional[str] = None
 
+    CollectionDate: Optional[str] = None
+
 
 # ============================================================
 # ADMIN — ADD DEVICE
@@ -1088,10 +1101,16 @@ def admin_add_device(item: AdminAddDevice):
         raise HTTPException(status_code=400, detail="Invalid Apple model year.")
 
     # ========================================================
+    # COLLECTION DATE
+    # ========================================================
+
+    collection_date = item.CollectionDate.strip() if item.CollectionDate else np.nan
+
+    # ========================================================
     # CREATE NEW ROW
     # ========================================================
 
-    new_row = {"Provider": provider, "Device": device, "Sub-device": sub_device, "Standardized Model": model_name, "Model Number": model_number, "Retail Price": msrp, "Storage (GB)": storage, "Storage Type": storage_type, "Connectivity": connectivity, "Material": (item.Material.strip() if item.Material else np.nan), "Max. Trade-In Value (RM)": trade_in_value, "Model_Year": model_year, "Chipset": chipset, "Case Size": case_size, "Charging Method": charging_method}
+    new_row = {"Provider": provider, "Device": device, "Sub-device": sub_device, "Standardized Model": model_name, "Model Number": model_number, "Retail Price": msrp, "Storage (GB)": storage, "Storage Type": storage_type, "Connectivity": connectivity, "Material": (item.Material.strip() if item.Material else np.nan), "Max. Trade-In Value (RM)": trade_in_value, "Model_Year": model_year, "Chipset": chipset, "Case Size": case_size, "Charging Method": charging_method, "Collection Date": collection_date}
 
     # ========================================================
     # APPEND TO DATAFRAME
@@ -1135,6 +1154,8 @@ def admin_add_device(item: AdminAddDevice):
 
     print(f"Trade-in     : " f"{'N/A' if pd.isna(trade_in_value) else f'RM {trade_in_value:,.2f}'}")
 
+    print(f"Collection Date : " f"{'N/A' if pd.isna(collection_date) else collection_date}")
+
     print("Device added successfully.")
 
     print("=" * 70)
@@ -1143,7 +1164,7 @@ def admin_add_device(item: AdminAddDevice):
     # RESPONSE
     # ========================================================
 
-    return {"status": "success", "message": "Device added successfully.", "price_status": price_status, "model": model_name, "msrp": msrp, "trade_in_value": (None if pd.isna(trade_in_value) else trade_in_value), "sheets_sync": sync_result.as_dict()}
+    return {"status": "success", "message": "Device added successfully.", "price_status": price_status, "model": model_name, "msrp": msrp, "trade_in_value": (None if pd.isna(trade_in_value) else trade_in_value), "collection_date": (None if pd.isna(collection_date) else collection_date), "sheets_sync": sync_result.as_dict()}
 
 
 # ============================================================
@@ -1414,7 +1435,7 @@ def admin_records(device: str, model: str, sub_device: Optional[str] = None):
         # BUILD RECORD
         # ------------------------------------------------
 
-        records.append({"id": record_id, "model": clean_value("Standardized Model", row), "sub_device": clean_value("Sub-device", row), "storage": storage, "storage_type": clean_value("Storage Type", row), "connectivity": clean_value("Connectivity", row), "material": clean_value("Material", row), "chipset": clean_value("Chipset", row), "provider": clean_value("Provider", row), "msrp": (None if pd.isna(row["Retail Price"]) else float(row["Retail Price"])), "trade_in_value": value})
+        records.append({"id": record_id, "model": clean_value("Standardized Model", row), "sub_device": clean_value("Sub-device", row), "storage": storage, "storage_type": clean_value("Storage Type", row), "connectivity": clean_value("Connectivity", row), "material": clean_value("Material", row), "chipset": clean_value("Chipset", row), "provider": clean_value("Provider", row), "msrp": (None if pd.isna(row["Retail Price"]) else float(row["Retail Price"])), "trade_in_value": value, "collection_date": clean_value("Collection Date", row)})
 
     records = clean_json_value(records)
 
@@ -1690,7 +1711,7 @@ def admin_bulk_import_preview(
     print("\n" + "=" * 70)
     print("ADMIN — BULK IMPORT PREVIEW")
     print("=" * 70)
-    print(f"Provider: {provider!r}  |  Date mode (metadata only): {date_mode!r} = {date_value!r}")
+    print(f"Provider: {provider!r}  |  Date mode: {date_mode!r} = {date_value!r}")
 
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Please upload a .csv file.")
@@ -1716,6 +1737,15 @@ def admin_bulk_import_preview(
     provider_value = (provider or "").strip() or "Unknown"
     raw_df["Provider"] = provider_value
 
+    # Stamp Collection Date onto every row the same way -- this batch's
+    # date (whichever of the two existing date_mode pickers the Admin
+    # used) is the date associated with this provider's pricing data
+    # for every row in the file. Reuses the existing date_mode/
+    # date_value mechanism rather than adding a second date input;
+    # blank/missing stays blank rather than inventing a date.
+    collection_date_value = (date_value or "").strip()
+    raw_df["Collection Date"] = collection_date_value or np.nan
+
     try:
         result = analyze_upload(
             raw_df=raw_df,
@@ -1726,8 +1756,10 @@ def admin_bulk_import_preview(
         print(f"Bulk import preview error: {exc}")
         raise HTTPException(status_code=500, detail=str(exc))
 
-    # Metadata-only echo -- not used by the classification pipeline
-    # above, and not written anywhere.
+    # Metadata echo for the Preview modal's own display -- the actual
+    # Collection Date value is now carried per-row via the stamped
+    # column above (and from there through effective_record like any
+    # other canonical field), not via this echo.
     result["date_mode"] = date_mode
     result["date_value"] = date_value
 
@@ -1833,6 +1865,8 @@ class AdminModifyDevice(BaseModel):
 
     TradeInValue: Optional[float] = None
 
+    CollectionDate: Optional[str] = None
+
 
 @app.post("/admin/modify")
 def admin_modify_device(item: AdminModifyDevice):
@@ -1903,6 +1937,24 @@ def admin_modify_device(item: AdminModifyDevice):
         print(f"Provider updated: " f"{old_provider} → {provider}")
 
     # ========================================================
+    # COLLECTION DATE
+    #
+    # Only touched when explicitly provided, same as Provider above
+    # -- editing Trade-In Value or MSRP alone must never clear an
+    # existing Collection Date.
+    # ========================================================
+
+    if item.CollectionDate is not None:
+
+        collection_date = item.CollectionDate.strip()
+
+        old_collection_date = df.at[item.id, "Collection Date"] if "Collection Date" in df.columns else np.nan
+
+        df.at[item.id, "Collection Date"] = collection_date if collection_date else np.nan
+
+        print(f"Collection Date updated: " f"{old_collection_date} → {collection_date or 'N/A'}")
+
+    # ========================================================
     # RETAIL PRICE (MSRP)
     # ========================================================
 
@@ -1971,7 +2023,7 @@ def admin_modify_device(item: AdminModifyDevice):
     # RESPONSE
     # ========================================================
 
-    return {"status": "success", "message": "Record updated successfully.", "id": item.id, "provider": (str(df.at[item.id, "Provider"]) if not pd.isna(df.at[item.id, "Provider"]) else None), "msrp": (None if pd.isna(df.at[item.id, "Retail Price"]) else float(df.at[item.id, "Retail Price"])), "trade_in_value": (None if pd.isna(df.at[item.id, "Max. Trade-In Value (RM)"]) else float(df.at[item.id, "Max. Trade-In Value (RM)"])), "sheets_sync": sync_result.as_dict()}
+    return {"status": "success", "message": "Record updated successfully.", "id": item.id, "provider": (str(df.at[item.id, "Provider"]) if not pd.isna(df.at[item.id, "Provider"]) else None), "msrp": (None if pd.isna(df.at[item.id, "Retail Price"]) else float(df.at[item.id, "Retail Price"])), "trade_in_value": (None if pd.isna(df.at[item.id, "Max. Trade-In Value (RM)"]) else float(df.at[item.id, "Max. Trade-In Value (RM)"])), "collection_date": (None if ("Collection Date" not in df.columns or pd.isna(df.at[item.id, "Collection Date"])) else str(df.at[item.id, "Collection Date"])), "sheets_sync": sync_result.as_dict()}
 
 
 # ============================================================

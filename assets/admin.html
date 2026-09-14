@@ -142,6 +142,10 @@
 					<input id="add-provider" type="text" placeholder="Optional">
 				</div>
 				<div class="form-group">
+					<label for="add-collection-date"> Collection Date </label>
+					<input id="add-collection-date" type="date">
+				</div>
+				<div class="form-group">
 					<label> Confirmed trade-in value available? </label>
 					<label>
 						<input type="radio" name="add-price-status" value="yes"> Yes </label>
@@ -490,6 +494,10 @@
 							<label for="modify-msrp"> Retail Price (RM) </label>
 							<input id="modify-msrp" type="number" min="0" step="0.01" placeholder="Leave blank if N/A">
 						</div>
+						<div class="form-group">
+							<label for="modify-collection-date"> Collection Date </label>
+							<input id="modify-collection-date" type="date" placeholder="Leave blank if N/A">
+						</div>
 						<div class="buttons">
 							<button type="button" id="modify-save" class="primary"> Save Changes </button>
 							<button type="button" id="modify-cancel" class="secondary"> Cancel </button>
@@ -790,6 +798,7 @@
 				document.getElementById("add-charging-method").value = "";
 				document.getElementById("add-material").value = "";
 				document.getElementById("add-provider").value = "";
+				document.getElementById("add-collection-date").value = "";
 				document.querySelectorAll('input[name="add-price-status"]').forEach(radio => {
 					radio.checked = false;
 				});
@@ -1665,6 +1674,7 @@
 			const year = document.getElementById("add-year").value;
 			const msrp = document.getElementById("add-msrp").value;
 			const provider = document.getElementById("add-provider").value.trim();
+			const collectionDate = document.getElementById("add-collection-date").value;
 			const storage = document.getElementById("add-storage").value;
 			const storageType = document.getElementById("add-storage-type").value.trim();
 			const chipset = document.getElementById("add-chipset").value.trim();
@@ -1738,6 +1748,7 @@
 				ModelNumber: modelNumber || null,
 				Model: model,
 				Provider: provider || null,
+				CollectionDate: collectionDate || null,
 				MSRP: parseFloat(msrp),
 				TradeInValue: tradeInValue,
 				Storage: device === "AirPods" ? null : (storage ? parseFloat(storage) : null),
@@ -2035,7 +2046,8 @@
 			["Storage", "Storage (GB)"],
 			["Provider", "Provider"],
 			["Retail Price", "Retail Price"],
-			["Trade-In Value", "Max. Trade-In Value (RM)"]
+			["Trade-In Value", "Max. Trade-In Value (RM)"],
+			["Collection Date", "Collection Date"]
 		];
 
 		let reviewQueueItems = [];
@@ -2878,7 +2890,8 @@
 			["Connectivity", "Connectivity"],
 			["Provider", "Provider"],
 			["Retail Price", "Retail Price"],
-			["Trade-in value", "Max. Trade-In Value (RM)"]
+			["Trade-in value", "Max. Trade-In Value (RM)"],
+			["Collection Date", "Collection Date"]
 		];
 
 		// ====================================================
@@ -3866,6 +3879,7 @@
 			document.getElementById("modify-price").value = null === record.trade_in_value ? "" : record.trade_in_value;
 			document.getElementById("modify-provider").value = record.provider ?? "";
 			document.getElementById("modify-msrp").value = record.msrp ?? "";
+			document.getElementById("modify-collection-date").value = record.collection_date ?? "";
 			document.getElementById("modify-form").classList.remove("hidden");
 		}
 		// ====================================================
@@ -3877,13 +3891,15 @@
 			}
 			const provider = document.getElementById("modify-provider").value.trim();
 			const msrp = document.getElementById("modify-msrp").value;
+			const collectionDate = document.getElementById("modify-collection-date").value;
 			const tradeInValue = document.getElementById("modify-price").value;
 			const payload = {
 				id: selectedRecordId,
 				dataVersion: selectedRecordDataVersion,
 				Provider: "" === provider ? null : provider,
 				MSRP: "" === msrp ? null : parseFloat(msrp),
-				TradeInValue: "" === tradeInValue ? null : parseFloat(tradeInValue)
+				TradeInValue: "" === tradeInValue ? null : parseFloat(tradeInValue),
+				CollectionDate: "" === collectionDate ? null : collectionDate
 			};
 			const saveButton = document.getElementById("modify-save");
 			setActionLoading(saveButton, "Saving...");

@@ -25,6 +25,7 @@ CANONICAL_FIELDS = [
     "Chipset",
     "Case Size",
     "Charging Method",
+    "Collection Date",
 ]
 
 CONFIGURATION_FIELDS = [
@@ -42,7 +43,12 @@ CONFIGURATION_FIELDS = [
     "Charging Method",
 ]
 
-DUPLICATE_FIELDS = list(CANONICAL_FIELDS)
+# Collection Date is Master metadata (the date associated with the
+# provider's current pricing data), never Apple configuration
+# identity -- it must never affect duplicate detection, matching, or
+# classification. DUPLICATE_FIELDS therefore stays exactly what it
+# was before Collection Date existed.
+DUPLICATE_FIELDS = [f for f in CANONICAL_FIELDS if f != "Collection Date"]
 
 NUMERIC_FIELDS = {
     "Retail Price",
@@ -1213,6 +1219,14 @@ def apply_classified_rows(canonical_df, row_results, master_df):
                 _append_model_numbers(working_df, m_idx, rr.get("model_numbers_to_append", []))
             else:
                 working_df.at[m_idx, "Max. Trade-In Value (RM)"] = canonical_df.at[idx, "Max. Trade-In Value (RM)"]
+            # Collection Date is metadata describing the freshness of
+            # the provider's pricing data -- on any UPDATE it is
+            # replaced by the incoming row's Collection Date, same as
+            # Max. Trade-In Value (RM) above. A blank/missing incoming
+            # value never overwrites an existing Master date.
+            incoming_collection_date = canonical_df.at[idx, "Collection Date"] if "Collection Date" in canonical_df.columns else None
+            if not _is_blank(incoming_collection_date):
+                working_df.at[m_idx, "Collection Date"] = incoming_collection_date
             outcomes.append({"row_index": idx, "action": APPLY_UPDATE, "match_index": m_idx, "row_result": rr})
             continue
         if cls == "conflict" and c_type == "duplicate":

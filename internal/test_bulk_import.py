@@ -62,6 +62,7 @@ def _master_row(
     chipset="A13 Bionic",
     case_size=None,
     charging_method=None,
+    collection_date=None,
 ):
     """Build one Master-schema row dict (CANONICAL_FIELDS order)."""
     return {
@@ -80,6 +81,7 @@ def _master_row(
         "Chipset": chipset,
         "Case Size": case_size,
         "Charging Method": charging_method,
+        "Collection Date": collection_date,
     }
 
 
@@ -2117,6 +2119,188 @@ class TestProblematicRowEditorReanalysis(unittest.TestCase):
         self.assertEqual(reanalyzed_against_current["classification"], "conflict")
         self.assertEqual(
             reanalyzed_against_current["conflict_type"], "duplicate"
+        )
+
+
+class TestCollectionDate(unittest.TestCase):
+    """
+    Collection Date -- Master metadata (the date associated with a
+    provider's current pricing data), added alongside the existing
+    schema.
+
+    Per spec, it must:
+      - never factor into Apple configuration identity/matching/
+        duplicate detection (tested here directly; the matching/
+        scoring functions themselves are untouched by this field);
+      - be stored on genuinely NEW rows;
+      - replace the Master value on UPDATE, exactly like
+        Max. Trade-In Value (RM);
+      - never be overwritten by a DUPLICATE re-import;
+      - never be invented for existing rows with no historical date;
+      - survive the Review Queue / Problematic Row re-analysis round
+        trip the same way every other effective_record field does.
+    """
+
+    # ---- UPDATE replaces both Trade-In Value and Collection Date --
+
+    def test_update_replaces_trade_in_value_and_collection_date(self):
+        master_df = _df(
+            [_master_row(trade_in=1000.0, collection_date="2026-08-01")]
+        )
+        incoming_df = _df(
+            [_master_row(trade_in=1100.0, collection_date="2026-09-01")]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
+
+        applied = bi.apply_classified_rows(
+            canonical_df=result["canonical_df"],
+            row_results=result["rows"],
+            master_df=master_df,
+        )
+
+        self.assertEqual(
+            applied["master_df"].at[0, "Max. Trade-In Value (RM)"], 1100.0
+        )
+        self.assertEqual(
+            applied["master_df"].at[0, "Collection Date"], "2026-09-01"
+        )
+
+    # ---- NEW rows receive their Collection Date --------------------
+
+    def test_new_row_receives_its_collection_date(self):
+        master_df = _df([])
+        incoming_df = _df([_master_row(collection_date="2026-09-01")])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "new")
+
+        applied = bi.apply_classified_rows(
+            canonical_df=result["canonical_df"],
+            row_results=result["rows"],
+            master_df=master_df,
+        )
+
+        new_row = applied["master_df"].iloc[-1]
+        self.assertEqual(new_row["Collection Date"], "2026-09-01")
+
+    # ---- Collection Date is never identity --------------------------
+
+    def test_collection_date_alone_does_not_create_a_new_configuration(self):
+        # Identical Apple configuration and pricing, only Collection
+        # Date differs -- must remain an exact duplicate, never "new"
+        # or "needs_review" purely because of the date.
+        master_df = _df([_master_row(collection_date="2026-08-01")])
+        incoming_df = _df([_master_row(collection_date="2026-09-01")])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "duplicate")
+        self.assertNotIn("Collection Date", row["different_fields"])
+        self.assertNotIn("Collection Date", row["unknown_fields"])
+
+    # ---- DUPLICATE never overwrites an existing Collection Date ----
+
+    def test_duplicate_does_not_overwrite_existing_collection_date(self):
+        master_df = _df([_master_row(collection_date="2026-08-01")])
+        incoming_df = _df([_master_row(collection_date="2026-09-01")])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+
+        applied = bi.apply_classified_rows(
+            canonical_df=result["canonical_df"],
+            row_results=result["rows"],
+            master_df=master_df,
+        )
+
+        # Duplicate rows are skipped entirely -- Master untouched.
+        self.assertEqual(
+            applied["master_df"].at[0, "Collection Date"], "2026-08-01"
+        )
+
+    # ---- Existing blank dates are never auto-populated ---------------
+
+    def test_existing_blank_collection_date_is_not_auto_populated(self):
+        master_df = _df([_master_row(collection_date=None)])
+        self.assertTrue(pd.isna(master_df.at[0, "Collection Date"]))
+
+        incoming_df = _df(
+            [_master_row(trade_in=999.0, collection_date=None)]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+        self.assertEqual(row["classification"], "update")
+
+        applied = bi.apply_classified_rows(
+            canonical_df=result["canonical_df"],
+            row_results=result["rows"],
+            master_df=master_df,
+        )
+
+        # Trade-In Value updates as normal; there is no incoming
+        # Collection Date to replace it with, so it stays blank --
+        # never auto-filled with today's date or anything else.
+        self.assertEqual(
+            applied["master_df"].at[0, "Max. Trade-In Value (RM)"], 999.0
+        )
+        self.assertTrue(
+            pd.isna(applied["master_df"].at[0, "Collection Date"])
+        )
+
+    # ---- Survives Review Queue / Problematic Row re-analysis --------
+
+    def test_collection_date_survives_review_queue_reanalysis(self):
+        master_df = _df([_master_row(retail_price=3599.0)])
+        incoming_row = _master_row(
+            retail_price=3799.0, collection_date="2026-09-01"
+        )
+
+        incoming_df = _df([incoming_row])
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["conflict_type"], "needs_review")
+        self.assertEqual(
+            row["effective_record"]["values"]["Collection Date"],
+            "2026-09-01",
+        )
+
+        # Re-analyze exactly as the Review Queue / Problematic Row
+        # editor's "Re-analyze" action does: effective_record -> row
+        # -> analyze_upload again.
+        proposed_row = bi.effective_record_to_row(row["effective_record"])
+        proposed_df = pd.DataFrame(
+            [proposed_row], columns=bi.CANONICAL_FIELDS
+        )
+
+        reanalyzed = bi.analyze_upload(
+            raw_df=proposed_df, master_df=master_df, clean_fn=None
+        )["rows"][0]
+
+        self.assertEqual(
+            reanalyzed["effective_record"]["values"]["Collection Date"],
+            "2026-09-01",
         )
 
 
