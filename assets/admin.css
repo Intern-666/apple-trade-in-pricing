@@ -168,6 +168,13 @@ body {
         0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
+/* Vertical breathing room between stacked cards -- e.g. Add New
+   Device -> Problematic Rows -> Import History, which otherwise
+   sit directly flush against one another. */
+.card + .card {
+    margin-top: 32px;
+}
+
 .card h2 {
     margin: 0 0 8px;
     font-size: 23px;
@@ -2098,33 +2105,38 @@ STATUS BADGES (per-row, inside the preview table)
     color: #8c3ba3;
 }
 
+.status-badge.status-update {
+    background: rgba(0, 122, 255, 0.15);
+    color: #0058b8;
+}
+
+.status-badge.status-invalid_data {
+    background: rgba(255, 59, 48, 0.15);
+    color: #d70015;
+}
+
 /* ============================================================
 PREVIEW TABLE
 ============================================================ */
 
-.bulk-import-table-wrapper {
-    overflow: auto;
-    border: 1px solid #e5e5e7;
-    border-radius: 12px;
+.bulk-import-scroll-area {
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 2px;
+}
+
+.bulk-import-table-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid #e5e5e7;
+    border-radius: 12px;
+    font-size: 13px;
 }
 
 .bulk-import-table-wrapper thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.bulk-import-edit-row {
-    padding: 6px 12px !important;
-    min-height: unset !important;
-    flex: none !important;
-    font-size: 12px !important;
-}
-
-.bulk-import-table-wrapper {
-    font-size: 13px;
+    background: #fff;
 }
 
 .bulk-import-table-wrapper table {
@@ -2144,6 +2156,50 @@ PREVIEW TABLE
 
 .bulk-import-table-wrapper td {
     font-size: 13px;
+}
+
+/* ============================================================
+BULK IMPORT — ROW DETAILS BUTTON
+============================================================ */
+
+.bulk-import-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px !important;
+    min-height: 32px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
+    border: 1px solid transparent !important;
+    flex: 0 0 auto !important;
+}
+
+.bulk-import-view-row {
+    background: #f5f5f7 !important;
+    color: #1d1d1f !important;
+    border-color: #d2d2d7 !important;
+}
+
+.bulk-import-view-row:hover {
+    background: #e8e8ed !important;
+    border-color: #b8b8bd !important;
+}
+
+.bulk-import-edit-row,
+.review-queue-edit-row {
+    background: #fff1f1 !important;
+    color: #d32f2f !important;
+    border-color: #ffcdd2 !important;
+}
+
+.bulk-import-edit-row:hover,
+.review-queue-edit-row:hover {
+    background: #ffebee !important;
+    border-color: #ef9a9a !important;
 }
 
 /* ============================================================
@@ -2203,7 +2259,7 @@ BULK IMPORT — ROW DETAIL MODAL
 
 .bulk-import-detail-columns {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
 }
 
@@ -2275,6 +2331,57 @@ BULK IMPORT — ROW DETAIL MODAL
     color: #8e8e93;
 }
 
+.bulk-import-detail-edit-input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #1d1d1f;
+    background: #fff;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.bulk-import-detail-edit-input:focus {
+    outline: none;
+    border-color: #0071e3;
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+}
+
+.bulk-import-detail-edit-input:disabled {
+    color: #6e6e73;
+    background: #f5f5f7;
+    border-color: #e5e5e7;
+    cursor: default;
+}
+
+.bulk-import-detail-provenance {
+    font-size: 11px;
+    color: #8e8e93;
+}
+
+.bulk-import-detail-reasons {
+    margin-bottom: 16px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #fff6ea;
+    border: 1px solid #f5deb3;
+}
+
+.bulk-import-detail-reasons ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #6e4a1f;
+}
+
+.bulk-import-detail-editor-actions {
+    margin-top: 18px;
+    justify-content: flex-end;
+}
+
 @media (max-width: 700px) {
     .bulk-import-row-detail-box {
         padding: 22px;
@@ -2289,6 +2396,91 @@ BULK IMPORT — ROW DETAIL MODAL
         flex-direction: column;
         gap: 10px;
     }
+}
+
+
+/* ============================================================
+BULK IMPORT — IMPORT ROWS / PROBLEMATIC ROWS SECTIONS
+============================================================ */
+
+.bulk-import-section {
+    margin-top: 24px;
+}
+
+.bulk-import-section-title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1d1d1f;
+}
+
+.bulk-import-problematic-section {
+    padding-top: 20px;
+    border-top: 1px solid #e5e5e7;
+}
+
+.bulk-import-problematic-group {
+    margin-bottom: 20px;
+}
+
+.bulk-import-problematic-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Review Queue box (the persistent Needs Review / Invalid Data
+   section): more separation between the two groups, and space
+   below the Refresh button so it isn't crowding the Needs Review
+   heading right under it. Scoped to this section only -- the
+   Preview modal's Problematic Rows area reuses the same classes
+   and is left as-is. */
+#review-queue-section > .buttons {
+    margin-bottom: 28px;
+}
+
+#review-queue-section .bulk-import-problematic-group {
+    margin-bottom: 40px;
+}
+
+#review-queue-section .bulk-import-problematic-group:last-child {
+    margin-bottom: 0;
+}
+
+.bulk-import-subsection-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #6e6e73;
+}
+
+.bulk-import-subsection-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #e5e5e7;
+    color: #1d1d1f;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.bulk-import-problematic-empty {
+    margin: 0;
+    padding: 14px 0;
+    font-size: 13px;
+    color: #8e8e93;
+    text-align: center;
+}
+
+.bulk-import-problematic-empty.hidden {
+    display: none;
 }
 
 
@@ -2367,18 +2559,6 @@ BULK IMPORT — TABLE FILTERS
 }
 
 /* ============================================================
-BULK IMPORT — ROW DETAILS BUTTON
-============================================================ */
-
-.bulk-import-view-row {
-    padding: 6px 12px !important;
-    min-height: unset !important;
-    flex: none !important;
-    font-size: 12px !important;
-    white-space: nowrap;
-}
-
-/* ============================================================
 BULK IMPORT — DETAIL PANEL
 ============================================================ */
 
@@ -2425,6 +2605,115 @@ BULK IMPORT — DETAIL PANEL
 }
 
 /* ============================================================
+BULK IMPORT — IMPORT HISTORY
+============================================================ */
+
+.bulk-import-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.bulk-import-history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bulk-import-history-item:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+.bulk-import-history-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+}
+
+.bulk-import-history-item-main strong {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1d1d1f;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bulk-import-history-item-main span {
+    font-size: 13px;
+    color: #6e6e73;
+}
+
+.bulk-import-history-item-meta {
+    font-size: 11px !important;
+    color: #8e8e93 !important;
+    margin-top: 2px;
+}
+
+.bulk-import-history-item-counts {
+    display: flex;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.bulk-import-history-item-counts span {
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #f5f5f7;
+    color: #555;
+}
+
+.bulk-import-history-item-counts span:nth-child(1) { /* New */
+    background: rgba(52, 199, 89, 0.12);
+    color: #248a3d;
+}
+
+.bulk-import-history-item-counts span:nth-child(2) { /* Update */
+    background: rgba(0, 122, 255, 0.12);
+    color: #0058b8;
+}
+
+.bulk-import-history-item-counts span:nth-child(3) { /* Conflict */
+    background: rgba(255, 59, 48, 0.12);
+    color: #d70015;
+}
+
+.bulk-import-history-view {
+    padding: 8px 16px !important;
+    min-height: unset !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    flex: 0 0 auto !important;
+}
+
+@media (max-width: 700px) {
+    .bulk-import-history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .bulk-import-history-item-counts {
+        flex-wrap: wrap;
+    }
+    .bulk-import-history-view {
+        width: 100%;
+    }
+}
+
+/* ============================================================
 BULK IMPORT — RESPONSIVE
 ============================================================ */
 
@@ -2441,6 +2730,20 @@ BULK IMPORT — RESPONSIVE
 
     .bulk-import-summary-count {
         font-size: 18px;
+    }
+
+    .bulk-import-history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .bulk-import-history-item-counts {
+        flex-wrap: wrap;
+    }
+
+    .bulk-import-history-view {
+        width: 100%;
     }
 }
 

@@ -169,13 +169,7 @@
 					<p class="description"> Upload a provider's CSV price list to preview how it maps against the current trade-in database. This is a read-only preview — nothing is imported or written until a later confirmation step. </p>
 					<div class="form-group">
 						<label for="upload-provider"> Provider </label>
-						<input id="upload-provider" type="text" value="Unknown" list="upload-provider-options">
-						<datalist id="upload-provider-options">
-							<option value="Unknown"></option>
-							<option value="CompAsia"></option>
-							<option value="3Cat"></option>
-							<option value="ATC"></option>
-						</datalist>
+						<input id="upload-provider" type="text" value="Unknown">
 					</div>
 					<div class="form-group">
 						<label> Date Mode </label>
@@ -204,106 +198,253 @@
 					<p id="upload-loading-note" class="upload-loading-note hidden"> Preview generation may take several minutes depending on the dataset size. </p>
 				</div>
 			</section>
+
+			<!-- =================================================
+				 PROBLEMATIC ROWS — ADMIN REVIEW QUEUE
+
+				 Persistent (Google Sheets-backed) list of Bulk
+				 Import rows that could not be resolved before an
+				 earlier batch was applied. Independent of any
+				 single upload's Preview modal -- populated any
+				 time an "Apply Import" leaves Needs Review /
+				 Invalid Data rows behind, and available here for
+				 the Admin to fix and send to Master at any later
+				 time via Edit -> Re-analyze -> Update.
+				 ================================================= -->
+			<section id="review-queue-section" class="card hidden">
+				<h2> Problematic Rows </h2>
+				<p class="description"> Rows from Bulk Import that could not be applied automatically. Edit and re-analyze to fix them, click Update to send a resolved row to Master, or Discard rows that don't belong. </p>
+
+				<div class="buttons">
+					<button type="button" id="review-queue-refresh-button" class="secondary"> Refresh </button>
+				</div>
+
+				<p id="review-queue-loading" class="bulk-import-problematic-empty hidden"> Loading… </p>
+				<div id="review-queue-error" class="result error hidden"></div>
+
+				<div class="bulk-import-problematic-group">
+					<h4 class="bulk-import-subsection-title">
+						Needs Review
+						<span id="review-queue-needs-review-count" class="bulk-import-subsection-count">0</span>
+					</h4>
+					<div class="bulk-import-table-wrapper">
+						<table class="forecast-table" id="review-queue-needs-review-table">
+							<thead id="review-queue-needs-review-head"></thead>
+							<tbody id="review-queue-needs-review-body"></tbody>
+						</table>
+					</div>
+					<p id="review-queue-needs-review-empty" class="bulk-import-problematic-empty hidden">
+						No rows need review.
+					</p>
+				</div>
+
+				<div class="bulk-import-problematic-group">
+					<h4 class="bulk-import-subsection-title">
+						Invalid Data
+						<span id="review-queue-invalid-data-count" class="bulk-import-subsection-count">0</span>
+					</h4>
+					<div class="bulk-import-table-wrapper">
+						<table class="forecast-table" id="review-queue-invalid-data-table">
+							<thead id="review-queue-invalid-data-head"></thead>
+							<tbody id="review-queue-invalid-data-body"></tbody>
+						</table>
+					</div>
+					<p id="review-queue-invalid-data-empty" class="bulk-import-problematic-empty hidden">
+						No rows have invalid data.
+					</p>
+				</div>
+			</section>
+
+			<!-- =================================================
+				 BULK IMPORT HISTORY
+
+				 Client-side record of applied Bulk Import batches,
+				 kept so the Admin can review what was imported
+				 without re-uploading or re-analyzing the file.
+				 ================================================= -->
+			<section id="bulk-import-history-section" class="card hidden">
+				<h2> Import History </h2>
+				<p class="description"> Past Bulk Import batches. Click View to review what was imported without re-analyzing the file. </p>
+				<p id="bulk-import-history-empty" class="bulk-import-problematic-empty hidden"> No imports yet. </p>
+				<div id="bulk-import-history-list" class="bulk-import-history-list"></div>
+			</section>
+
 			<!-- =================================================
              BULK IMPORT PREVIEW MODAL (read-only)
              ================================================= -->
 			<div id="bulk-import-modal" class="hidden">
 				<div class="bulk-import-modal-box">
 					<button type="button" id="bulk-import-close-button" class="modify-close-button"> × </button>
-					<div class="modify-modal-title"> Bulk Import Preview </div>
+					<div id="bulk-import-modal-title" class="modify-modal-title"> Bulk Import Preview </div>
 					<p id="bulk-import-meta" class="modify-modal-info"></p>
 					<div id="bulk-import-summary" class="bulk-import-summary"></div>
 					<div id="bulk-import-unmapped-notice" class="notice hidden">
 						<strong> Unmapped columns </strong>
 						<p id="bulk-import-unmapped-text"></p>
 					</div>
-					<div class="bulk-import-table-wrapper">
-						<table class="forecast-table" id="bulk-import-table">
-							<thead id="bulk-import-table-head"></thead>
-							<tbody id="bulk-import-table-body"></tbody>
-						</table>
-					</div>
-					<div class="buttons">
-						<button type="button" id="bulk-import-close-footer" class="secondary"> Close </button>
-					</div>
-				</div>
-				<!-- =================================================
-					BULK IMPORT ROW DETAIL MODAL
-					================================================= -->
-				<div id="bulk-import-row-detail-modal" class="hidden">
-					<div class="bulk-import-row-detail-box">
+					<div id="bulk-import-scroll-area" class="bulk-import-scroll-area">
+						<div class="bulk-import-section">
+							<h3 class="bulk-import-section-title">Import Rows</h3>
+							<div class="bulk-import-table-wrapper">
+								<table class="forecast-table" id="bulk-import-table">
+									<thead id="bulk-import-table-head"></thead>
+									<tbody id="bulk-import-table-body"></tbody>
+								</table>
+							</div>
+						</div>
 
-						<button
-							type="button"
-							id="bulk-import-row-detail-close"
-							class="modify-close-button">
-							×
+						<!-- =================================================
+							 PROBLEMATIC ROWS — NEEDS REVIEW / INVALID DATA
+							 kept separate from New / Update / Duplicate above,
+							 each row editable via the Edit action.
+							 ================================================= -->
+						<div class="bulk-import-section bulk-import-problematic-section">
+							<h3 class="bulk-import-section-title">Problematic Rows</h3>
+
+							<div class="bulk-import-problematic-group">
+								<h4 class="bulk-import-subsection-title">
+									Needs Review
+									<span id="bulk-import-needs-review-count" class="bulk-import-subsection-count">0</span>
+								</h4>
+								<div class="bulk-import-table-wrapper">
+									<table class="forecast-table" id="bulk-import-needs-review-table">
+										<thead id="bulk-import-needs-review-head"></thead>
+										<tbody id="bulk-import-needs-review-body"></tbody>
+									</table>
+								</div>
+								<p id="bulk-import-needs-review-empty" class="bulk-import-problematic-empty hidden">
+									No rows need review.
+								</p>
+							</div>
+
+							<div class="bulk-import-problematic-group">
+								<h4 class="bulk-import-subsection-title">
+									Invalid Data
+									<span id="bulk-import-invalid-data-count" class="bulk-import-subsection-count">0</span>
+								</h4>
+								<div class="bulk-import-table-wrapper">
+									<table class="forecast-table" id="bulk-import-invalid-data-table">
+										<thead id="bulk-import-invalid-data-head"></thead>
+										<tbody id="bulk-import-invalid-data-body"></tbody>
+									</table>
+								</div>
+								<p id="bulk-import-invalid-data-empty" class="bulk-import-problematic-empty hidden">
+									No rows have invalid data.
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<div class="buttons">
+						<button type="button" id="bulk-import-apply-button">
+							Apply Import
 						</button>
 
-						<div class="modify-modal-title">
-							Import Review
-						</div>
-
-						<div class="bulk-import-detail-heading">
-							<div>
-								<div
-									id="bulk-import-detail-model"
-									class="bulk-import-detail-model">
-									Device
-								</div>
-
-								<div class="bulk-import-detail-subtitle">
-									Incoming row compared with the existing database
-								</div>
-							</div>
-
-							<span
-								id="bulk-import-detail-status"
-								class="status-badge">
-								Review
-							</span>
-						</div>
-
-						<div class="bulk-import-detail-columns">
-
-							<!-- INCOMING -->
-							<section class="bulk-import-detail-card">
-								<h3>Incoming information</h3>
-
-								<div
-									id="bulk-import-detail-incoming"
-									class="bulk-import-detail-fields">
-								</div>
-							</section>
-
-							<!-- MASTER -->
-							<section class="bulk-import-detail-card">
-								<h3>Existing database record</h3>
-
-								<div
-									id="bulk-import-detail-master"
-									class="bulk-import-detail-fields">
-								</div>
-							</section>
-
-						</div>
-
-						<div class="bulk-import-detail-explanation">
-							<div class="bulk-import-detail-explanation-title">
-								What this means
-							</div>
-
-							<p id="bulk-import-detail-explanation">
-								This row has been compared with the current
-								trade-in database.
-							</p>
-						</div>
-
+						<button type="button" id="bulk-import-close-footer" class="secondary">
+							Close
+						</button>
 					</div>
 				</div>
-
-
 			</div>
+			<!-- =================================================
+				BULK IMPORT ROW DETAIL MODAL
+				================================================= -->
+			<div id="bulk-import-row-detail-modal" class="hidden">
+				<div class="bulk-import-row-detail-box">
+
+					<button
+						type="button"
+						id="bulk-import-row-detail-close"
+						class="modify-close-button">
+						×
+					</button>
+
+					<div class="modify-modal-title">
+						Import Review
+					</div>
+
+					<div class="bulk-import-detail-heading">
+						<div>
+							<div
+								id="bulk-import-detail-model"
+								class="bulk-import-detail-model">
+								Device
+							</div>
+
+							<div class="bulk-import-detail-subtitle">
+								Incoming row compared with the existing database
+							</div>
+						</div>
+
+						<span
+							id="bulk-import-detail-status"
+							class="status-badge">
+							Review
+						</span>
+					</div>
+
+					<div
+						id="bulk-import-detail-reasons"
+						class="bulk-import-detail-reasons hidden">
+						<div class="bulk-import-detail-explanation-title">
+							Reason(s) for conflict
+						</div>
+						<ul id="bulk-import-detail-reasons-list"></ul>
+					</div>
+
+					<div class="bulk-import-detail-columns">
+						<section class="bulk-import-detail-card">
+							<h3>Incoming information</h3>
+							<div id="bulk-import-detail-incoming" class="bulk-import-detail-fields"></div>
+						</section>
+
+						<section class="bulk-import-detail-card">
+							<h3>Matched Master information</h3>
+							<div id="bulk-import-detail-master" class="bulk-import-detail-fields"></div>
+						</section>
+
+						<section class="bulk-import-detail-card">
+							<h3>Effective record (editable)</h3>
+							<div id="bulk-import-detail-effective" class="bulk-import-detail-fields"></div>
+						</section>
+					</div>
+
+					<div class="bulk-import-detail-explanation">
+						<div class="bulk-import-detail-explanation-title">
+							What this means
+						</div>
+
+						<p id="bulk-import-detail-explanation">
+							This row has been compared with the current
+							trade-in database.
+						</p>
+					</div>
+
+					<!-- =========================================
+							EDITOR ACTIONS -- only shown when this
+							modal was opened via "Edit" on a
+							Problematic Row (Needs Review / Invalid
+							Data). Re-analyze always re-runs the
+							SAME backend bulk-import classification
+							logic against the current Master dataset.
+							The resolve button label/action depends
+							on the freshest classification returned.
+							========================================= -->
+					<div id="bulk-import-detail-editor-actions" class="buttons bulk-import-detail-editor-actions hidden">
+						<button type="button" id="bulk-import-detail-discard-button" class="secondary hidden">
+							Discard
+						</button>
+						<button type="button" id="bulk-import-detail-reanalyze-button" class="secondary">
+							Re-analyze
+						</button>
+						<button type="button" id="bulk-import-detail-resolve-button" class="hidden">
+							Apply
+						</button>
+					</div>
+
+				</div>
+			</div>
+
 			<!-- =================================================
              MODIFY
              ================================================= -->
@@ -542,6 +683,13 @@
 			Object.values(sections).forEach(section => {
 				section.classList.add("hidden");
 			});
+			
+			// Hide the bulk import extra sections globally when switching tabs
+			const reviewQueue = document.getElementById("review-queue-section");
+			const importHistory = document.getElementById("bulk-import-history-section");
+			if (reviewQueue) reviewQueue.classList.add("hidden");
+			if (importHistory) importHistory.classList.add("hidden");
+
 			// ============================================================
 			// REMOVE ACTIVE FROM ALL NAV BUTTONS
 			// ============================================================
@@ -1646,10 +1794,16 @@
 			const uploadFields = document.getElementById("add-upload-fields");
 			const modelBtn = document.getElementById("add-mode-model-btn");
 			const uploadBtn = document.getElementById("add-mode-upload-btn");
+			const reviewQueue = document.getElementById("review-queue-section");
+			const importHistory = document.getElementById("bulk-import-history-section");
+
 			modelFields.classList.toggle("hidden", mode !== "model");
 			uploadFields.classList.toggle("hidden", mode !== "upload");
 			modelBtn.classList.toggle("active", mode === "model");
 			uploadBtn.classList.toggle("active", mode === "upload");
+			
+			if (reviewQueue) reviewQueue.classList.toggle("hidden", mode !== "upload");
+			if (importHistory) importHistory.classList.toggle("hidden", mode !== "upload");
 		}
 		document.getElementById("add-mode-model-btn").addEventListener("click", () => setAddMode("model"));
 		document.getElementById("add-mode-upload-btn").addEventListener("click", () => setAddMode("upload"));
@@ -1703,6 +1857,361 @@
 		// master_msrp.csv, or the app's master data -- this only
 		// ever calls the preview endpoint.
 		// ====================================================
+
+		let lastBulkImportPreviewData = null;
+		let lastBulkImportPreviewMeta = null;
+		let currentPreviewRows = [];
+
+		// ====================================================
+		// BULK IMPORT — IMPORT HISTORY
+		//
+		// A client-side record of applied Bulk Import batches, so
+		// the Admin can review what was imported (all rows, exactly
+		// as they were classified at Apply time) without ever
+		// re-uploading or re-analyzing the file. Persisted in
+		// localStorage purely so it survives a page reload; it is
+		// NOT a substitute for Master/Google Sheets, which is the
+		// real source of truth -- this is only a read-only log.
+		// ====================================================
+
+		const BULK_IMPORT_HISTORY_STORAGE_KEY = "adminBulkImportHistory";
+		const BULK_IMPORT_HISTORY_MAX_ENTRIES = 25;
+
+		function loadBulkImportHistoryFromStorage() {
+			try {
+				const raw = localStorage.getItem(
+					BULK_IMPORT_HISTORY_STORAGE_KEY
+				);
+
+				return raw ? JSON.parse(raw) : [];
+			} catch (error) {
+				console.error(
+					"Failed to load Bulk Import history:",
+					error
+				);
+
+				return [];
+			}
+		}
+
+		function saveBulkImportHistoryToStorage(list) {
+			try {
+				localStorage.setItem(
+					BULK_IMPORT_HISTORY_STORAGE_KEY,
+					JSON.stringify(
+						list.slice(0, BULK_IMPORT_HISTORY_MAX_ENTRIES)
+					)
+				);
+			} catch (error) {
+				console.error(
+					"Failed to save Bulk Import history:",
+					error
+				);
+			}
+		}
+
+		let bulkImportHistory = loadBulkImportHistoryFromStorage();
+
+		function addBulkImportHistoryEntry(previewData, meta, applyResult) {
+			const entry = {
+				id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+				appliedAt: new Date().toISOString(),
+				provider: meta.provider,
+				dateMode: meta.dateMode,
+				dateModeLabel: meta.dateModeLabel,
+				dateValue: meta.dateValue,
+				filename: meta.filename,
+				summary: previewData.summary || {},
+				rows: previewData.rows || [],
+				unmapped_raw_columns: previewData.unmapped_raw_columns || [],
+				message: (applyResult && applyResult.message) || null
+			};
+
+			bulkImportHistory = [entry, ...bulkImportHistory].slice(
+				0,
+				BULK_IMPORT_HISTORY_MAX_ENTRIES
+			);
+
+			saveBulkImportHistoryToStorage(bulkImportHistory);
+			renderBulkImportHistory();
+		}
+
+		function renderBulkImportHistory() {
+			const list = document.getElementById(
+				"bulk-import-history-list"
+			);
+			const empty = document.getElementById(
+				"bulk-import-history-empty"
+			);
+
+			if (bulkImportHistory.length === 0) {
+				list.innerHTML = "";
+				empty.classList.remove("hidden");
+				return;
+			}
+
+			empty.classList.add("hidden");
+
+			list.innerHTML = bulkImportHistory
+				.map(entry => {
+					const appliedAtLabel = new Date(
+						entry.appliedAt
+					).toLocaleString();
+
+					const summary = entry.summary || {};
+
+					return `
+						<div class="bulk-import-history-item">
+							<div class="bulk-import-history-item-main">
+								<strong>${entry.filename}</strong>
+								<span>${entry.provider} • ${entry.dateModeLabel}: ${entry.dateValue}</span>
+								<span class="bulk-import-history-item-meta">
+									Applied ${appliedAtLabel}
+								</span>
+							</div>
+							<div class="bulk-import-history-item-counts">
+								<span>${summary.new || 0} New</span>
+								<span>${summary.update || 0} Update</span>
+								<span>${summary.conflict || 0} Conflict</span>
+							</div>
+							<button
+								type="button"
+								class="secondary bulk-import-history-view bulk-import-action-btn"
+								data-history-id="${entry.id}"
+								onclick="openBulkImportHistoryById('${entry.id}')">
+								View
+							</button>
+						</div>
+					`;
+				})
+				.join("");
+		}
+
+		// Helper wrapper to easily call from onclick attributes without attaching loops
+		window.openBulkImportHistoryById = function(historyId) {
+			const entry = bulkImportHistory.find(item => item.id === historyId);
+			if (!entry) return;
+			openBulkImportHistoryEntry(entry);
+		};
+
+		function openBulkImportHistoryEntry(entry) {
+			renderBulkImportPreview(
+				{
+					summary: entry.summary,
+					rows: entry.rows,
+					unmapped_raw_columns: entry.unmapped_raw_columns
+				},
+				{
+					provider: entry.provider,
+					dateMode: entry.dateMode,
+					dateModeLabel: entry.dateModeLabel,
+					dateValue: entry.dateValue,
+					filename: entry.filename
+				},
+				{ viewOnly: true }
+			);
+		}
+
+		// ====================================================
+		// ADMIN REVIEW QUEUE — PROBLEMATIC ROWS BOX
+		//
+		// A persistent (Google Sheets-backed) list of rows any past
+		// Bulk Import batch could not resolve before Apply. This is
+		// independent of any single upload's Preview modal -- it is
+		// loaded on page load and after any action that could
+		// change it, and stays available for the Admin to fix at
+		// any later time. Reuses the SAME editor
+		// (openBulkImportRowDetail) as the Preview's Problematic
+		// Rows, tagged with a queue_id so its actions route to
+		// /admin/review-queue/* instead of the ephemeral preview
+		// endpoints.
+		// ====================================================
+
+		const REVIEW_QUEUE_TABLE_COLUMNS = [
+			["Device", "Device"],
+			["Sub-device", "Sub-device"],
+			["Model", "Standardized Model"],
+			["Model Number", "Model Number"],
+			["Storage", "Storage (GB)"],
+			["Provider", "Provider"],
+			["Retail Price", "Retail Price"],
+			["Trade-In Value", "Max. Trade-In Value (RM)"]
+		];
+
+		let reviewQueueItems = [];
+
+		async function loadReviewQueue() {
+			const loading = document.getElementById("review-queue-loading");
+			const errorBox = document.getElementById("review-queue-error");
+
+			loading.classList.remove("hidden");
+			errorBox.classList.add("hidden");
+
+			try {
+				const response = await fetch("/admin/review-queue");
+				const data = await response.json();
+
+				if (!response.ok) {
+					throw new Error(
+						data.detail ||
+						data.message ||
+						"Failed to load the Admin Review Queue."
+					);
+				}
+
+				reviewQueueItems = data.items || [];
+				renderReviewQueue();
+			} catch (error) {
+				console.error("Failed to load the Review Queue:", error);
+				errorBox.textContent =
+					error.message ||
+					"Failed to load the Admin Review Queue.";
+				errorBox.classList.remove("hidden");
+			} finally {
+				loading.classList.add("hidden");
+			}
+		}
+
+		// Helper wrapper to easily call from onclick attributes without attaching loops
+		window.openReviewQueueItemById = function(queueId) {
+			const item = reviewQueueItems.find(entry => entry.queue_id === queueId);
+			if (!item) return;
+			openBulkImportRowDetail(reviewQueueItemToRow(item), { editable: true });
+		};
+
+		function renderReviewQueueRowsTable(targetItems, theadId, tbodyId) {
+			let headHTML = "<tr>";
+
+			REVIEW_QUEUE_TABLE_COLUMNS.forEach(([label]) => {
+				headHTML += `<th>${label}</th>`;
+			});
+
+			headHTML += "<th>Queued</th><th></th></tr>";
+
+			document.getElementById(theadId).innerHTML = headHTML;
+
+			let bodyHTML = "";
+
+			targetItems.forEach(item => {
+				const values =
+					(item.effective_record &&
+						item.effective_record.values) ||
+					{};
+
+				bodyHTML += `<tr data-queue-id="${item.queue_id}">`;
+
+				REVIEW_QUEUE_TABLE_COLUMNS.forEach(([, key]) => {
+					bodyHTML += `
+						<td>${bulkImportFieldDisplayValue(values[key], key)}</td>
+					`;
+				});
+
+				const queuedAtLabel = item.queued_at
+					? new Date(item.queued_at).toLocaleString()
+					: "—";
+
+				bodyHTML += `<td>${queuedAtLabel}</td>`;
+
+				bodyHTML += `
+					<td>
+						<button
+							type="button"
+							class="bulk-import-action-btn review-queue-edit-row"
+							data-queue-id="${item.queue_id}"
+							onclick="openReviewQueueItemById('${item.queue_id}')">
+							Edit
+						</button>
+					</td>
+				`;
+
+				bodyHTML += "</tr>";
+			});
+
+			document.getElementById(tbodyId).innerHTML = bodyHTML;
+		}
+
+		function renderReviewQueue() {
+			const needsReview = reviewQueueItems.filter(
+				item => item.conflict_type === "needs_review"
+			);
+			const invalidData = reviewQueueItems.filter(
+				item => item.conflict_type === "invalid_data"
+			);
+
+			renderReviewQueueRowsTable(
+				needsReview,
+				"review-queue-needs-review-head",
+				"review-queue-needs-review-body"
+			);
+
+			renderReviewQueueRowsTable(
+				invalidData,
+				"review-queue-invalid-data-head",
+				"review-queue-invalid-data-body"
+			);
+
+			document.getElementById(
+				"review-queue-needs-review-count"
+			).textContent = needsReview.length;
+
+			document.getElementById(
+				"review-queue-invalid-data-count"
+			).textContent = invalidData.length;
+
+			document
+				.getElementById("review-queue-needs-review-empty")
+				.classList.toggle("hidden", needsReview.length > 0);
+
+			document
+				.getElementById("review-queue-invalid-data-empty")
+				.classList.toggle("hidden", invalidData.length > 0);
+		}
+
+		function reviewQueueItemToRow(item) {
+			return {
+				queue_id: item.queue_id,
+				row_index: null,
+				incoming_row:
+					(item.effective_record &&
+						item.effective_record.values) ||
+					{},
+				classification: "conflict",
+				conflict_type: item.conflict_type,
+				reasons: item.reasons || [],
+				warnings: item.warnings || [],
+				unknown_fields: item.unknown_fields || [],
+				different_fields: item.different_fields || [],
+				matched_master: item.matched_master,
+				effective_record: item.effective_record,
+				what_this_means: item.what_this_means
+			};
+		}
+
+		document
+			.getElementById("review-queue-refresh-button")
+			.addEventListener("click", loadReviewQueue);
+
+
+
+		// ----------------------------------------------------
+		// Identifies "the same dataset" for the caching check
+		// below: same file (name/size/last-modified), same
+		// Provider, and same date. If any of these differ from
+		// the last analyzed selection, this is a NEW dataset and
+		// must be re-analyzed -- only an exact match may reuse
+		// the cached preview.
+		// ----------------------------------------------------
+		function bulkImportSelectionKey(file, provider, dateMode, dateValue) {
+			return [
+				file.name,
+				file.size,
+				file.lastModified,
+				provider,
+				dateMode,
+				dateValue
+			].join("|");
+		}
+
 		document.getElementById("upload-preview-button").addEventListener("click", async () => {
 			const fileInput = document.getElementById("upload-csv-file");
 			const provider = document.getElementById("upload-provider").value.trim() || "Unknown";
@@ -1723,6 +2232,23 @@
 				return;
 			}
 			const file = fileInput.files[0];
+			const selectionKey = bulkImportSelectionKey(file, provider, dateMode, dateValue);
+
+			// Only reuse the cached preview if this is the EXACT same
+			// dataset (file + Provider + date) as last time -- a
+			// different file/provider/date must always be freshly
+			// analyzed, even though a preview is already cached.
+			if (
+				lastBulkImportPreviewData &&
+				lastBulkImportPreviewMeta &&
+				lastBulkImportPreviewMeta.selectionKey === selectionKey
+			) {
+				renderBulkImportPreview(
+					lastBulkImportPreviewData,
+					lastBulkImportPreviewMeta
+				);
+				return;
+			}
 			const formData = new FormData();
 			formData.append("file", file);
 			formData.append("provider", provider);
@@ -1741,13 +2267,21 @@
 				if (!response.ok) {
 					throw new Error(data.detail || data.message || "Failed to preview upload.");
 				}
-				renderBulkImportPreview(data, {
+
+				lastBulkImportPreviewData = data;
+				lastBulkImportPreviewMeta = {
 					provider,
 					dateMode,
 					dateModeLabel,
 					dateValue,
-					filename: file.name
-				});
+					filename: file.name,
+					selectionKey
+				};
+
+				renderBulkImportPreview(
+					lastBulkImportPreviewData,
+					lastBulkImportPreviewMeta
+				);
 			} catch (error) {
 				console.error(error);
 				showAdminToast(error.message, "error");
@@ -1795,10 +2329,33 @@
 			document.body.style.paddingRight = "";
 		}
 
-		function renderBulkImportPreview(data, meta) {
+		// Helper wrapper to easily call from onclick attributes
+		window.openPreviewRowById = function(rowIndex, editable) {
+			const row = currentPreviewRows.find(item => item.row_index === rowIndex);
+			if (!row) return;
+			openBulkImportRowDetail(row, { editable });
+		};
+
+		function renderBulkImportPreview(data, meta, options) {
+			options = options || {};
+			const viewOnly = Boolean(options.viewOnly);
+
 			const summary = data.summary || {};
 			const rows = data.rows || [];
+			currentPreviewRows = rows;
 			const totalRows = rows.length;
+
+			// -------------------------------------------------
+			// TITLE + APPLY BUTTON (History entries are read-only:
+			// every row opens "View" regardless of classification,
+			// and there is nothing left to Apply).
+			// -------------------------------------------------
+			document.getElementById("bulk-import-modal-title").textContent =
+				viewOnly ? "Import History" : "Bulk Import Preview";
+
+			document
+				.getElementById("bulk-import-apply-button")
+				.classList.toggle("hidden", viewOnly);
 
 			// -------------------------------------------------
 			// META LINE
@@ -1919,7 +2476,37 @@
 			}
 
 			// -------------------------------------------------
-			// FILTER BAR
+			// SEPARATE: Import Rows (New / Update / Duplicate)
+			// from Problematic Rows (Needs Review / Invalid
+			// Data). Problematic rows get their own editable
+			// section below the Import Rows table -- see
+			// openBulkImportRowDetail()'s "editable" mode for
+			// the Edit action's Re-analyze / Apply / Resolve
+			// flow.
+			// -------------------------------------------------
+			const isProblematic = row =>
+				row.classification === "conflict" &&
+				(
+					row.conflict_type === "needs_review" ||
+					row.conflict_type === "invalid_data"
+				);
+
+			const importRows = rows.filter(row => !isProblematic(row));
+			const needsReviewRows = rows.filter(
+				row =>
+					row.classification === "conflict" &&
+					row.conflict_type === "needs_review"
+			);
+			const invalidDataRows = rows.filter(
+				row =>
+					row.classification === "conflict" &&
+					row.conflict_type === "invalid_data"
+			);
+
+			// -------------------------------------------------
+			// FILTER BAR — operates on the Import Rows table
+			// only (New / Update / Duplicate / All). Problematic
+			// Rows have their own always-visible sections below.
 			// -------------------------------------------------
 			const existingFilters =
 				document.querySelector(".bulk-import-filters");
@@ -1928,14 +2515,20 @@
 				existingFilters.remove();
 			}
 
+			const duplicateCount = importRows.filter(
+				row =>
+					row.classification === "conflict" &&
+					row.conflict_type === "duplicate"
+			).length;
+
 			const filters = document.createElement("div");
 			filters.className = "bulk-import-filters";
 
 			const filterDefinitions = [
-				["all", `All ${totalRows}`],
+				["all", `All ${importRows.length}`],
 				["new", `New ${summary.new || 0}`],
 				["update", `Update ${summary.update || 0}`],
-				["conflict", `Conflict ${conflictCount}`]
+				["duplicate", `Duplicate ${duplicateCount}`]
 			];
 
 			filterDefinitions.forEach(([filter, label], index) => {
@@ -1952,15 +2545,18 @@
 				filters.appendChild(button);
 			});
 
-			const tableWrapper =
-				document.querySelector(".bulk-import-table-wrapper");
+			const tableWrapper = document
+				.getElementById("bulk-import-table")
+				.closest(".bulk-import-table-wrapper");
 
 			tableWrapper.insertAdjacentElement(
 				"beforebegin",
 				filters
 			);
 			// -------------------------------------------------
-			// TABLE — Model + Trade-In Value first, then uploaded columns
+			// TABLE COLUMNS — Model + Trade-In Value first, then
+			// uploaded columns. Shared by the Import Rows table
+			// and both Problematic Rows tables below.
 			// -------------------------------------------------
 			const rawColumns =
 				totalRows > 0
@@ -2002,119 +2598,174 @@
 				...remainingColumns
 			];
 
-			let headHTML = "<tr>";
+			function formatBulkImportCellValue(col, value) {
+				let displayValue =
+					value === null ||
+					value === undefined ||
+					value === ""
+						? "—"
+						: value;
 
-			displayColumns.forEach(col => {
-				let label = col;
+				if (
+					col === tradeInColumn &&
+					displayValue !== "—"
+				) {
+					const numericValue = Number(
+						String(displayValue)
+							.replace(/RM/gi, "")
+							.replace(/,/g, "")
+							.trim()
+					);
 
-				if (col === tradeInColumn) {
-					label = "Trade-In Value";
+					if (!Number.isNaN(numericValue)) {
+						displayValue =
+							`RM ${numericValue.toLocaleString(
+								"en-MY",
+								{
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2
+								}
+							)}`;
+					}
 				}
 
-				if (col === modelColumn) {
-					label = "Model";
-				}
+				return displayValue;
+			}
 
-				headHTML += `<th>${label}</th>`;
-			});
-
-			headHTML += "<th>Status</th><th></th></tr>";
-
-			document.getElementById(
-				"bulk-import-table-head"
-			).innerHTML = headHTML;
-
-			let bodyHTML = "";
-
-			rows.forEach(row => {
-				const status = row.classification || "conflict";
-				const conflictType = row.conflict_type || null;
-
-				let statusLabel =
-					BULK_IMPORT_STATUS_LABELS[status] || status;
-
-				if (status === "conflict" && conflictType) {
-					statusLabel =
-						BULK_IMPORT_STATUS_LABELS[conflictType] ||
-						conflictType;
-				}
-
-				bodyHTML += `
-					<tr
-						data-classification="${status}"
-						data-conflict-type="${conflictType || ""}">
-				`;
+			// -------------------------------------------------
+			// RENDER ONE ROWS TABLE (shared by Import Rows and
+			// each Problematic Rows sub-section).
+			// -------------------------------------------------
+			function renderBulkImportRowsTable(
+				targetRows,
+				theadId,
+				tbodyId,
+				actionLabel,
+				actionClass,
+				editable
+			) {
+				let headHTML = "<tr>";
 
 				displayColumns.forEach(col => {
-					const value = row.incoming_row
-						? row.incoming_row[col]
-						: null;
+					let label = col;
 
-					let displayValue =
-						value === null ||
-						value === undefined ||
-						value === ""
-							? "—"
-							: value;
+					if (col === tradeInColumn) {
+						label = "Trade-In Value";
+					}
 
-					// Make the trade-in value visually clearer.
-					if (
-						col === tradeInColumn &&
-						displayValue !== "—"
-					) {
-						const numericValue = Number(
-							String(displayValue)
-								.replace(/RM/gi, "")
-								.replace(/,/g, "")
-								.trim()
-						);
+					if (col === modelColumn) {
+						label = "Model";
+					}
 
-						if (!Number.isNaN(numericValue)) {
-							displayValue =
-								`RM ${numericValue.toLocaleString(
-									"en-MY",
-									{
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									}
-								)}`;
-						}
+					headHTML += `<th>${label}</th>`;
+				});
+
+				headHTML += "<th>Status</th><th></th></tr>";
+
+				document.getElementById(theadId).innerHTML = headHTML;
+
+				let bodyHTML = "";
+
+				targetRows.forEach(row => {
+					const status = row.classification || "conflict";
+					const conflictType = row.conflict_type || null;
+
+					let statusLabel =
+						BULK_IMPORT_STATUS_LABELS[status] || status;
+
+					if (status === "conflict" && conflictType) {
+						statusLabel =
+							BULK_IMPORT_STATUS_LABELS[conflictType] ||
+							conflictType;
 					}
 
 					bodyHTML += `
-						<td>${displayValue}</td>
+						<tr
+							data-classification="${status}"
+							data-conflict-type="${conflictType || ""}">
 					`;
+
+					displayColumns.forEach(col => {
+						const value = row.incoming_row
+							? row.incoming_row[col]
+							: null;
+
+						bodyHTML += `
+							<td>${formatBulkImportCellValue(col, value)}</td>
+						`;
+					});
+
+					bodyHTML += `
+						<td>
+							<span class="status-badge status-${conflictType || status}">
+								${statusLabel}
+							</span>
+						</td>
+					`;
+
+					bodyHTML += `
+						<td>
+							<button
+								type="button"
+								class="bulk-import-action-btn ${actionClass}"
+								data-row-index="${row.row_index}"
+								onclick="openPreviewRowById(${row.row_index}, ${editable})">
+								${actionLabel}
+							</button>
+						</td>
+					`;
+
+					bodyHTML += "</tr>";
 				});
 
-				bodyHTML += `
-					<td>
-						<span class="status-badge status-${status}">
-							${statusLabel}
-						</span>
-					</td>
-				`;
+				document.getElementById(tbodyId).innerHTML = bodyHTML;
+			}
 
-				bodyHTML += `
-					<td>
-						<button
-							type="button"
-							class="bulk-import-view-row secondary"
-							data-row-index="${row.row_index}">
-							View
-						</button>
-					</td>
-				`;
+			renderBulkImportRowsTable(
+				importRows,
+				"bulk-import-table-head",
+				"bulk-import-table-body",
+				"View",
+				"bulk-import-view-row",
+				false
+			);
 
-				bodyHTML += "</tr>";
-			});
+			renderBulkImportRowsTable(
+				needsReviewRows,
+				"bulk-import-needs-review-head",
+				"bulk-import-needs-review-body",
+				viewOnly ? "View" : "Edit",
+				viewOnly ? "bulk-import-view-row" : "bulk-import-edit-row",
+				!viewOnly
+			);
+
+			renderBulkImportRowsTable(
+				invalidDataRows,
+				"bulk-import-invalid-data-head",
+				"bulk-import-invalid-data-body",
+				viewOnly ? "View" : "Edit",
+				viewOnly ? "bulk-import-view-row" : "bulk-import-edit-row",
+				!viewOnly
+			);
 
 			document.getElementById(
-				"bulk-import-table-body"
-			).innerHTML = bodyHTML;
+				"bulk-import-needs-review-count"
+			).textContent = needsReviewRows.length;
 
+			document.getElementById(
+				"bulk-import-invalid-data-count"
+			).textContent = invalidDataRows.length;
+
+			document
+				.getElementById("bulk-import-needs-review-empty")
+				.classList.toggle("hidden", needsReviewRows.length > 0);
+
+			document
+				.getElementById("bulk-import-invalid-data-empty")
+				.classList.toggle("hidden", invalidDataRows.length > 0);
 
 			// -------------------------------------------------
-			// FILTER BEHAVIOR
+			// FILTER BEHAVIOR (Import Rows table only)
 			// -------------------------------------------------
 			document
 				.querySelectorAll(".bulk-import-filter")
@@ -2138,6 +2789,8 @@
 							.forEach(row => {
 								const classification =
 									row.dataset.classification;
+								const conflictType =
+									row.dataset.conflictType;
 
 								let visible = true;
 
@@ -2147,38 +2800,14 @@
 								} else if (filter === "update") {
 									visible =
 										classification === "update";
-								} else if (filter === "conflict") {
+								} else if (filter === "duplicate") {
 									visible =
-										classification === "conflict";
+										conflictType === "duplicate";
 								}
 
 								row.style.display =
 									visible ? "" : "none";
 							});
-					});
-				});
-
-
-			// -------------------------------------------------
-			// VIEW ROW — OPEN DETAIL MODAL
-			// -------------------------------------------------
-			document
-				.querySelectorAll(".bulk-import-view-row")
-				.forEach(button => {
-					button.addEventListener("click", () => {
-						const rowIndex =
-							Number(button.dataset.rowIndex);
-
-						const row = rows.find(
-							item => item.row_index === rowIndex
-						);
-
-						if (!row) {
-							return;
-						}
-
-						console.log("BULK IMPORT ROW:", row);
-						openBulkImportRowDetail(row);
 					});
 				});
 
@@ -2192,11 +2821,108 @@
 		// ====================================================
 		// BULK IMPORT — ROW DETAIL MODAL
 		// ====================================================
-		function openBulkImportRowDetail(row) {
+		// State for the currently-open Problematic Row editor (null
+		// when the modal is in read-only "View" mode). Populated by
+		// openBulkImportRowDetail() and consumed by the Re-analyze /
+		// Apply / Resolve-Skip button handlers below.
+		let currentEditRow = null;
+		let currentEditRowEditable = false;
+
+		function bulkImportFieldDisplayValue(value, key) {
+			let displayValue = value;
+
+			if (
+				displayValue === null ||
+				displayValue === undefined ||
+				displayValue === "" ||
+				String(displayValue).toLowerCase() === "nan"
+			) {
+				return "Not provided";
+			}
+
+			if (key === "Max. Trade-In Value (RM)") {
+				const numericValue = Number(
+					String(displayValue)
+						.replace(/RM/gi, "")
+						.replace(/,/g, "")
+						.trim()
+				);
+
+				if (!Number.isNaN(numericValue)) {
+					return `RM ${numericValue.toLocaleString(
+						"en-MY",
+						{
+							minimumFractionDigits: 2,
+							maximumFractionDigits: 2
+						}
+					)}`;
+				}
+
+				return displayValue;
+			}
+
+			if (key === "Storage (GB)") {
+				return `${displayValue} GB`;
+			}
+
+			return displayValue;
+		}
+
+		const BULK_IMPORT_DETAIL_FIELDS = [
+			["Device", "Device"],
+			["Sub-device", "Sub-device"],
+			["Model", "Standardized Model"],
+			["Model Number", "Model Number"],
+			["Storage", "Storage (GB)"],
+			["Storage Type", "Storage Type"],
+			["Connectivity", "Connectivity"],
+			["Provider", "Provider"],
+			["Retail Price", "Retail Price"],
+			["Trade-in value", "Max. Trade-In Value (RM)"]
+		];
+
+		// ====================================================
+		// BULK IMPORT — ROW DETAIL / PROBLEMATIC-ROW EDITOR
+		//
+		// options.editable === true opens this as the Problematic
+		// Row editor (Needs Review / Invalid Data): the Effective
+		// Record fields become inputs the Admin can change, and the
+		// Re-analyze / Apply / Resolve-Skip action bar is shown.
+		// options.editable === false (the default, used by "View"
+		// on New/Update/Duplicate rows) keeps the existing read-only
+		// behavior with no action bar.
+		// ====================================================
+		function openBulkImportRowDetail(row, options) {
+			options = options || {};
+
+			currentEditRow = row;
+			currentEditRow.queue_id = row.queue_id || null;
+			currentEditRowEditable = Boolean(options.editable);
+
 			const modal =
 				document.getElementById("bulk-import-row-detail-modal");
 
 			const incoming = row.incoming_row || {};
+
+			// -------------------------------------------------
+			// INCOMING INFORMATION CARD -- a Review Queue item has
+			// no separate "raw incoming" record (only its Effective
+			// Record), so showing that card again alongside
+			// Effective Record would just duplicate it. Hide it and
+			// fall back to a 2-column layout in that case.
+			// -------------------------------------------------
+			const incomingCard = document
+				.getElementById("bulk-import-detail-incoming")
+				.closest(".bulk-import-detail-card");
+			const detailColumns = document.querySelector(
+				".bulk-import-detail-columns"
+			);
+
+			incomingCard.classList.toggle("hidden", Boolean(row.queue_id));
+			detailColumns.classList.toggle(
+				"bulk-import-detail-columns-two",
+				Boolean(row.queue_id)
+			);
 
 			// -------------------------------------------------
 			// STATUS
@@ -2213,7 +2939,7 @@
 
 			statusElement.textContent = statusLabel;
 			statusElement.className =
-				`status-badge status-${row.classification || "conflict"}`;
+				`status-badge status-${statusKey || "conflict"}`;
 
 			// -------------------------------------------------
 			// MODEL TITLE
@@ -2229,68 +2955,44 @@
 			).textContent = model;
 
 			// -------------------------------------------------
+			// REASON(S) FOR CONFLICT
+			// -------------------------------------------------
+			const reasonsSection =
+				document.getElementById("bulk-import-detail-reasons");
+			const reasonsList =
+				document.getElementById("bulk-import-detail-reasons-list");
+
+			const reasons = [
+				...(row.reasons || []),
+				...(row.warnings || [])
+			];
+
+			if (reasons.length > 0) {
+				reasonsList.innerHTML = reasons
+					.map(reason => `<li>${reason}</li>`)
+					.join("");
+				reasonsSection.classList.remove("hidden");
+			} else {
+				reasonsList.innerHTML = "";
+				reasonsSection.classList.add("hidden");
+			}
+
+			// -------------------------------------------------
 			// INCOMING INFORMATION
 			// -------------------------------------------------
 			const incomingContainer =
-				document.getElementById(
-					"bulk-import-detail-incoming"
-				);
+				document.getElementById("bulk-import-detail-incoming");
 
 			incomingContainer.innerHTML = "";
 
-			const incomingFields = [
-				["Device", "Device"],
-				["Sub-device", "Sub-device"],
-				["Model", "Standardized Model"],
-				["Model Number", "Model Number"],
-				["Storage", "Storage (GB)"],
-				["Storage Type", "Storage Type"],
-				["Connectivity", "Connectivity"],
-				["Provider", "Provider"],
-				["Trade-in value", "Max. Trade-In Value (RM)"]
-			];
-
-			incomingFields.forEach(([label, key]) => {
-				let value = incoming[key];
-
-				if (
-					value === null ||
-					value === undefined ||
-					value === ""
-				) {
-					value = "Not provided";
-				}
-
-				if (
-					key === "Max. Trade-In Value (RM)" &&
-					value !== "Not provided"
-				) {
-					const numericValue = Number(
-						String(value)
-							.replace(/RM/gi, "")
-							.replace(/,/g, "")
-							.trim()
-					);
-
-					if (!Number.isNaN(numericValue)) {
-						value =
-							`RM ${numericValue.toLocaleString(
-								"en-MY",
-								{
-									minimumFractionDigits: 2,
-									maximumFractionDigits: 2
-								}
-							)}`;
-					}
-				}
-
-				if (key === "Storage (GB)" && value !== "Not provided") {
-					value = `${value} GB`;
-				}
+			BULK_IMPORT_DETAIL_FIELDS.forEach(([label, key]) => {
+				const value = bulkImportFieldDisplayValue(
+					incoming[key],
+					key
+				);
 
 				const item = document.createElement("div");
-				item.className =
-					"bulk-import-detail-field";
+				item.className = "bulk-import-detail-field";
 
 				item.innerHTML = `
 					<span class="bulk-import-detail-field-label">
@@ -2305,88 +3007,24 @@
 			});
 
 			// -------------------------------------------------
-			// MASTER INFORMATION
+			// MATCHED MASTER INFORMATION
 			// -------------------------------------------------
 			const masterContainer =
-				document.getElementById(
-					"bulk-import-detail-master"
-				);
+				document.getElementById("bulk-import-detail-master");
 
 			masterContainer.innerHTML = "";
-
-			/*
-			* The backend needs to provide the actual matched
-			* Master row for this section.
-			*
-			* Expected shape:
-			*
-			* row.matched_master = {
-			*     "Device": "...",
-			*     "Sub-device": "...",
-			*     "Standardized Model": "...",
-			*     ...
-			* }
-			*/
 
 			const master = row.matched_master || null;
 
 			if (master) {
-				const masterFields = [
-					["Device", "Device"],
-					["Sub-device", "Sub-device"],
-					["Model", "Standardized Model"],
-					["Model Number", "Model Number"],
-					["Storage", "Storage (GB)"],
-					["Storage Type", "Storage Type"],
-					["Connectivity", "Connectivity"],
-					["Provider", "Provider"],
-					["Trade-in value", "Max. Trade-In Value (RM)"]
-				];
-
-				masterFields.forEach(([label, key]) => {
-					let value = master[key];
-
-					if (
-						value === null ||
-						value === undefined ||
-						value === ""
-					) {
-						value = "Not provided";
-					}
-
-					if (
-						key === "Max. Trade-In Value (RM)" &&
-						value !== "Not provided"
-					) {
-						const numericValue = Number(
-							String(value)
-								.replace(/RM/gi, "")
-								.replace(/,/g, "")
-								.trim()
-						);
-
-						if (!Number.isNaN(numericValue)) {
-							value =
-								`RM ${numericValue.toLocaleString(
-									"en-MY",
-									{
-										minimumFractionDigits: 2,
-										maximumFractionDigits: 2
-									}
-								)}`;
-						}
-					}
-
-					if (
-						key === "Storage (GB)" &&
-						value !== "Not provided"
-					) {
-						value = `${value} GB`;
-					}
+				BULK_IMPORT_DETAIL_FIELDS.forEach(([label, key]) => {
+					const value = bulkImportFieldDisplayValue(
+						master[key],
+						key
+					);
 
 					const item = document.createElement("div");
-					item.className =
-						"bulk-import-detail-field";
+					item.className = "bulk-import-detail-field";
 
 					item.innerHTML = `
 						<span class="bulk-import-detail-field-label">
@@ -2402,11 +3040,88 @@
 			} else {
 				masterContainer.innerHTML = `
 					<div class="bulk-import-detail-empty">
-						The existing database record could not be
-						displayed for this preview.
+						No matching Master record was found for this row.
 					</div>
 				`;
 			}
+
+			// -------------------------------------------------
+			// EFFECTIVE RECORD (editable in editor mode).
+			//
+			// Rendered independent of whether a Master match was
+			// found -- Invalid Data / New-style rows with no match
+			// still need their proposed values shown/editable.
+			// -------------------------------------------------
+			const effective = row.effective_record || {};
+			const effectiveValues = Object.assign(
+				{},
+				effective.values || {}
+			);
+			const provenance = effective.provenance || {};
+
+			// Keep the row's own effective_record.values in sync so
+			// reasonalyze/apply always send the latest edits, even
+			// for fields BULK_IMPORT_DETAIL_FIELDS doesn't render.
+			effective.values = effectiveValues;
+			row.effective_record = effective;
+
+			const provenanceLabels = {
+				incoming: "Incoming",
+				inferred: "Inferred / normalized",
+				master_inherited: "Master inherited",
+				missing: "Missing"
+			};
+
+			const effectiveContainer = document.getElementById(
+				"bulk-import-detail-effective"
+			);
+
+			effectiveContainer.innerHTML = "";
+
+			BULK_IMPORT_DETAIL_FIELDS.forEach(([label, key]) => {
+				const rawValue = effectiveValues[key];
+
+				const displayValue =
+					rawValue === null ||
+					rawValue === undefined ||
+					rawValue === "" ||
+					String(rawValue).toLowerCase() === "nan"
+						? ""
+						: rawValue;
+
+				const source = provenance[key] || "missing";
+				const sourceLabel = provenanceLabels[source] || source;
+
+				const field = document.createElement("div");
+				field.className = "bulk-import-detail-field";
+
+				const labelElement = document.createElement("strong");
+				labelElement.textContent = label;
+
+				const valueElement = document.createElement("input");
+
+				valueElement.type = "text";
+				valueElement.value = String(displayValue);
+				valueElement.placeholder = "Not provided";
+				valueElement.className = "bulk-import-detail-edit-input";
+				valueElement.dataset.field = key;
+				valueElement.disabled = !currentEditRowEditable;
+
+				const provenanceElement = document.createElement("small");
+				provenanceElement.textContent = sourceLabel;
+				provenanceElement.className =
+					"bulk-import-detail-provenance";
+
+				field.appendChild(labelElement);
+				field.appendChild(valueElement);
+				field.appendChild(provenanceElement);
+
+				effectiveContainer.appendChild(field);
+
+				valueElement.addEventListener("input", () => {
+					effectiveValues[key] = valueElement.value;
+				});
+			});
 
 			// -------------------------------------------------
 			// HUMAN-READABLE EXPLANATION
@@ -2417,6 +3132,7 @@
 				);
 
 			let explanationText =
+				row.what_this_means ||
 				"This row has been compared with the current trade-in database.";
 
 			if (row.classification === "new") {
@@ -2425,20 +3141,14 @@
 			} else if (row.classification === "update") {
 				explanationText =
 					"This device already exists in the database, but some information has changed and may require an update.";
-			} else if (
-				row.classification === "conflict"
-			) {
+			} else if (row.classification === "conflict") {
 				if (row.conflict_type === "duplicate") {
 					explanationText =
 						"This row matches an existing record with the same information, so it is already represented in the database.";
-				} else if (
-					row.conflict_type === "needs_review"
-				) {
+				} else if (row.conflict_type === "needs_review") {
 					explanationText =
 						"This device matches an existing record, but some information could not be confirmed automatically and should be reviewed.";
-				} else if (
-					row.conflict_type === "invalid_data"
-				) {
+				} else if (row.conflict_type === "invalid_data") {
 					explanationText =
 						"Some information in this uploaded row does not match the expected format and needs to be corrected.";
 				}
@@ -2447,10 +3157,541 @@
 			explanation.textContent = explanationText;
 
 			// -------------------------------------------------
+			// EDITOR ACTIONS (Re-analyze / Apply / Resolve-Skip /
+			// Discard)
+			//
+			// Discard only ever applies to a persisted Admin Review
+			// Queue row (queue_id set) -- there is nothing to
+			// "discard" for a row still sitting in an unapplied
+			// Preview modal batch, since closing that modal without
+			// applying already leaves it untouched.
+			// -------------------------------------------------
+			const editorActions = document.getElementById(
+				"bulk-import-detail-editor-actions"
+			);
+			const resolveButton = document.getElementById(
+				"bulk-import-detail-resolve-button"
+			);
+			const discardButton = document.getElementById(
+				"bulk-import-detail-discard-button"
+			);
+
+			if (currentEditRowEditable) {
+				editorActions.classList.remove("hidden");
+				updateBulkImportResolveButton(row);
+				discardButton.classList.toggle(
+					"hidden",
+					!currentEditRow.queue_id
+				);
+			} else {
+				editorActions.classList.add("hidden");
+				resolveButton.classList.add("hidden");
+				discardButton.classList.add("hidden");
+			}
+
+			// -------------------------------------------------
 			// OPEN
 			// -------------------------------------------------
 			modal.classList.remove("hidden");
 		}
+
+		// ----------------------------------------------------
+		// Show/hide + label the resolve button based on the
+		// freshest classification for the row currently open in
+		// the editor: NEW/UPDATE -> "Apply", DUPLICATE ->
+		// "Resolve/Skip", NEEDS REVIEW/INVALID DATA -> hidden
+		// (remains unresolved until edited + re-analyzed again).
+		// ----------------------------------------------------
+		function updateBulkImportResolveButton(row) {
+			const resolveButton = document.getElementById(
+				"bulk-import-detail-resolve-button"
+			);
+
+			if (row.classification === "new" || row.classification === "update") {
+				resolveButton.textContent = "Apply";
+				resolveButton.className = "primary";
+				resolveButton.classList.remove("hidden");
+			} else if (
+				row.classification === "conflict" &&
+				row.conflict_type === "duplicate"
+			) {
+				resolveButton.textContent = "Resolve / Skip";
+				resolveButton.className = "secondary";
+				resolveButton.classList.remove("hidden");
+			} else {
+				resolveButton.classList.add("hidden");
+			}
+		}
+
+		// ----------------------------------------------------
+		// RE-ANALYZE — sends the Admin's edited Effective Record
+		// to /admin/bulk-import/reanalyze-row, which reuses the
+		// SAME bulk-import classification logic (analyze_upload)
+		// against the CURRENT Master dataset. Nothing is applied
+		// or persisted here.
+		// ----------------------------------------------------
+		document
+			.getElementById("bulk-import-detail-reanalyze-button")
+			.addEventListener("click", async () => {
+				if (!currentEditRow || !currentEditRowEditable) {
+					return;
+				}
+
+				const button = document.getElementById(
+					"bulk-import-detail-reanalyze-button"
+				);
+
+				setActionLoading(button, "Re-analyzing...");
+
+				try {
+					const response = await fetch(
+						"/admin/bulk-import/reanalyze-row",
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json"
+							},
+							body: JSON.stringify({
+								effective_record: currentEditRow.effective_record
+							})
+						}
+					);
+
+					const result = await response.json();
+
+					if (!response.ok) {
+						throw new Error(
+							result.detail ||
+							result.message ||
+							"Failed to re-analyze this row."
+						);
+					}
+
+					// Merge the fresh classification into the row this
+					// preview is tracking, then re-open the editor so
+					// every section (status, reasons, matched master,
+					// effective record, resolve button) reflects it.
+					currentEditRow.classification = result.classification;
+					currentEditRow.conflict_type = result.conflict_type;
+					currentEditRow.reasons = result.reasons || [];
+					currentEditRow.warnings = result.warnings || [];
+					currentEditRow.unknown_fields = result.unknown_fields || [];
+					currentEditRow.different_fields = result.different_fields || [];
+					currentEditRow.what_this_means = result.what_this_means;
+					currentEditRow.matched_master = result.matched_master;
+					currentEditRow.effective_record = result.effective_record;
+
+					openBulkImportRowDetail(currentEditRow, { editable: true });
+
+					if (
+						currentEditRow.classification === "conflict" &&
+						(currentEditRow.conflict_type === "needs_review" ||
+							currentEditRow.conflict_type === "invalid_data")
+					) {
+						showAdminToast(
+							"Still needs attention -- see the updated reason(s) above.",
+							"warning"
+						);
+					} else {
+						showAdminToast(
+							"Re-analyzed against the current Master dataset.",
+							"success"
+						);
+					}
+				} catch (error) {
+					console.error("Bulk import row re-analyze failed:", error);
+					showAdminToast(
+						error.message || "Failed to re-analyze this row.",
+						"error"
+					);
+				} finally {
+					resetActionButton(button, "Re-analyze");
+				}
+			});
+
+		// ----------------------------------------------------
+		// APPLY / RESOLVE-SKIP
+		//
+		// Two different rows can open this same editor, and they
+		// resolve through two different endpoints:
+		//
+		//   - A row still sitting in an unapplied Preview modal
+		//     batch (currentEditRow.queue_id is null) resolves via
+		//     the existing /admin/bulk-import/apply endpoint, same
+		//     as before.
+		//
+		//   - A row opened from the persistent Admin Review Queue
+		//     box (currentEditRow.queue_id is set) MUST resolve via
+		//     /admin/review-queue/{queue_id}/apply instead -- that
+		//     is the only endpoint that also removes the row's
+		//     entry from the Review Queue worksheet once it's
+		//     resolved. Routing this case through
+		//     /admin/bulk-import/apply would still apply the row to
+		//     Master, but would leave a stale duplicate sitting in
+		//     the Review Queue sheet forever.
+		// ----------------------------------------------------
+		// ----------------------------------------------------
+		// DISCARD — only ever shown for a persisted Admin Review
+		// Queue row. Removes the row from the Review Queue
+		// worksheet without ever touching Master; nothing here is
+		// applied or synced anywhere else.
+		// ----------------------------------------------------
+		document
+			.getElementById("bulk-import-detail-discard-button")
+			.addEventListener("click", async () => {
+				if (!currentEditRow || !currentEditRowEditable || !currentEditRow.queue_id) {
+					return;
+				}
+
+				const confirmed = window.confirm(
+					"Discard this row from the Admin Review Queue? " +
+					"This cannot be undone."
+				);
+
+				if (!confirmed) {
+					return;
+				}
+
+				const queueId = currentEditRow.queue_id;
+				const button = document.getElementById(
+					"bulk-import-detail-discard-button"
+				);
+
+				setActionLoading(button, "Discarding...");
+
+				try {
+					const response = await fetch(
+						`/admin/review-queue/${encodeURIComponent(queueId)}/discard`,
+						{ method: "POST" }
+					);
+
+					const result = await response.json();
+
+					if (!response.ok) {
+						throw new Error(
+							result.detail ||
+							result.message ||
+							"Failed to discard this row."
+						);
+					}
+
+					showAdminToast(
+						result.message || "Row discarded from the Review Queue.",
+						"success"
+					);
+
+					document
+						.getElementById("bulk-import-row-detail-modal")
+						.classList.add("hidden");
+
+					currentEditRow = null;
+					currentEditRowEditable = false;
+
+					loadReviewQueue();
+				} catch (error) {
+					console.error("Review queue discard failed:", error);
+					showAdminToast(
+						error.message || "Failed to discard this row.",
+						"error"
+					);
+				} finally {
+					resetActionButton(button, "Discard");
+				}
+			});
+
+		document
+			.getElementById("bulk-import-detail-resolve-button")
+			.addEventListener("click", async () => {
+				if (!currentEditRow || !currentEditRowEditable) {
+					return;
+				}
+
+				const button = document.getElementById(
+					"bulk-import-detail-resolve-button"
+				);
+
+				const originalLabel = button.textContent.trim();
+
+				setActionLoading(button, "Working...");
+
+				const queueId = currentEditRow.queue_id;
+
+				try {
+					if (queueId) {
+
+						// ------------------------------------------
+						// PERSISTENT REVIEW QUEUE ROW
+						// ------------------------------------------
+
+						const response = await fetch(
+							`/admin/review-queue/${encodeURIComponent(queueId)}/apply`,
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json"
+								},
+								body: JSON.stringify({
+									effective_record:
+										currentEditRow.effective_record
+								})
+							}
+						);
+
+						const result = await response.json();
+
+						if (!response.ok) {
+							throw new Error(
+								result.detail ||
+								result.message ||
+								"Failed to resolve this row."
+							);
+						}
+
+						if (result.status === "still_needs_review") {
+
+							// Still not resolvable as-is -- stays in the
+							// queue with its refreshed reasons. Reopen
+							// the editor so the Admin sees why.
+							currentEditRow.classification = result.classification;
+							currentEditRow.conflict_type = result.conflict_type;
+							currentEditRow.reasons = result.reasons || [];
+							currentEditRow.unknown_fields = result.unknown_fields || [];
+							currentEditRow.different_fields = result.different_fields || [];
+							currentEditRow.what_this_means = result.what_this_means;
+
+							openBulkImportRowDetail(currentEditRow, { editable: true });
+
+							showAdminToast(
+								"Still needs attention -- see the updated reason(s) above.",
+								"warning"
+							);
+
+							loadReviewQueue();
+
+						} else {
+
+							let message = "Row resolved.";
+
+							if (result.status === "duplicate_discarded") {
+								message = result.message || "Row already matched Master; discarded.";
+							} else if (result.action === "applied_new") {
+								message = "Row applied to Master as a new record.";
+							} else if (result.action === "applied_update") {
+								message = "Row applied to Master as an update.";
+							} else if (result.message) {
+								message = result.message;
+							}
+
+							showAdminToast(message, "success");
+
+							document
+								.getElementById("bulk-import-row-detail-modal")
+								.classList.add("hidden");
+
+							currentEditRow = null;
+							currentEditRowEditable = false;
+
+							loadReviewQueue();
+						}
+
+					} else {
+
+						// ------------------------------------------
+						// UNAPPLIED PREVIEW MODAL ROW (unchanged)
+						// ------------------------------------------
+
+						const response = await fetch(
+							"/admin/bulk-import/apply",
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json"
+								},
+								body: JSON.stringify({
+									rows: [
+										{
+											effective_record:
+												currentEditRow.effective_record
+										}
+									],
+									date_mode:
+										lastBulkImportPreviewData &&
+										lastBulkImportPreviewData.date_mode,
+									date_value:
+										lastBulkImportPreviewData &&
+										lastBulkImportPreviewData.date_value
+								})
+							}
+						);
+
+						const result = await response.json();
+
+						if (!response.ok) {
+							throw new Error(
+								result.detail ||
+								result.message ||
+								"Failed to resolve this row."
+							);
+						}
+
+						// This row is now fully resolved (applied to Master,
+						// skipped as a duplicate, or -- unexpectedly -- sent
+						// to the Admin Review Queue) -- remove it from the
+						// pending preview batch so "Apply Import" below never
+						// reprocesses it.
+						if (lastBulkImportPreviewData && lastBulkImportPreviewData.rows) {
+							lastBulkImportPreviewData.rows =
+								lastBulkImportPreviewData.rows.filter(
+									item => item.row_index !== currentEditRow.row_index
+								);
+						}
+
+						let message = "Row resolved.";
+
+						if (result.imported_new) {
+							message = "Row applied to Master as a new record.";
+						} else if (result.imported_update) {
+							message = "Row applied to Master as an update.";
+						} else if (result.skipped_duplicate) {
+							message = "Row skipped as a duplicate.";
+						} else if (result.queued_for_review) {
+							message = "Row sent to the Admin Review Queue.";
+						}
+
+						showAdminToast(message, "success");
+
+						document
+							.getElementById("bulk-import-row-detail-modal")
+							.classList.add("hidden");
+
+						currentEditRow = null;
+						currentEditRowEditable = false;
+
+						if (lastBulkImportPreviewData && lastBulkImportPreviewMeta) {
+							renderBulkImportPreview(
+								lastBulkImportPreviewData,
+								lastBulkImportPreviewMeta
+							);
+						}
+					}
+				} catch (error) {
+					console.error("Bulk import row resolve failed:", error);
+					showAdminToast(
+						error.message || "Failed to resolve this row.",
+						"error"
+					);
+				} finally {
+					resetActionButton(
+						button,
+						originalLabel || "Apply"
+					);
+				}
+			});
+
+		document
+			.getElementById("bulk-import-apply-button")
+			.addEventListener("click", async () => {
+
+				if (!lastBulkImportPreviewData) {
+					showAdminToast(
+						"No bulk import preview is available.",
+						"error"
+					);
+					return;
+				}
+
+				const button = document.getElementById(
+					"bulk-import-apply-button"
+				);
+
+				button.disabled = true;
+				button.textContent = "Applying...";
+
+				try {
+					const response = await fetch(
+						"/admin/bulk-import/apply",
+						{
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json"
+							},
+							body: JSON.stringify(
+								lastBulkImportPreviewData
+							)
+						}
+					);
+
+					const result = await response.json();
+
+					if (!response.ok) {
+						throw new Error(
+							result.detail ||
+							result.message ||
+							"Failed to apply bulk import."
+						);
+					}
+
+					// Show success notification
+					showAdminToast(
+						result.message ||
+						"Bulk import applied successfully.",
+						"success"
+					);
+
+					// Record this batch in the Import History box
+					// BEFORE clearing the in-memory preview state --
+					// this is the last chance to see exactly what was
+					// submitted.
+					addBulkImportHistoryEntry(
+						lastBulkImportPreviewData,
+						lastBulkImportPreviewMeta,
+						result
+					);
+
+					// Close the Preview modal -- the import is done,
+					// nothing left here to act on.
+					closeBulkImportPreview();
+
+					// Clear the completed import state so the next
+					// "Preview Upload" click always re-analyzes
+					// rather than reusing this now-applied batch.
+					lastBulkImportPreviewData = null;
+					lastBulkImportPreviewMeta = null;
+
+					// Clear the selected CSV file so the same file
+					// can't be silently re-submitted by accident.
+					const fileInput = document.getElementById(
+						"upload-csv-file"
+					);
+
+					if (fileInput) {
+						fileInput.value = "";
+					}
+
+					// Any rows this batch could not resolve are now
+					// sitting in the real Admin Review Queue --
+					// refresh that box so they show up immediately.
+					loadReviewQueue();
+
+				} catch (error) {
+
+					console.error(
+						"Bulk import apply failed:",
+						error
+					);
+
+					showAdminToast(
+						error.message ||
+						"Failed to apply bulk import.",
+						"error"
+					);
+
+				} finally {
+
+					button.disabled = false;
+					button.textContent = "Apply Import";
+				}
+			});
 
 
 		// ====================================================
@@ -2476,6 +3717,34 @@
 					event.currentTarget.classList.add("hidden");
 				}
 			});
+
+		function closeBulkImportPreview() {
+			document
+				.getElementById("bulk-import-modal")
+				.classList.add("hidden");
+
+			document
+				.getElementById("bulk-import-row-detail-modal")
+				.classList.add("hidden");
+
+			unlockBackgroundScroll();
+		}
+
+		document
+			.getElementById("bulk-import-modal")
+			.addEventListener("click", event => {
+				if (event.target.id === "bulk-import-modal") {
+					closeBulkImportPreview();
+				}
+			});
+
+		document
+			.getElementById("bulk-import-close-button")
+			.addEventListener("click", closeBulkImportPreview);
+
+		document
+			.getElementById("bulk-import-close-footer")
+			.addEventListener("click", closeBulkImportPreview);
 
 
 		// ====================================================

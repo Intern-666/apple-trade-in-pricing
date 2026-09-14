@@ -1438,5 +1438,687 @@ class TestInvalidData(unittest.TestCase):
         self.assertEqual(row["conflict_type"], "invalid_data")
 
 
+class TestMacModelNumberNormalization(unittest.TestCase):
+    """
+    Regression coverage for the Mac Model Number normalization bug:
+    a genuine Mac hardware identifier like "MacBookAir8,2" has a
+    comma that is part of the identifier itself, not a separator
+    between multiple Model Numbers, and must survive
+    normalize_model_numbers() as a single token when the row's
+    Device is Mac.
+    """
+
+    def test_macbookair8_2_is_one_token(self):
+        tokens = bi.normalize_model_numbers(
+            "MacBookAir8,2", device="Mac"
+        )
+        self.assertEqual(tokens, frozenset({"MACBOOKAIR8,2"}))
+
+    def test_macbookair9_1_is_one_token(self):
+        tokens = bi.normalize_model_numbers(
+            "MacBookAir9,1", device="Mac"
+        )
+        self.assertEqual(tokens, frozenset({"MACBOOKAIR9,1"}))
+
+    def test_iphone_comma_separated_list_is_unchanged(self):
+        # Existing iPhone behavior: commas are genuine separators
+        # between multiple Apple regulatory Model Numbers.
+        tokens = bi.normalize_model_numbers(
+            "A2111, A2221, A2223", device="iPhone"
+        )
+        self.assertEqual(tokens, frozenset({"A2111", "A2221", "A2223"}))
+
+    def test_no_device_argument_preserves_prior_behavior(self):
+        # Callers that don't pass device at all (or pass a
+        # non-Mac/unknown device) must see exactly the old
+        # comma-splits-everything behavior.
+        tokens = bi.normalize_model_numbers("A2111, A2221, A2223")
+        self.assertEqual(tokens, frozenset({"A2111", "A2221", "A2223"}))
+
+    def test_multiple_mac_identifiers_separated_by_slash(self):
+        tokens = bi.normalize_model_numbers(
+            "MacBookAir8,2/MacBookAir9,1", device="Mac"
+        )
+        self.assertEqual(
+            tokens, frozenset({"MACBOOKAIR8,2", "MACBOOKAIR9,1"})
+        )
+
+    def test_master_mac_row_inherits_without_corruption(self):
+        # A Master row's own Mac Model Number must not be mangled
+        # into "MACBOOKAIR8" + "2" when normalized for inheritance/
+        # comparison.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+        tokens = bi.normalize_model_numbers(
+            master_df.at[0, "Model Number"],
+            device=master_df.at[0, "Device"],
+        )
+        self.assertEqual(tokens, frozenset({"MACBOOKAIR8,2"}))
+        self.assertNotIn("MACBOOKAIR8", tokens)
+        self.assertNotIn("2", tokens)
+
+
+class TestMacModelNumberAppend(unittest.TestCase):
+    """
+    End-to-end coverage that the Mac-aware normalization flows
+    correctly through classification and into the applied Master
+    row, without disturbing the existing iPhone-style overlap/
+    append behavior.
+    """
+
+    def test_new_mac_model_number_is_flagged_for_append(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir9,1",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "update")
+        self.assertIsNone(row["conflict_type"])
+        self.assertEqual(row["model_number_flag"], "append")
+        self.assertTrue(row["model_number_update_required"])
+        self.assertEqual(
+            row["model_numbers_to_append"], ["MACBOOKAIR9,1"]
+        )
+
+    def test_same_mac_model_number_is_a_plain_match(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        # An exact Mac Model Number match must be recognized as
+        # such -- not corrupted into partial-overlap noise by a
+        # bad comma split.
+        self.assertEqual(row["classification"], "conflict")
+        self.assertEqual(row["conflict_type"], "duplicate")
+        self.assertEqual(row["model_number_flag"], "match")
+
+    def test_applying_mac_append_preserves_identifier_in_master(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+        incoming_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir9,1",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    model_year=2019.0,
+                )
+            ]
+        )
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+
+        applied = bi.apply_classified_rows(
+            canonical_df=result["canonical_df"],
+            row_results=result["rows"],
+            master_df=master_df,
+        )
+
+        updated_value = applied["master_df"].at[0, "Model Number"]
+
+        # Both identifiers must survive intact as two comma-joined
+        # whole tokens, never split into four garbage fragments.
+        parts = [p.strip() for p in updated_value.split(", ")]
+        self.assertIn("MacBookAir8,2", parts)
+        self.assertIn("MACBOOKAIR9,1", parts)
+        self.assertEqual(len(parts), 2)
+
+
+class TestNormalizeMasterModelNumberColumn(unittest.TestCase):
+    """
+    Regression coverage for the Master-persistence-facing
+    normalization: normalize_master_model_number_column() is what
+    must run on the Master dataframe immediately before it is
+    written to Google Sheets ("Cleaned Master") and to the local
+    CSV, so a Mac hardware identifier's internal comma survives
+    intact while separator style is still canonicalized.
+
+    Unlike normalize_model_numbers(), this does NOT upper-case or
+    otherwise rewrite each identifier's own text -- only the
+    separator between multiple identifiers is canonicalized to
+    ", ".
+    """
+
+    def test_mac_model_number_persisted_format(self):
+        # Test 1: a single Mac identifier must be preserved exactly,
+        # not split and not re-cased.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"], "MacBookAir8,2"
+        )
+        self.assertNotEqual(
+            result_df.at[0, "Model Number"], "MACBOOKAIR8, 2"
+        )
+        # Exactly one identifier, not two.
+        self.assertEqual(
+            len(result_df.at[0, "Model Number"].split(", ")), 1
+        )
+
+    def test_multiple_mac_identifiers_persisted_format(self):
+        # Test 2: multiple Mac identifiers, mixed separator style
+        # in, canonical comma-space style out -- each identifier's
+        # own text (including its internal comma) untouched.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2 / MacBookAir9,1",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"],
+            "MacBookAir8,2, MacBookAir9,1",
+        )
+
+    def test_iphone_model_numbers_persisted_format(self):
+        # Test 3: iPhone regression -- multiple regulatory Model
+        # Numbers still canonicalize to a comma-space separated
+        # list, regardless of how they arrived.
+        master_df = _df(
+            [_master_row(model_number="A2111 / A2221 / A2223")]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"], "A2111, A2221, A2223"
+        )
+
+    def test_unrelated_master_fields_are_unchanged(self):
+        # Test 4: only the Model Number column may change; every
+        # other Master field/value is passed through untouched.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2 / MacBookAir9,1",
+                    model="MacBook Air i5 1.6GHz 13-inch (Mid 2019)",
+                    retail_price=5999.0,
+                    storage=256.0,
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                    trade_in=350.0,
+                    model_year=2019.0,
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        for column in bi.CANONICAL_FIELDS:
+            if column == "Model Number":
+                continue
+            with self.subTest(column=column):
+                original = master_df.at[0, column]
+                updated = result_df.at[0, column]
+                if pd.isna(original) and pd.isna(updated):
+                    continue
+                self.assertEqual(updated, original)
+
+        # And the Model Number column itself DID change (was
+        # actually normalized, not silently skipped).
+        self.assertNotEqual(
+            result_df.at[0, "Model Number"],
+            master_df.at[0, "Model Number"],
+        )
+
+    def test_already_canonical_value_is_left_untouched(self):
+        # A well-formed Mac Model Number should come back byte-
+        # identical -- normalization should never rewrite text
+        # that wasn't broken in the first place.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"],
+            master_df.at[0, "Model Number"],
+        )
+
+    def test_blank_model_number_is_left_untouched(self):
+        master_df = _df([_master_row(model_number=None)])
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertTrue(pd.isna(result_df.at[0, "Model Number"]))
+
+    def test_does_not_mutate_the_input_dataframe(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MacBookAir8,2 / MacBookAir9,1",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+        original_value = master_df.at[0, "Model Number"]
+
+        bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(master_df.at[0, "Model Number"], original_value)
+
+    def test_all_caps_mac_identifier_is_recased_to_apple_style(self):
+        # This is the exact symptom reported: a Mac identifier that
+        # ended up stored in all caps (e.g. from an appended
+        # comparison token) must come back in Apple's own casing.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Pro",
+                    model_number="MACBOOKPRO17,1",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"], "MacBookPro17,1"
+        )
+
+    def test_recasing_is_idempotent_on_already_correct_casing(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Pro",
+                    model_number="MacBookPro17,1",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"], "MacBookPro17,1"
+        )
+
+    def test_mixed_case_list_is_recased_and_joined(self):
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="MACBOOKAIR8,2 / MacBookAir9,1",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"],
+            "MacBookAir8,2, MacBookAir9,1",
+        )
+
+    def test_generic_mac_family_identifier_is_recased(self):
+        # Apple Silicon-era generic identifiers like "Mac16,3" (no
+        # MacBook/iMac qualifier) must also recase correctly.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="Mac mini",
+                    model_number="MAC16,3",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(result_df.at[0, "Model Number"], "Mac16,3")
+
+    def test_unknown_mac_family_prefix_is_left_untouched(self):
+        # A product-line prefix we don't recognize should never be
+        # guess-recased -- leave it exactly as it arrived.
+        master_df = _df(
+            [
+                _master_row(
+                    device="Mac",
+                    sub_device="MacBook Air",
+                    model_number="FUTUREMACTHING5,1",
+                    storage_type="SSD",
+                    connectivity="Unknown",
+                )
+            ]
+        )
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"], "FUTUREMACTHING5,1"
+        )
+
+    def test_iphone_model_numbers_are_never_recased(self):
+        # Recasing is Mac-only; iPhone tokens are already the
+        # canonical "A####" form and must never be touched by this
+        # logic path.
+        master_df = _df([_master_row(model_number="a2111, a2221")])
+
+        result_df = bi.normalize_master_model_number_column(master_df)
+
+        self.assertEqual(
+            result_df.at[0, "Model Number"], "a2111, a2221"
+        )
+
+
+class TestProblematicRowEditorReanalysis(unittest.TestCase):
+    """
+    Admin Bulk Import Preview — Problematic Row editor.
+
+    The editor's "Re-analyze" action (see the new
+    /admin/bulk-import/reanalyze-row endpoint in app.py, and the
+    identical pattern already used by the Admin Review Queue's
+    _recheck_review_queue_record()) is nothing more than:
+
+        effective_record_to_row(effective_record)
+            -> pd.DataFrame([...])
+            -> analyze_upload(raw_df=..., master_df=..., clean_fn=...)
+
+    run again, one row at a time, against the CURRENT Master
+    dataset. These tests exercise exactly that round trip so the
+    editor's behavior is verified against the real, unmodified
+    bulk-import classification logic -- no separate/duplicated
+    classification logic is introduced anywhere for this feature.
+    """
+
+    def _load_problematic_row(self, master_df, incoming_row):
+        """
+        Simulate what happens when the Admin opens "Edit" on a
+        Preview row: analyze the original incoming row and assert
+        it is in fact problematic (Needs Review or Invalid Data)
+        before editing it, exactly like the Preview would have
+        classified it in the first place.
+        """
+        incoming_df = _df([incoming_row])
+
+        result = bi.analyze_upload(
+            raw_df=incoming_df, master_df=master_df, clean_fn=None
+        )
+        row = result["rows"][0]
+
+        self.assertEqual(row["classification"], "conflict")
+        self.assertIn(
+            row["conflict_type"], {"needs_review", "invalid_data"}
+        )
+
+        return row
+
+    def _reanalyze(self, master_df, effective_record):
+        """
+        The exact operation the new /admin/bulk-import/reanalyze-row
+        endpoint performs on the Admin's edited effective_record.
+        """
+        proposed_row = bi.effective_record_to_row(effective_record)
+        proposed_df = pd.DataFrame([proposed_row], columns=bi.CANONICAL_FIELDS)
+
+        result = bi.analyze_upload(
+            raw_df=proposed_df, master_df=master_df, clean_fn=None
+        )
+
+        return result["rows"][0]
+
+    # ---- Loading a problematic row into the editor --------------
+
+    def test_loading_needs_review_row_exposes_effective_record_and_reasons(self):
+        master_df = _df([_master_row(retail_price=3599.0)])
+        incoming_row = _master_row(retail_price=3799.0)  # Retail Price changed
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        self.assertEqual(row["conflict_type"], "needs_review")
+        self.assertTrue(row["reasons"])
+        self.assertIn("values", row["effective_record"])
+        self.assertIn("provenance", row["effective_record"])
+        self.assertEqual(
+            row["effective_record"]["values"]["Retail Price"], 3799.0
+        )
+
+    def test_loading_invalid_data_row_exposes_effective_record(self):
+        master_df = _df([_master_row()])
+        incoming_row = _master_row(retail_price="RM 3599")
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        self.assertEqual(row["conflict_type"], "invalid_data")
+        self.assertIn("values", row["effective_record"])
+
+    # ---- Editing + re-analysis, per resolution outcome -----------
+
+    def test_edit_resolving_to_new_stays_new_on_reanalysis(self):
+        # Needs Review because Provider's price changed unexpectedly
+        # relative to Master; Admin corrects it to a genuinely new
+        # Provider, which should now classify as NEW.
+        master_df = _df([_master_row(provider="CompAsia")])
+        incoming_row = _master_row(provider="CompAsia", retail_price=9999.0)
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        edited = row["effective_record"]
+        edited["values"]["Provider"] = "Celcom"
+
+        reanalyzed = self._reanalyze(master_df, edited)
+
+        self.assertEqual(reanalyzed["classification"], "new")
+        self.assertIsNone(reanalyzed["conflict_type"])
+
+    def test_edit_resolving_to_update_stays_update_on_reanalysis(self):
+        master_df = _df([_master_row(retail_price=3599.0)])
+        incoming_row = _master_row(retail_price="RM 3599")  # invalid_data
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        edited = row["effective_record"]
+        edited["values"]["Retail Price"] = 3599.0
+        edited["values"]["Max. Trade-In Value (RM)"] = 450.0  # only mutable field changes
+
+        reanalyzed = self._reanalyze(master_df, edited)
+
+        self.assertEqual(reanalyzed["classification"], "update")
+        self.assertIsNone(reanalyzed["conflict_type"])
+        self.assertEqual(
+            reanalyzed["different_fields"], ["Max. Trade-In Value (RM)"]
+        )
+
+    def test_edit_resolving_to_duplicate_on_reanalysis(self):
+        master_df = _df([_master_row(retail_price=3599.0, trade_in=390.0)])
+        incoming_row = _master_row(retail_price="RM 3599")  # invalid_data
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        edited = row["effective_record"]
+        edited["values"]["Retail Price"] = 3599.0  # now matches Master exactly
+
+        reanalyzed = self._reanalyze(master_df, edited)
+
+        self.assertEqual(reanalyzed["classification"], "conflict")
+        self.assertEqual(reanalyzed["conflict_type"], "duplicate")
+
+    def test_edit_still_needs_review_remains_unresolved(self):
+        master_df = _df([_master_row(retail_price=3599.0)])
+        incoming_row = _master_row(retail_price=3799.0)
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        edited = row["effective_record"]
+        # A different, still-unexplained Retail Price -- the edit
+        # did not actually resolve the conflict.
+        edited["values"]["Retail Price"] = 3899.0
+
+        reanalyzed = self._reanalyze(master_df, edited)
+
+        self.assertEqual(reanalyzed["classification"], "conflict")
+        self.assertEqual(reanalyzed["conflict_type"], "needs_review")
+
+    def test_edit_still_invalid_data_remains_unresolved(self):
+        master_df = _df([_master_row()])
+        incoming_row = _master_row(retail_price="RM 3599")
+
+        row = self._load_problematic_row(master_df, incoming_row)
+
+        edited = row["effective_record"]
+        # Still malformed -- e.g. Admin mistyped the correction.
+        edited["values"]["Retail Price"] = "still not a number"
+
+        reanalyzed = self._reanalyze(master_df, edited)
+
+        self.assertEqual(reanalyzed["classification"], "conflict")
+        self.assertEqual(reanalyzed["conflict_type"], "invalid_data")
+
+    # ---- Re-analysis reflects the CURRENT Master dataset ---------
+
+    def test_reanalysis_uses_current_master_dataset_not_original(self):
+        # Simulate Master changing between when the Preview was
+        # first generated and when the Admin re-analyzes an edited
+        # row: the ORIGINAL master had a lower Trade-In Value, the
+        # CURRENT master (passed in at re-analysis time) has been
+        # updated -- re-analysis must reflect the CURRENT one.
+        original_master_df = _df([_master_row(trade_in=390.0)])
+        current_master_df = _df([_master_row(trade_in=450.0)])
+
+        incoming_row = _master_row(retail_price="RM 3599")  # invalid_data
+        row = self._load_problematic_row(original_master_df, incoming_row)
+
+        edited = row["effective_record"]
+        edited["values"]["Retail Price"] = 3599.0
+        edited["values"]["Max. Trade-In Value (RM)"] = 450.0
+
+        reanalyzed_against_current = self._reanalyze(
+            current_master_df, edited
+        )
+
+        # Now an exact duplicate of the CURRENT master, not the
+        # stale one the row was originally loaded against.
+        self.assertEqual(reanalyzed_against_current["classification"], "conflict")
+        self.assertEqual(
+            reanalyzed_against_current["conflict_type"], "duplicate"
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -445,6 +445,72 @@ class SheetsSync:
                 error=str(exc)
             )
 
+    def append_generic_row(
+        self,
+        fields: Dict[str, Any],
+        columns: List[str],
+    ) -> SyncResult:
+        """
+        Append one row to the worksheet using an explicit, caller-
+        provided column order -- the generic counterpart to
+        append_record() (which is hardcoded to the Customer Data
+        schema).
+
+        Writes a header row first if the worksheet has no data at
+        all yet, exactly like append_record() does. Missing keys in
+        `fields` are written as empty strings.
+
+        Never raises -- any failure is captured in the returned
+        SyncResult.
+        """
+
+        if not self.is_available:
+            return SyncResult(
+                success=False,
+                rows_synced=0,
+                error=(
+                    self._init_error
+                    or "Google Sheets sync is unavailable."
+                ),
+            )
+
+        try:
+
+            existing_values = self._worksheet.get_all_values()
+
+            if not existing_values or not any(
+                str(cell).strip()
+                for row in existing_values
+                for cell in row
+            ):
+                self._worksheet.append_row(
+                    columns,
+                    value_input_option="USER_ENTERED",
+                )
+
+            row = [str(fields.get(column, "")) for column in columns]
+
+            self._worksheet.append_row(
+                row,
+                value_input_option="USER_ENTERED",
+            )
+
+            return SyncResult(
+                success=True,
+                rows_synced=1,
+                error=None,
+            )
+
+        except Exception as exc:
+
+            print(f"WARNING: Google Sheets append_generic_row failed: {exc}")
+
+            return SyncResult(
+                success=False,
+                rows_synced=0,
+                error=str(exc),
+            )
+
     def list_records(self) -> RecordsResult:
         """
         Reads the worksheet's raw rows and returns each data row

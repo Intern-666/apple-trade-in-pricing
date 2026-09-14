@@ -7,6 +7,8 @@ import pandas as pd
 import numpy as np
 import os
 import io
+import json
+import uuid
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +21,19 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from internal.tradein_fallback import TradeInFallback
 from internal.sheets_sync import SheetsSync
-from internal.bulk_import import analyze_upload
+from internal.bulk_import import (
+    analyze_upload,
+    effective_record_to_row,
+    apply_classified_rows,
+    build_effective_record,
+    normalize_master_model_number_column,
+    json_safe,
+    APPLY_NEW,
+    APPLY_UPDATE,
+    APPLY_SKIPPED_DUPLICATE,
+    APPLY_QUEUED,
+    APPLY_ERROR,
+)
 
 
 # ============================================================
@@ -57,6 +71,43 @@ SHEETS_SPREADSHEET_ID = "1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs"
 SHEETS_WORKSHEET_NAME = "Cleaned Master"
 
 CUSTOMER_SHEETS_WORKSHEET_NAME = "Customer Data"
+
+# Persistent home for Bulk Import rows classified as Needs Review
+# or Invalid Data -- these are never written to Master, but must
+# not be lost either (see admin_bulk_import_apply() /
+# admin/review-queue/* below). A worksheet with this exact name
+# must exist in the spreadsheet above (create it once, headers are
+# written automatically on first use) for Sheets persistence to be
+# active; until then this degrades the same way every other Sheets
+# integration in this file does -- Admin Review Queue writes/reads
+# fail with a clear 503 instead of silently losing data.
+REVIEW_QUEUE_WORKSHEET_NAME = "Admin Review Queue"
+
+# Column order used for every row written to the Review Queue
+# worksheet. "Record JSON" carries the full proposed record
+# (Effective Record values + provenance), the classification
+# result that caused it to be queued, and the batch metadata it
+# arrived with -- everything admin/review-queue/* needs to re-
+# analyze and, eventually, apply the row. The other columns exist
+# purely so the worksheet itself is readable/searchable directly
+# in Google Sheets, mirroring the raw-data philosophy already used
+# for "Cleaned Master".
+REVIEW_QUEUE_COLUMNS = [
+    "Queue ID",
+    "Queued At",
+    "Updated At",
+    "Conflict Type",
+    "Provider",
+    "Device",
+    "Sub-device",
+    "Standardized Model",
+    "Reasons",
+    "Record JSON",
+]
+
+CONDITION_FIELD_MARKER = "condition"
+
+VALID_DATE_MODES = {"collection_date", "price_last_updated"}
 
 
 # ============================================================
@@ -297,6 +348,31 @@ if customer_sheets_sync.is_available:
 else:
 
     print("Customer Google Sheets sync UNAVAILABLE.")
+
+# ============================================================
+# ADMIN REVIEW QUEUE GOOGLE SHEETS SYNC
+#
+# Same access pattern as Customer Data: no in-memory dataframe and
+# no local CSV mirror -- the worksheet itself is the single source
+# of truth, read/written live via list_records() /
+# append_generic_row() / delete_rows(). This is a deliberately
+# different persistence strategy than Master's "CSV + full-
+# overwrite Sheet sync" -- the Review Queue is admin-curated,
+# individual rows are added/edited/removed one at a time, and
+# there is no separate customer-facing or startup-time consumer
+# that needs a local fallback copy of it the way Master's CSV
+# provides for the pricing engine.
+# ============================================================
+
+review_queue_sheets_sync = SheetsSync(service_account_file=str(SHEETS_SERVICE_ACCOUNT_FILE), service_account_json=SHEETS_SERVICE_ACCOUNT_JSON, spreadsheet_id=SHEETS_SPREADSHEET_ID, worksheet_name=REVIEW_QUEUE_WORKSHEET_NAME)
+
+if review_queue_sheets_sync.is_available:
+
+    print("Admin Review Queue sync ready -> " f"worksheet '{REVIEW_QUEUE_WORKSHEET_NAME}'")
+
+else:
+
+    print("Admin Review Queue sync UNAVAILABLE -- Bulk Import rows that need review will fail to queue until this is resolved. " f"Create a worksheet named '{REVIEW_QUEUE_WORKSHEET_NAME}' in the spreadsheet to enable it.")
 
 print(f"Devices available: {len(device_model_map)}")
 
@@ -876,7 +952,7 @@ class AdminAddDevice(BaseModel):
 @app.post("/admin/add")
 def admin_add_device(item: AdminAddDevice):
 
-    global df
+    global df, device_model_map, device_config_map, model_number_map
 
     print("\n" + "=" * 70)
     print("ADMIN — ADD DEVICE")
@@ -1022,6 +1098,11 @@ def admin_add_device(item: AdminAddDevice):
     # ========================================================
 
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+    df = normalize_master_model_number_column(df)
+
+    device_model_map, device_config_map = build_device_maps(df)
+    model_number_map = build_model_number_map(df)
 
     # Save updated master dataset
     df.to_csv(DATA_FILE, index=False)
@@ -1341,30 +1422,261 @@ def admin_records(device: str, model: str, sub_device: Optional[str] = None):
 
 
 # ============================================================
-# ADMIN — BULK IMPORT PREVIEW
+# ADMIN REVIEW QUEUE — HELPERS
 #
-# Read-only. Runs an uploaded CSV through the bulk-import
-# mapping/normalization/classification pipeline (internal/bulk_import.py)
-# against the CURRENT in-memory master dataset. Does not write to
-# Google Sheets, master_msrp.csv, or the global `df` -- a defensive
-# copy of `df` is passed in so analyze_upload() has nothing it could
-# mutate even by accident.
+# A queued row is persisted as one worksheet row: a handful of
+# human-readable columns (see REVIEW_QUEUE_COLUMNS) plus one
+# "Record JSON" column holding everything needed to redisplay,
+# re-analyze, and eventually apply it -- the row's Effective
+# Record (values + provenance), the classification result that
+# caused it to be queued, and the date-mode/date-value metadata
+# it arrived with.
 #
-# `provider` is stamped onto every parsed row as a real `Provider`
-# column BEFORE the row ever reaches analyze_upload(), so it flows
-# through the existing column-mapping/classification pipeline exactly
-# like any other uploaded column -- no classifier changes needed.
-#
-# `date_mode` + `date_value` are accepted and logged/echoed only.
-# There are exactly two mutually exclusive modes -- "collection_date"
-# (Date of Collection) and "price_last_updated" (Price Last Updated).
-# Neither is added to the parsed rows, and neither is part of the
-# master schema yet: this stays metadata-only until a later step
-# implements the actual Existing-record update (Retail Price + the
-# selected date) and Google Sheets writes.
+# These helpers only ever build/read that row shape; they never
+# touch Master and never decide whether a row should be queued --
+# that decision is made once, in admin_bulk_import_apply() and
+# admin_review_queue_apply(), from a classification already
+# produced by analyze_upload().
 # ============================================================
 
-VALID_DATE_MODES = {"collection_date", "price_last_updated"}
+
+def _build_review_queue_record_json(row_result, effective_record, batch_meta):
+
+    return json_safe({
+        "classification": row_result.get("classification"),
+        "conflict_type": row_result.get("conflict_type"),
+        "reasons": row_result.get("reasons", []),
+        "warnings": row_result.get("warnings", []),
+        "unknown_fields": row_result.get("unknown_fields", []),
+        "different_fields": row_result.get("different_fields", []),
+        "match_index": row_result.get("match_index"),
+        "matched_master": row_result.get("matched_master"),
+        "what_this_means": row_result.get("what_this_means"),
+        "effective_record": effective_record,
+        "date_mode": (batch_meta or {}).get("date_mode"),
+        "date_value": (batch_meta or {}).get("date_value"),
+    })
+
+
+def _build_review_queue_fields(queue_id, queued_at, updated_at, row_result, effective_record, batch_meta):
+
+    values = (effective_record or {}).get("values", {}) or {}
+
+    record_json = _build_review_queue_record_json(row_result, effective_record, batch_meta)
+
+    def _display(value):
+        return "" if value is None else str(value)
+
+    return {
+        "Queue ID": queue_id,
+        "Queued At": queued_at,
+        "Updated At": updated_at,
+        "Conflict Type": _display(row_result.get("conflict_type")),
+        "Provider": _display(values.get("Provider") or "Unknown"),
+        "Device": _display(values.get("Device")),
+        "Sub-device": _display(values.get("Sub-device")),
+        "Standardized Model": _display(values.get("Standardized Model")),
+        "Reasons": "; ".join(row_result.get("reasons") or []),
+        "Record JSON": json.dumps(record_json),
+    }
+
+
+def _review_queue_item_from_sheet_record(record):
+    """
+    Convert one list_records() entry ({"row": int, "fields": {...}})
+    into the JSON-friendly shape returned by the Admin Review Queue
+    endpoints. Tolerates a corrupted/hand-edited "Record JSON" cell
+    by falling back to empty classification metadata rather than
+    raising -- a single bad row must never take down the whole
+    queue listing.
+    """
+
+    fields = record.get("fields", {})
+
+    raw_json = fields.get("Record JSON", "")
+
+    try:
+        record_json = json.loads(raw_json) if raw_json else {}
+    except (TypeError, ValueError):
+        record_json = {}
+
+    # A row queued before this sanitization existed (or hand-edited
+    # in the sheet) may still carry a literal NaN/Infinity token from
+    # an un-sanitized write -- json.loads() happily parses those back
+    # into real float('nan')/float('inf') values, which FastAPI's
+    # JSONResponse (allow_nan=False) then refuses to serialize. Run
+    # it through json_safe() so a legacy bad row degrades to null
+    # instead of taking down the whole queue listing.
+    record_json = json_safe(record_json)
+
+    return {
+        "row": record.get("row"),
+        "queue_id": fields.get("Queue ID"),
+        "queued_at": fields.get("Queued At"),
+        "updated_at": fields.get("Updated At"),
+        "conflict_type": fields.get("Conflict Type") or record_json.get("conflict_type"),
+        "provider": fields.get("Provider"),
+        "device": fields.get("Device"),
+        "sub_device": fields.get("Sub-device"),
+        "standardized_model": fields.get("Standardized Model"),
+        "reasons": record_json.get("reasons", []),
+        "warnings": record_json.get("warnings", []),
+        "unknown_fields": record_json.get("unknown_fields", []),
+        "different_fields": record_json.get("different_fields", []),
+        "matched_master": record_json.get("matched_master"),
+        "effective_record": record_json.get("effective_record", {}),
+        "what_this_means": record_json.get("what_this_means"),
+        "date_mode": record_json.get("date_mode"),
+        "date_value": record_json.get("date_value"),
+    }
+
+
+def _find_review_queue_sheet_record(queue_id):
+    """
+    Look up a queued row's LIVE sheet row number + full field
+    content by Queue ID. Returns None if not found. Raises
+    HTTPException(503) if the Review Queue itself can't be read.
+
+    Always re-fetched fresh (never cached) because the row number
+    is only meaningful at the instant of this read -- see
+    SheetsSync.delete_rows().
+    """
+
+    result = review_queue_sheets_sync.list_records()
+
+    if not result.success:
+        raise HTTPException(status_code=503, detail=result.error or "Unable to load the Admin Review Queue.")
+
+    for record in result.records:
+        if record.get("fields", {}).get("Queue ID") == queue_id:
+            return record
+
+    return None
+
+
+def _queue_row_for_review(row_result, canonical_row, batch_meta):
+    """
+    Persist one classify_incoming_row() conflict outcome (Needs
+    Review or Invalid Data) to the Admin Review Queue worksheet.
+
+    Returns the SheetsSync SyncResult so the caller can decide how
+    to report a failure -- this never raises, and never silently
+    drops the row: a failed queue write is always surfaced back to
+    the Admin rather than the row quietly disappearing.
+    """
+
+    # canonical_row already IS the effective/proposed record for
+    # this row (post re-analysis) -- reuse analyze_upload()'s own
+    # Effective Record builder so the queued record has the exact
+    # same {values, provenance} shape the Admin preview already
+    # knows how to render, with every field's provenance marked
+    # "incoming" (nothing here is inherited a second time; that
+    # inheritance already happened during re-analysis and is
+    # baked into canonical_row).
+    effective_record = build_effective_record(
+        pre_inference_row=canonical_row,
+        normalized_row=canonical_row,
+        effective_row=canonical_row,
+        inherited_fields=[],
+        matched_master_row=None,
+    )
+
+    queue_id = uuid.uuid4().hex
+    now = datetime.now().isoformat()
+
+    queue_fields = _build_review_queue_fields(
+        queue_id=queue_id,
+        queued_at=now,
+        updated_at=now,
+        row_result=row_result,
+        effective_record=effective_record,
+        batch_meta=batch_meta,
+    )
+
+    sync_result = review_queue_sheets_sync.append_generic_row(queue_fields, REVIEW_QUEUE_COLUMNS)
+
+    return queue_id, sync_result
+
+
+def _recheck_review_queue_record(record, effective_record_override=None):
+    """
+    Re-analyze one Admin Review Queue row against the CURRENT
+    Master dataset, persist the refreshed classification (and any
+    admin edit) back to its worksheet row, and return the fresh
+    classification result for the caller to act on.
+
+    This is the shared core of both POST /admin/review-queue/{id}/
+    recheck (report only) and POST /admin/review-queue/{id}/apply
+    (report, then act on the result) -- an edit must never be lost
+    just because the row still isn't valid yet, so both endpoints
+    persist it the same way before doing anything else.
+
+    Returns (row_result, canonical_row, stored_item, sheet_record)
+    where sheet_record is the FRESH sheet row (row number + fields)
+    for the just-persisted state, suitable for an immediate
+    delete_rows() call by the caller.
+    """
+
+    stored_item = _review_queue_item_from_sheet_record(record)
+
+    effective_record = effective_record_override or stored_item["effective_record"]
+
+    proposed_row = effective_record_to_row(effective_record)
+
+    proposed_df = pd.DataFrame([proposed_row])
+
+    reanalysis = analyze_upload(raw_df=proposed_df, master_df=df.copy(), clean_fn=clean_dataset)
+
+    row_result = reanalysis["rows"][0]
+    canonical_row = reanalysis["canonical_df"].loc[0]
+
+    # The re-analysis may itself enrich the record (e.g. Master-
+    # inherited Retail Price) -- persist THAT, not the raw override,
+    # so what's stored always matches what was actually classified.
+    refreshed_effective_record = row_result["effective_record"]
+
+    batch_meta = {"date_mode": stored_item.get("date_mode"), "date_value": stored_item.get("date_value")}
+
+    unchanged = (
+        effective_record_override is None
+        and row_result.get("conflict_type") == stored_item.get("conflict_type")
+        and row_result.get("reasons", []) == stored_item.get("reasons", [])
+        and refreshed_effective_record == stored_item.get("effective_record", {})
+    )
+
+    if unchanged:
+        return row_result, canonical_row, stored_item, record
+
+    queue_fields = _build_review_queue_fields(
+        queue_id=stored_item["queue_id"],
+        queued_at=stored_item["queued_at"],
+        updated_at=datetime.now().isoformat(),
+        row_result=row_result,
+        effective_record=refreshed_effective_record,
+        batch_meta=batch_meta,
+    )
+
+    # 1. Safely APPEND the replacement record FIRST
+    append_result = review_queue_sheets_sync.append_generic_row(queue_fields, REVIEW_QUEUE_COLUMNS)
+
+    if not append_result.success:
+        raise HTTPException(status_code=503, detail=append_result.error or "Unable to update the Admin Review Queue.")
+
+    # 2. Only DELETE the old record if the append succeeded
+    delete_result = review_queue_sheets_sync.delete_rows([{"row": record["row"], "fields": record["fields"]}])
+
+    if not delete_result.success:
+        raise HTTPException(status_code=503, detail=delete_result.error or "Unable to update the Admin Review Queue.")
+
+    if not delete_result.deleted_rows:
+        raise HTTPException(status_code=409, detail="This review queue item changed since it was loaded. Reloading...")
+
+    fresh_record = _find_review_queue_sheet_record(stored_item["queue_id"])
+
+    if fresh_record is None:
+        raise HTTPException(status_code=503, detail="Lost track of the review queue item after updating it. Please reload the queue.")
+
+    return row_result, canonical_row, stored_item, fresh_record
 
 
 @app.post("/admin/bulk-import/preview")
@@ -1429,6 +1741,82 @@ def admin_bulk_import_preview(
 
 
 # ============================================================
+# ADMIN BULK IMPORT — PREVIEW ROW RE-ANALYZE
+#
+# Supports the Admin Bulk Import Preview's Problematic Rows
+# editor: after the Admin edits a Needs Review / Invalid Data
+# row's proposed values, this re-classifies that ONE row against
+# the CURRENT Master dataset so the Admin can see whether the
+# edit resolved it before deciding to Apply / Resolve / Skip.
+#
+# This is a read-only counterpart to the Admin Review Queue's
+# recheck endpoint (_recheck_review_queue_record below) and
+# reuses the exact same building blocks (effective_record_to_row
+# + analyze_upload) -- it is not a second classification system,
+# just the existing one invoked one row at a time, before that
+# row has been queued or applied anywhere. Nothing is persisted
+# here: no CSV write, no Sheets write, no Review Queue entry.
+# Resolving the row (Apply / Resolve-Skip) is a separate call to
+# the existing /admin/bulk-import/apply endpoint, which already
+# knows how to apply, skip, or -- if the row still isn't valid --
+# queue it to the real Admin Review Queue.
+# ============================================================
+
+
+class BulkImportReanalyzeRowRequest(BaseModel):
+
+    effective_record: Optional[dict] = None
+
+
+@app.post("/admin/bulk-import/reanalyze-row")
+def admin_bulk_import_reanalyze_row(item: BulkImportReanalyzeRowRequest):
+
+    print("\n" + "=" * 70)
+    print("ADMIN — BULK IMPORT PREVIEW ROW RE-ANALYZE")
+    print("=" * 70)
+
+    if not force_refresh_from_sheets():
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to refresh data from Google Sheets. Operation cancelled.",
+        )
+
+    proposed_row = effective_record_to_row(item.effective_record)
+
+    if not proposed_row:
+        raise HTTPException(
+            status_code=400,
+            detail="effective_record is required.",
+        )
+
+    proposed_df = pd.DataFrame([proposed_row])
+
+    reanalysis = analyze_upload(
+        raw_df=proposed_df,
+        master_df=df.copy(),
+        clean_fn=clean_dataset,
+    )
+
+    row_result = reanalysis["rows"][0]
+
+    print(f"Classification: {row_result['classification']} / {row_result.get('conflict_type')}")
+    print("=" * 70)
+
+    return {
+        "status": "success",
+        "classification": row_result["classification"],
+        "conflict_type": row_result.get("conflict_type"),
+        "reasons": row_result.get("reasons", []),
+        "warnings": row_result.get("warnings", []),
+        "unknown_fields": row_result.get("unknown_fields", []),
+        "different_fields": row_result.get("different_fields", []),
+        "what_this_means": row_result.get("what_this_means"),
+        "matched_master": row_result.get("matched_master"),
+        "effective_record": row_result.get("effective_record"),
+    }
+
+
+# ============================================================
 # ADMIN MODIFY REQUEST
 # ============================================================
 
@@ -1449,7 +1837,7 @@ class AdminModifyDevice(BaseModel):
 @app.post("/admin/modify")
 def admin_modify_device(item: AdminModifyDevice):
 
-    global df
+    global df, device_model_map, device_config_map, model_number_map
 
     print("\n" + "=" * 70)
     print("ADMIN — MODIFY DEVICE")
@@ -1550,6 +1938,11 @@ def admin_modify_device(item: AdminModifyDevice):
     # SAVE MASTER DATASET
     # ========================================================
 
+    df = normalize_master_model_number_column(df)
+
+    device_model_map, device_config_map = build_device_maps(df)
+    model_number_map = build_model_number_map(df)
+
     df.to_csv(DATA_FILE, index=False)
 
     # ========================================================
@@ -1589,7 +1982,7 @@ def admin_modify_device(item: AdminModifyDevice):
 @app.post("/admin/delete")
 def admin_delete_device(item: dict):
 
-    global df
+    global df, device_model_map, device_config_map, model_number_map
 
     print("\n" + "=" * 70)
     print("ADMIN — DELETE DEVICE")
@@ -1657,6 +2050,11 @@ def admin_delete_device(item: dict):
 
     df = df.drop(index=record_id).reset_index(drop=True)
 
+    df = normalize_master_model_number_column(df)
+
+    device_model_map, device_config_map = build_device_maps(df)
+    model_number_map = build_model_number_map(df)
+
     # --------------------------------------------------------
     # SAVE MASTER CLEAN
     # --------------------------------------------------------
@@ -1683,9 +2081,433 @@ def admin_delete_device(item: dict):
 
     return {"status": "success", "message": "Record deleted successfully.", "sheets_sync": sync_result.as_dict()}
 
+@app.post("/admin/bulk-import/apply")
+def admin_bulk_import_apply(item: dict):
+
+    global df, device_model_map, device_config_map, model_number_map
+
+    print("\n" + "=" * 70)
+    print("ADMIN — BULK IMPORT APPLY")
+    print("=" * 70)
+
+    # --------------------------------------------------------
+    # REFRESH MASTER FROM GOOGLE SHEETS
+    # --------------------------------------------------------
+
+    if not force_refresh_from_sheets():
+        raise HTTPException(
+            status_code=503,
+            detail="Unable to refresh data from Google Sheets. Operation cancelled."
+        )
+
+    # --------------------------------------------------------
+    # CHECK REQUEST
+    # --------------------------------------------------------
+
+    if not item:
+        return {
+            "status": "error",
+            "message": "Bulk import data is required."
+        }
+
+    print("Bulk import apply request received.")
+
+    rows = item.get("rows", [])
+
+    if not isinstance(rows, list):
+        return {
+            "status": "error",
+            "message": "Invalid bulk import rows."
+        }
+
+    if not rows:
+        return {
+            "status": "success",
+            "message": "No rows to import.",
+            "master_rows": len(df),
+        }
+
+    batch_meta = {
+        "date_mode": item.get("date_mode"),
+        "date_value": item.get("date_value"),
+    }
+
+    proposed_rows = [
+        effective_record_to_row(row.get("effective_record"))
+        for row in rows
+    ]
+
+    print(f"Received {len(proposed_rows)} proposed import rows.")
+
+    # --------------------------------------------------------
+    # RE-ANALYZE ADMIN-EDITED PROPOSED ROWS AGAINST THE CURRENT
+    # MASTER DATASET.
+    #
+    # This is the batch's single source of truth for what happens
+    # next -- the classification the Admin saw in the preview modal
+    # may be stale (Master can have changed since then), so nothing
+    # is applied off the original preview result.
+    # --------------------------------------------------------
+
+    proposed_df = pd.DataFrame(proposed_rows)
+
+    reanalysis = analyze_upload(
+        raw_df=proposed_df,
+        master_df=df.copy(),
+        clean_fn=clean_dataset,
+    )
+
+    print("Re-analysis complete:", reanalysis["summary"])
+
+    # --------------------------------------------------------
+    # APPLY EVERY ROW INDEPENDENTLY.
+    #
+    # NEW / UPDATE rows are applied to Master; DUPLICATE rows are
+    # skipped; NEEDS_REVIEW / INVALID_DATA rows are queued below --
+    # none of these block one another.
+    # --------------------------------------------------------
+
+    apply_result = apply_classified_rows(
+        reanalysis["canonical_df"],
+        reanalysis["rows"],
+        df,
+    )
+
+    outcomes = apply_result["outcomes"]
+
+    # --------------------------------------------------------
+    # PERSIST NEEDS_REVIEW / INVALID_DATA ROWS TO THE ADMIN REVIEW
+    # QUEUE. A failure here is reported back, but never silently
+    # drops the row, and never blocks the NEW/UPDATE rows below.
+    # --------------------------------------------------------
+
+    queued_ids = []
+    queue_errors = []
+
+    for outcome in outcomes:
+        if outcome["action"] != APPLY_QUEUED:
+            continue
+
+        row_result = outcome["row_result"]
+        canonical_row = reanalysis["canonical_df"].loc[outcome["row_index"]]
+
+        queue_id, sync_result = _queue_row_for_review(
+            row_result, canonical_row, batch_meta
+        )
+
+        if sync_result.success:
+            queued_ids.append(queue_id)
+        else:
+            print(
+                "WARNING: Failed to queue row "
+                f"{outcome['row_index']} for review: {sync_result.error}"
+            )
+            queue_errors.append({
+                "row_index": outcome["row_index"],
+                "error": sync_result.error,
+            })
+
+    # --------------------------------------------------------
+    # PERSIST MASTER CHANGES (only if anything actually changed).
+    # --------------------------------------------------------
+
+    changed = any(
+        outcome["action"] in (APPLY_NEW, APPLY_UPDATE)
+        for outcome in outcomes
+    )
+
+    sync_result = None
+
+    if changed:
+        df = apply_result["master_df"]
+
+        df = normalize_master_model_number_column(df)
+
+        device_model_map, device_config_map = build_device_maps(df)
+        model_number_map = build_model_number_map(df)
+
+        df.to_csv(DATA_FILE, index=False)
+
+        bump_data_version()
+
+        sync_result = sheets_sync.sync_dataset(df)
+
+        if not sync_result.success:
+            print(f"WARNING: Google Sheets sync failed after BULK IMPORT APPLY: {sync_result.error}")
+
+    # --------------------------------------------------------
+    # COUNTS + RESPONSE
+    # --------------------------------------------------------
+
+    counts = {
+        "imported_new": 0,
+        "imported_update": 0,
+        "skipped_duplicate": 0,
+        "queued_for_review": 0,
+        "errors": 0,
+    }
+
+    for outcome in outcomes:
+        if outcome["action"] == APPLY_NEW:
+            counts["imported_new"] += 1
+        elif outcome["action"] == APPLY_UPDATE:
+            counts["imported_update"] += 1
+        elif outcome["action"] == APPLY_SKIPPED_DUPLICATE:
+            counts["skipped_duplicate"] += 1
+        elif outcome["action"] == APPLY_QUEUED:
+            counts["queued_for_review"] += 1
+        elif outcome["action"] == APPLY_ERROR:
+            counts["errors"] += 1
+
+    print(f"Imported (new)      : {counts['imported_new']}")
+    print(f"Imported (update)   : {counts['imported_update']}")
+    print(f"Skipped (duplicate) : {counts['skipped_duplicate']}")
+    print(f"Queued (review)     : {counts['queued_for_review']}")
+    if queue_errors:
+        print(f"Queue failures      : {len(queue_errors)}")
+    print("=" * 70)
+
+    message = (
+        f"{counts['imported_new']} new record(s) added, "
+        f"{counts['imported_update']} record(s) updated, "
+        f"{counts['skipped_duplicate']} duplicate(s) skipped, "
+        f"{counts['queued_for_review']} row(s) sent to the Admin Review Queue."
+    )
+
+    return {
+        "status": "success" if not queue_errors else "partial",
+        "message": message,
+        "master_rows": len(df),
+        **counts,
+        "queued_ids": queued_ids,
+        "queue_errors": queue_errors,
+        "reanalysis_summary": reanalysis["summary"],
+        "sheets_sync": sync_result.as_dict() if sync_result else None,
+    }
+
 
 # ============================================================
-# ADMIN — CUSTOMER DATA
+# ADMIN REVIEW QUEUE
+#
+# Rows Bulk Import could not import automatically (Needs Review /
+# Invalid Data) land here instead of blocking the rest of their
+# batch. An Admin can list them, edit the proposed record, re-check
+# it against the CURRENT Master dataset without committing anything
+# (recheck), and apply it once it resolves to New or Update (apply)
+# -- or discard it outright.
+#
+# Persistence is the Review Queue worksheet itself (see
+# review_queue_sheets_sync above) -- there is no in-memory
+# dataframe and no local CSV mirror for this, the same design
+# already used for Customer Data.
+# ============================================================
+
+
+@app.get("/admin/review-queue")
+def admin_review_queue_list():
+
+    result = review_queue_sheets_sync.list_records()
+
+    if not result.success:
+        raise HTTPException(status_code=503, detail=result.error or "Unable to load the Admin Review Queue.")
+
+    items = [
+        _review_queue_item_from_sheet_record(record)
+        for record in result.records
+    ]
+
+    return {"status": "success", "items": items}
+
+
+class ReviewQueueActionRequest(BaseModel):
+
+    effective_record: Optional[dict] = None
+
+
+@app.post("/admin/review-queue/{queue_id}/recheck")
+def admin_review_queue_recheck(queue_id: str, item: ReviewQueueActionRequest):
+
+    print("\n" + "=" * 70)
+    print("ADMIN — REVIEW QUEUE RECHECK")
+    print("=" * 70)
+
+    if not force_refresh_from_sheets():
+        raise HTTPException(status_code=503, detail="Unable to refresh data from Google Sheets. Operation cancelled.")
+
+    record = _find_review_queue_sheet_record(queue_id)
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="Review queue item not found.")
+
+    row_result, canonical_row, stored_item, fresh_record = _recheck_review_queue_record(
+        record, effective_record_override=item.effective_record
+    )
+
+    print(f"Queue ID     : {queue_id}")
+    print(f"Classification: {row_result['classification']} / {row_result.get('conflict_type')}")
+    print("=" * 70)
+
+    return {
+        "status": "success",
+        "classification": row_result["classification"],
+        "conflict_type": row_result.get("conflict_type"),
+        "reasons": row_result.get("reasons", []),
+        "warnings": row_result.get("warnings", []),
+        "unknown_fields": row_result.get("unknown_fields", []),
+        "different_fields": row_result.get("different_fields", []),
+        "what_this_means": row_result.get("what_this_means"),
+        "matched_master": row_result.get("matched_master"),
+        "effective_record": row_result.get("effective_record"),
+        "item": _review_queue_item_from_sheet_record(fresh_record),
+    }
+
+
+@app.post("/admin/review-queue/{queue_id}/apply")
+def admin_review_queue_apply(queue_id: str, item: ReviewQueueActionRequest):
+
+    global df, device_model_map, device_config_map, model_number_map
+
+    print("\n" + "=" * 70)
+    print("ADMIN — REVIEW QUEUE APPLY")
+    print("=" * 70)
+
+    if not force_refresh_from_sheets():
+        raise HTTPException(status_code=503, detail="Unable to refresh data from Google Sheets. Operation cancelled.")
+
+    record = _find_review_queue_sheet_record(queue_id)
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="Review queue item not found.")
+
+    row_result, canonical_row, stored_item, fresh_record = _recheck_review_queue_record(
+        record, effective_record_override=item.effective_record
+    )
+
+    classification = row_result["classification"]
+    conflict_type = row_result.get("conflict_type")
+
+    # ----------------------------------------------------------
+    # STILL NOT VALID -- leave it queued (already persisted above
+    # with its refreshed reasons/effective record).
+    # ----------------------------------------------------------
+
+    if classification == "conflict" and conflict_type in ("needs_review", "invalid_data"):
+
+        print(f"Queue ID {queue_id} still requires review: {row_result.get('reasons')}")
+        print("=" * 70)
+
+        return {
+            "status": "still_needs_review",
+            "classification": classification,
+            "conflict_type": conflict_type,
+            "reasons": row_result.get("reasons", []),
+            "unknown_fields": row_result.get("unknown_fields", []),
+            "different_fields": row_result.get("different_fields", []),
+            "what_this_means": row_result.get("what_this_means"),
+            "item": _review_queue_item_from_sheet_record(fresh_record),
+        }
+
+    # ----------------------------------------------------------
+    # DUPLICATE -- already represented in Master; nothing to apply.
+    # Discard the queue entry.
+    # ----------------------------------------------------------
+
+    if classification == "conflict" and conflict_type == "duplicate":
+
+        delete_result = review_queue_sheets_sync.delete_rows(
+            [{"row": fresh_record["row"], "fields": fresh_record["fields"]}]
+        )
+
+        if not delete_result.success:
+            raise HTTPException(status_code=503, detail=delete_result.error or "Unable to update the Admin Review Queue.")
+
+        print(f"Queue ID {queue_id} is now a duplicate of an existing Master row; discarded.")
+        print("=" * 70)
+
+        return {
+            "status": "duplicate_discarded",
+            "message": "This row already matches an existing Master record exactly, so it was discarded.",
+        }
+
+    # ----------------------------------------------------------
+    # NEW / UPDATE -- apply to Master, then remove from the queue.
+    # ----------------------------------------------------------
+
+    single_canonical_df = pd.DataFrame([canonical_row])
+    single_canonical_df.index = [0]
+
+    apply_result = apply_classified_rows(single_canonical_df, [row_result], df)
+
+    outcome = apply_result["outcomes"][0]
+
+    if outcome["action"] == APPLY_ERROR:
+        raise HTTPException(status_code=409, detail=outcome.get("error") or "Unable to apply this row.")
+
+    df = apply_result["master_df"]
+
+    df = normalize_master_model_number_column(df)
+
+    device_model_map, device_config_map = build_device_maps(df)
+    model_number_map = build_model_number_map(df)
+
+    df.to_csv(DATA_FILE, index=False)
+
+    bump_data_version()
+
+    sync_result = sheets_sync.sync_dataset(df)
+
+    if not sync_result.success:
+        print(f"WARNING: Google Sheets sync failed after REVIEW QUEUE APPLY: {sync_result.error}")
+
+    delete_result = review_queue_sheets_sync.delete_rows(
+        [{"row": fresh_record["row"], "fields": fresh_record["fields"]}]
+    )
+
+    if not delete_result.success:
+        print(f"WARNING: Failed to remove resolved item from the Admin Review Queue: {delete_result.error}")
+
+    print(f"Queue ID {queue_id} resolved as {outcome['action']} and applied to Master.")
+    print("=" * 70)
+
+    return {
+        "status": "success",
+        "message": "Row applied to Master and removed from the Review Queue.",
+        "action": outcome["action"],
+        "master_rows": len(df),
+        "sheets_sync": sync_result.as_dict(),
+        "review_queue_removed": bool(delete_result.success and delete_result.deleted_rows),
+    }
+
+
+@app.post("/admin/review-queue/{queue_id}/discard")
+def admin_review_queue_discard(queue_id: str):
+
+    print("\n" + "=" * 70)
+    print("ADMIN — REVIEW QUEUE DISCARD")
+    print("=" * 70)
+
+    record = _find_review_queue_sheet_record(queue_id)
+
+    if record is None:
+        raise HTTPException(status_code=404, detail="Review queue item not found.")
+
+    delete_result = review_queue_sheets_sync.delete_rows(
+        [{"row": record["row"], "fields": record["fields"]}]
+    )
+
+    if not delete_result.success:
+        raise HTTPException(status_code=503, detail=delete_result.error or "Unable to update the Admin Review Queue.")
+
+    if not delete_result.deleted_rows:
+        raise HTTPException(status_code=409, detail="This review queue item changed since it was loaded. Reloading...")
+
+    print(f"Queue ID {queue_id} discarded.")
+    print("=" * 70)
+
+    return {"status": "success", "message": "Review queue item discarded."}
+
+
+
 #
 # Unlike the master dataset, Customer Data has no in-memory
 # dataframe -- it's append-only from the customer-facing flow and
@@ -1697,8 +2519,6 @@ def admin_delete_device(item: dict):
 # never surface through this endpoint even if a column by that name
 # were ever added to the sheet directly.
 # ============================================================
-
-CONDITION_FIELD_MARKER = "condition"
 
 
 @app.get("/admin/customers")
