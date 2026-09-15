@@ -10,3 +10,7 @@ gspread
 google-auth
 lightgbm
 python-multipart
+opencv-python-headless
+easyocr
+pdfplumber
+thefuzz
