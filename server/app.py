@@ -1,4 +1,4 @@
-import pandas as pd; import numpy as np; import os; import io; import json; import uuid; import cv2; import easyocr; import pdfplumber; import re; from thefuzz import fuzz; from fastapi import FastAPI, HTTPException, UploadFile, File, Form; from fastapi.middleware.cors import CORSMiddleware; from fastapi.responses import FileResponse, JSONResponse; from fastapi.staticfiles import StaticFiles; from pathlib import Path; from typing import Optional, cast, List; from pydantic import BaseModel; from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; from internal.tradein_fallback import TradeInFallback; from internal.sheets_sync import SheetsSync; from internal.bulk_import import analyze_upload, effective_record_to_row, apply_classified_rows, build_effective_record, normalize_master_model_number_column, json_safe, APPLY_NEW, APPLY_UPDATE, APPLY_SKIPPED_DUPLICATE, APPLY_QUEUED, APPLY_ERROR; BASE_DIR = Path(__file__).resolve().parent.parent; APP_DIR = Path(__file__).resolve().parent; ASSETS_DIR = BASE_DIR / 'assets'; DATA_FILE = BASE_DIR / 'data' / 'master_msrp.csv'; FITTED_CURVES_FILE = BASE_DIR / 'data' / 'fitted_curves.csv'; SHEETS_SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', str(BASE_DIR / 'internal' / 'service_account.json')); SHEETS_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'); SHEETS_SPREADSHEET_ID = '1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs'; SHEETS_WORKSHEET_NAME = 'Cleaned Master'; CUSTOMER_SHEETS_WORKSHEET_NAME = 'Customer Data'; REVIEW_QUEUE_WORKSHEET_NAME = 'Admin Review Queue'; REVIEW_QUEUE_COLUMNS = ['Queue ID', 'Queued At', 'Updated At', 'Conflict Type', 'Provider', 'Device', 'Sub-device', 'Standardized Model', 'Reasons', 'Record JSON']; CONDITION_FIELD_MARKER = 'condition'; VALID_DATE_MODES = {'collection_date', 'price_last_updated'}; app = FastAPI(title='Apple Trade-In Valuation API'); app.mount('/assets', StaticFiles(directory=ASSETS_DIR), name='assets'); app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
+import pandas as pd; import numpy as np; import os; import io; import json; import uuid; import cv2; import pdfplumber; import re; from thefuzz import fuzz; from fastapi import FastAPI, HTTPException, UploadFile, File, Form; from fastapi.middleware.cors import CORSMiddleware; from fastapi.responses import FileResponse, JSONResponse; from fastapi.staticfiles import StaticFiles; from pathlib import Path; from typing import Optional, cast, List; from pydantic import BaseModel; from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; from internal.tradein_fallback import TradeInFallback; from internal.sheets_sync import SheetsSync; from internal.bulk_import import analyze_upload, effective_record_to_row, apply_classified_rows, build_effective_record, normalize_master_model_number_column, json_safe, APPLY_NEW, APPLY_UPDATE, APPLY_SKIPPED_DUPLICATE, APPLY_QUEUED, APPLY_ERROR; BASE_DIR = Path(__file__).resolve().parent.parent; APP_DIR = Path(__file__).resolve().parent; ASSETS_DIR = BASE_DIR / 'assets'; DATA_FILE = BASE_DIR / 'data' / 'master_msrp.csv'; FITTED_CURVES_FILE = BASE_DIR / 'data' / 'fitted_curves.csv'; SHEETS_SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', str(BASE_DIR / 'internal' / 'service_account.json')); SHEETS_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'); SHEETS_SPREADSHEET_ID = '1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs'; SHEETS_WORKSHEET_NAME = 'Cleaned Master'; CUSTOMER_SHEETS_WORKSHEET_NAME = 'Customer Data'; REVIEW_QUEUE_WORKSHEET_NAME = 'Admin Review Queue'; REVIEW_QUEUE_COLUMNS = ['Queue ID', 'Queued At', 'Updated At', 'Conflict Type', 'Provider', 'Device', 'Sub-device', 'Standardized Model', 'Reasons', 'Record JSON']; CONDITION_FIELD_MARKER = 'condition'; VALID_DATE_MODES = {'collection_date', 'price_last_updated'}; app = FastAPI(title='Apple Trade-In Valuation API'); app.mount('/assets', StaticFiles(directory=ASSETS_DIR), name='assets'); app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 def storage_to_gb(value):
     if pd.isna(value):
         return np.nan
@@ -340,11 +340,13 @@ def _recheck_review_queue_record(record, effective_record_override=None):
     if fresh_record is None:
         raise HTTPException(status_code=503, detail='Lost track of the review queue item after updating it. Please reload the queue.')
     return (row_result, canonical_row, stored_item, fresh_record)
-try:
-    ocr_reader = easyocr.Reader(['en'], gpu=False, model_storage_directory=r"D:\easyocr_models")
-except Exception as e:
-    print(f"Warning: EasyOCR failed to initialize. " f"Image parsing will be unavailable: {e}")
-    ocr_reader = None
+ocr_reader = None
+def get_ocr_reader():
+    global ocr_reader
+    if ocr_reader is None:
+        import easyocr
+        ocr_reader = easyocr.Reader(['en'], gpu=False, model_storage_directory="/tmp/easyocr_models")
+    return ocr_reader
 def validate_extraction_upload(file: UploadFile, ext: str):
     MAX_FILE_SIZE = 10 * 1024 * 1024; file.file.seek(0, 2); file_size = file.file.tell(); file.file.seek(0)
     if file_size > MAX_FILE_SIZE:
@@ -369,7 +371,7 @@ def extract_raw_text(file: UploadFile, ext: str) -> list:
         elif ext in ['.jpg', '.jpeg', '.png']:
             if ocr_reader is None:
                 raise HTTPException(status_code=500, detail='Image processing is currently unavailable. Please try again later.')
-            image_bytes = file.file.read(); processed_img = preprocess_image_for_ocr(image_bytes); results = ocr_reader.readtext(processed_img, detail=1)
+            image_bytes = file.file.read(); processed_img = preprocess_image_for_ocr(image_bytes); results =get_ocr_reader().readtext(processed_img, detail=1)
             for bbox, text, prob in results:
                 if prob > 0.4:
                     extracted_lines.append(text)
