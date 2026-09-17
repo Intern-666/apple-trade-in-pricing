@@ -1,4 +1,4 @@
-import pandas as pd; import numpy as np; import os; import io; import json; import uuid; import cv2; import pdfplumber; import re; from thefuzz import fuzz; from fastapi import FastAPI, HTTPException, UploadFile, File, Form; from fastapi.middleware.cors import CORSMiddleware; from fastapi.responses import FileResponse, JSONResponse; from fastapi.staticfiles import StaticFiles; from pathlib import Path; from typing import Optional, cast, List; from pydantic import BaseModel; from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; from internal.tradein_fallback import TradeInFallback; from internal.sheets_sync import SheetsSync; from internal.bulk_import import analyze_upload, effective_record_to_row, apply_classified_rows, build_effective_record, normalize_master_model_number_column, json_safe, APPLY_NEW, APPLY_UPDATE, APPLY_SKIPPED_DUPLICATE, APPLY_QUEUED, APPLY_ERROR; BASE_DIR = Path(__file__).resolve().parent.parent; APP_DIR = Path(__file__).resolve().parent; ASSETS_DIR = BASE_DIR / 'assets'; DATA_FILE = BASE_DIR / 'data' / 'master_msrp.csv'; FITTED_CURVES_FILE = BASE_DIR / 'data' / 'fitted_curves.csv'; SHEETS_SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', str(BASE_DIR / 'internal' / 'service_account.json')); SHEETS_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'); SHEETS_SPREADSHEET_ID = '1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs'; SHEETS_WORKSHEET_NAME = 'Cleaned Master'; CUSTOMER_SHEETS_WORKSHEET_NAME = 'Customer Data'; REVIEW_QUEUE_WORKSHEET_NAME = 'Admin Review Queue'; REVIEW_QUEUE_COLUMNS = ['Queue ID', 'Queued At', 'Updated At', 'Conflict Type', 'Provider', 'Device', 'Sub-device', 'Standardized Model', 'Reasons', 'Record JSON']; CONDITION_FIELD_MARKER = 'condition'; VALID_DATE_MODES = {'collection_date', 'price_last_updated'}; app = FastAPI(title='Apple Trade-In Valuation API'); app.mount('/assets', StaticFiles(directory=ASSETS_DIR), name='assets'); app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
+import pandas as pd; import numpy as np; import os; import io; import json; import uuid; import cv2; import pdfplumber; import re; from thefuzz import fuzz; from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request; from fastapi.middleware.cors import CORSMiddleware; from fastapi.responses import FileResponse, JSONResponse, RedirectResponse; from fastapi.staticfiles import StaticFiles; from pathlib import Path; from typing import Optional, cast, List; from pydantic import BaseModel; from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; from internal.tradein_fallback import TradeInFallback; from internal.sheets_sync import SheetsSync; from internal.bulk_import import analyze_upload, effective_record_to_row, apply_classified_rows, build_effective_record, normalize_master_model_number_column, json_safe, APPLY_NEW, APPLY_UPDATE, APPLY_SKIPPED_DUPLICATE, APPLY_QUEUED, APPLY_ERROR; BASE_DIR = Path(__file__).resolve().parent.parent; APP_DIR = Path(__file__).resolve().parent; ASSETS_DIR = BASE_DIR / 'assets'; DATA_FILE = BASE_DIR / 'data' / 'master_msrp.csv'; FITTED_CURVES_FILE = BASE_DIR / 'data' / 'fitted_curves.csv'; SHEETS_SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', str(BASE_DIR / 'internal' / 'service_account.json')); SHEETS_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'); SHEETS_SPREADSHEET_ID = '1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs'; SHEETS_WORKSHEET_NAME = 'Cleaned Master'; CUSTOMER_SHEETS_WORKSHEET_NAME = 'Customer Data'; REVIEW_QUEUE_WORKSHEET_NAME = 'Admin Review Queue'; REVIEW_QUEUE_COLUMNS = ['Queue ID', 'Queued At', 'Updated At', 'Conflict Type', 'Provider', 'Device', 'Sub-device', 'Standardized Model', 'Reasons', 'Record JSON']; CONDITION_FIELD_MARKER = 'condition'; VALID_DATE_MODES = {'collection_date', 'price_last_updated'}; CUSTOMER_DETAIL_COOKIE = 'customer_detail_ack'; app = FastAPI(title='Apple Trade-In Valuation API'); app.mount('/assets', StaticFiles(directory=ASSETS_DIR), name='assets'); app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 def storage_to_gb(value):
     if pd.isna(value):
         return np.nan
@@ -716,11 +716,23 @@ def admin_forecast(item: dict):
     except Exception as e:
         return {'status': 'error', 'message': str(e)}
 @app.get('/')
-def customer_frontend():
+def customer_frontend(request: Request):
+    if not request.cookies.get(CUSTOMER_DETAIL_COOKIE):
+        return RedirectResponse(url='/customer-detail')
     return FileResponse(ASSETS_DIR / 'index.html')
 @app.get('/customer-detail')
 def customer_detail_page():
     return FileResponse(ASSETS_DIR / 'customer-detail.html')
+@app.post('/customer-detail/complete')
+def customer_detail_complete():
+    # Marks this browser session as having filled in the customer-detail
+    # form, so the '/' route above will let it through. This is what
+    # actually gates the site server-side -- sessionStorage alone can't be
+    # checked by the server, and it can't stop someone from requesting '/'
+    # directly (curl, JS disabled, etc.), so this cookie is the real gate.
+    response = JSONResponse(content={'status': 'success'})
+    response.set_cookie(key=CUSTOMER_DETAIL_COOKIE, value='1', httponly=True, samesite='lax', path='/')
+    return response
 @app.get('/admin')
 def admin_frontend():
     return FileResponse(ASSETS_DIR / 'admin.html')
