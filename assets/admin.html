@@ -946,6 +946,8 @@
             </div>
             <p id="customer-delete-confirm-info" class="delete-modal-info">
             </p>
+            <div id="customer-delete-preview" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px;font-size:0.85rem;">
+            </div>
             <div class="buttons">
               <button type="button" id="customer-delete-confirm-button" class="danger">
                 Delete Permanently
@@ -3304,6 +3306,15 @@
         customerDeleteTargets = customerRecords.filter((customer) => selectedCustomerRows.has(customer.row));
         const count = customerDeleteTargets.length;
         document.getElementById("customer-delete-confirm-info").textContent = `Delete ${count} customer record${count === 1 ? "" : "s"}? This will permanently remove them from the Customer Data Google Sheet and cannot be undone.`;
+        const preview = document.getElementById("customer-delete-preview");
+        preview.innerHTML = customerDeleteTargets.map((c) => {
+          const f = c.fields || {};
+          return `<div style="padding:8px 10px;border-bottom:1px solid var(--border);">
+            <strong>${f["Customer Name"] || "Unknown"}</strong>
+            <span style="color:var(--text-muted);margin-left:8px;">${f["Phone"] || "N/A"} &middot; ${f["Email"] || "N/A"}</span>
+            ${f["Device"] ? `<span style="display:block;font-size:0.8rem;color:var(--text-muted);margin-top:2px;">${f["Device"]}</span>` : ""}
+          </div>`;
+        }).join("");
         document.getElementById("customer-delete-confirm").classList.remove("hidden");
       });
       document.getElementById("customer-delete-cancel-button").addEventListener("click", () => {
