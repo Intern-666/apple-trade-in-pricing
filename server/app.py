@@ -1,4 +1,4 @@
-import pandas as pd; import numpy as np; import os; import io; import json; import uuid; import pytesseract; from PIL import Image, ImageFilter; import pdfplumber; import re; from thefuzz import fuzz; from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request; from fastapi.middleware.cors import CORSMiddleware; from fastapi.responses import FileResponse, JSONResponse, RedirectResponse; from fastapi.staticfiles import StaticFiles; from pathlib import Path; from typing import Optional, cast, List; from pydantic import BaseModel; from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; from internal.tradein_fallback import TradeInFallback; from internal.sheets_sync import SheetsSync; from internal.bulk_import import analyze_upload, effective_record_to_row, apply_classified_rows, build_effective_record, normalize_master_model_number_column, json_safe, APPLY_NEW, APPLY_UPDATE, APPLY_SKIPPED_DUPLICATE, APPLY_QUEUED, APPLY_ERROR; BASE_DIR = Path(__file__).resolve().parent.parent; APP_DIR = Path(__file__).resolve().parent; ASSETS_DIR = BASE_DIR / 'assets'; DATA_FILE = BASE_DIR / 'data' / 'master_msrp.csv'; FITTED_CURVES_FILE = BASE_DIR / 'data' / 'fitted_curves.csv'; SHEETS_SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', str(BASE_DIR / 'internal' / 'service_account.json')); SHEETS_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'); SHEETS_SPREADSHEET_ID = '1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs'; SHEETS_WORKSHEET_NAME = 'Cleaned Master'; CUSTOMER_SHEETS_WORKSHEET_NAME = 'Customer Data'; REVIEW_QUEUE_WORKSHEET_NAME = 'Admin Review Queue'; REVIEW_QUEUE_COLUMNS = ['Queue ID', 'Queued At', 'Updated At', 'Conflict Type', 'Provider', 'Device', 'Sub-device', 'Standardized Model', 'Reasons', 'Record JSON']; CONDITION_FIELD_MARKER = 'condition'; VALID_DATE_MODES = {'collection_date', 'price_last_updated'}; CUSTOMER_DETAIL_COOKIE = 'customer_detail_ack'; app = FastAPI(title='Apple Trade-In Valuation API'); app.mount('/assets', StaticFiles(directory=ASSETS_DIR), name='assets'); app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
+import pandas as pd; import numpy as np; import os; import io; import json; import uuid; import re; from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request; from fastapi.middleware.cors import CORSMiddleware; from fastapi.responses import FileResponse, JSONResponse, RedirectResponse; from fastapi.staticfiles import StaticFiles; from pathlib import Path; from typing import Optional, cast, List; from pydantic import BaseModel; from datetime import datetime, timedelta; from zoneinfo import ZoneInfo; from internal.tradein_fallback import TradeInFallback; from internal.sheets_sync import SheetsSync; from internal.bulk_import import analyze_upload, effective_record_to_row, apply_classified_rows, build_effective_record, normalize_master_model_number_column, json_safe, APPLY_NEW, APPLY_UPDATE, APPLY_SKIPPED_DUPLICATE, APPLY_QUEUED, APPLY_ERROR; BASE_DIR = Path(__file__).resolve().parent.parent; APP_DIR = Path(__file__).resolve().parent; ASSETS_DIR = BASE_DIR / 'assets'; DATA_FILE = BASE_DIR / 'data' / 'master_msrp.csv'; FITTED_CURVES_FILE = BASE_DIR / 'data' / 'fitted_curves.csv'; SHEETS_SERVICE_ACCOUNT_FILE = os.getenv('GOOGLE_SERVICE_ACCOUNT_FILE', str(BASE_DIR / 'internal' / 'service_account.json')); SHEETS_SERVICE_ACCOUNT_JSON = os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'); SHEETS_SPREADSHEET_ID = '1TzySGhtEs-ptmzLHNxcJ5q_lQ9nGr6HDofy0IL7G1vs'; SHEETS_WORKSHEET_NAME = 'Cleaned Master'; CUSTOMER_SHEETS_WORKSHEET_NAME = 'Customer Data'; REVIEW_QUEUE_WORKSHEET_NAME = 'Admin Review Queue'; REVIEW_QUEUE_COLUMNS = ['Queue ID', 'Queued At', 'Updated At', 'Conflict Type', 'Provider', 'Device', 'Sub-device', 'Standardized Model', 'Reasons', 'Record JSON']; CONDITION_FIELD_MARKER = 'condition'; VALID_DATE_MODES = {'collection_date', 'price_last_updated'}; CUSTOMER_DETAIL_COOKIE = 'customer_detail_ack'; app = FastAPI(title='Apple Trade-In Valuation API'); app.mount('/assets', StaticFiles(directory=ASSETS_DIR), name='assets'); app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*'])
 def storage_to_gb(value):
     if pd.isna(value):
         return np.nan
@@ -340,98 +340,7 @@ def _recheck_review_queue_record(record, effective_record_override=None):
     if fresh_record is None:
         raise HTTPException(status_code=503, detail='Lost track of the review queue item after updating it. Please reload the queue.')
     return (row_result, canonical_row, stored_item, fresh_record)
-def validate_extraction_upload(file: UploadFile, ext: str):
-    MAX_FILE_SIZE = 10 * 1024 * 1024; file.file.seek(0, 2); file_size = file.file.tell(); file.file.seek(0)
-    if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail='This file is too large to process. Please upload a file under 10MB.')
-    allowed_extensions = ['.csv', '.xls', '.xlsx', '.pdf', '.jpg', '.jpeg', '.png']
-    if ext not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="We can't read this file type. Please upload a JPG, PNG, PDF, Excel, or CSV.")
-def preprocess_image_for_ocr(image_bytes: bytes) -> Image.Image:
-    img = Image.open(io.BytesIO(image_bytes))
-    if img is None:
-        raise HTTPException(status_code=400, detail="We couldn't read this image. Please check the photo and try again.")
-    img = img.convert('L'); img = img.filter(ImageFilter.MedianFilter(size=3)); return img
-def extract_raw_text(file: UploadFile, ext: str) -> list:
-    extracted_lines = []
-    try:
-        if ext == '.pdf':
-            with pdfplumber.open(file.file) as pdf:
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        extracted_lines.extend(text.split('\n'))
-        elif ext in ['.jpg', '.jpeg', '.png']:
-            image_bytes = file.file.read(); processed_img = preprocess_image_for_ocr(image_bytes); raw = pytesseract.image_to_string(processed_img, config='--psm 6')
-            extracted_lines = [line.strip() for line in raw.splitlines() if line.strip()]
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f'Extraction engine error: {e}'); raise HTTPException(status_code=500, detail='Something went wrong while reading this file. Please try again in a moment.')
-    if not extracted_lines:
-        raise HTTPException(status_code=400, detail="We couldn't find any text in this file. Please check the photo and try again.")
-    return extracted_lines
-@app.post('/admin/extract')
-async def api_admin_extract(file: UploadFile=File(...)):
-    ext = Path(file.filename).suffix.lower(); validate_extraction_upload(file, ext); refresh_data_if_stale(); apple_devices_master = df[['Device', 'Sub-device', 'Standardized Model']].drop_duplicates()
-    if ext in ['.csv', '.xls', '.xlsx']:
-        if ext == '.csv':
-            df_upload = pd.read_csv(file.file, dtype=object)
-        else:
-            df_upload = pd.read_excel(file.file, dtype=object)
-        candidates = ['model', 'model name', 'device', 'product', 'name', 'item', 'description']; model_col = None
-        for col in df_upload.columns:
-            if str(col).lower().strip() in candidates:
-                model_col = col; break
-        if not model_col:
-            for col in df_upload.select_dtypes(include=['object', 'string']).columns:
-                model_col = col; break
-        if not model_col:
-            raise HTTPException(status_code=400, detail='Could not identify a model name column in the spreadsheet.')
-        extracted_rows = []
-        for _, row in df_upload.iterrows():
-            val = str(row[model_col])
-            if len(val) < 4 or val.lower() == 'nan':
-                continue
-            best_match = None; highest_score = 0
-            for _, master_row in apple_devices_master.iterrows():
-                target = str(master_row['Standardized Model']); score = fuzz.token_set_ratio(val.lower(), target.lower())
-                if score > 88 and score > highest_score:
-                    highest_score = score; best_match = master_row
-            if best_match is not None:
-                row_dict = row.to_dict(); row_dict['Device'] = best_match['Device']; row_dict['Sub-device'] = best_match['Sub-device']; row_dict['Standardized Model'] = best_match['Standardized Model']; extracted_rows.append(row_dict)
-        if not extracted_rows:
-            raise HTTPException(status_code=400, detail="We couldn't find any recognized Apple devices in this file.")
-        result_df = pd.DataFrame(extracted_rows)
-    else:
-        raw_lines = extract_raw_text(file, ext); extracted_data = []
-        for line in raw_lines:
-            if not isinstance(line, str) or len(line.strip()) < 4:
-                continue
-            best_match = None; highest_score = 0
-            for _, master_row in apple_devices_master.iterrows():
-                target = str(master_row['Standardized Model']); score = fuzz.token_set_ratio(line.lower(), target.lower())
-                if score > 88 and score > highest_score:
-                    highest_score = score; best_match = master_row
-            if best_match is not None:
-                storage = None; price = None; temp_line = line; storage_match = re.search('\\b(\\d+)\\s*(GB|TB)\\b', temp_line, re.IGNORECASE)
-                if storage_match:
-                    val = int(storage_match.group(1)); unit = storage_match.group(2).upper()
-                    if unit == 'TB':
-                        val *= 1024
-                    storage = val; temp_line = temp_line[:storage_match.start()] + temp_line[storage_match.end():]
-                price_match = re.search('(?:RM|Price:?|\\$)\\s*(\\d{1,5}(?:\\.\\d{2})?)', temp_line, re.IGNORECASE)
-                if price_match:
-                    price = float(price_match.group(1))
-                else:
-                    numbers = re.findall('\\b(\\d{3,5}(?:\\.\\d{2})?)\\b', temp_line)
-                    if numbers:
-                        price = float(numbers[-1])
-                extracted_data.append({'Device': best_match['Device'], 'Sub-device': best_match['Sub-device'], 'Standardized Model': best_match['Standardized Model'], 'Storage (GB)': storage if storage else '', 'Retail Price': price if price else ''})
-        if not extracted_data:
-            raise HTTPException(status_code=400, detail="We couldn't find any recognized Apple devices in this file.")
-        result_df = pd.DataFrame(extracted_data)
-    csv_buffer = io.StringIO(); result_df.to_csv(csv_buffer, index=False); return JSONResponse(content={'status': 'success', 'csv_content': csv_buffer.getvalue()})
+
 @app.post('/admin/bulk-import/preview')
 def admin_bulk_import_preview(file: UploadFile=File(...), provider: str=Form('Unknown'), date_mode: str=Form('collection_date'), date_value: Optional[str]=Form(None)):
     if not file.filename or not file.filename.lower().endswith('.csv'):
@@ -745,12 +654,3 @@ def admin_refresh():
 @app.get('/health')
 def health_check():
     return {'status': 'online'}
-
-@app.get('/admin/debug-ocr')
-def debug_ocr():
-    import shutil, pytesseract
-    tesseract_path = shutil.which('tesseract')
-    return {
-        'tesseract_binary': tesseract_path,
-        'pytesseract_version': str(pytesseract.get_tesseract_version()) if tesseract_path else None
-    }

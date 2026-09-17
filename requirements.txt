@@ -10,7 +10,3 @@ gspread
 google-auth
 lightgbm
 python-multipart
-pytesseract
-Pillow
-pdfplumber
-thefuzz

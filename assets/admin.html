@@ -97,10 +97,7 @@
           </button>
           <div class="add-mode-spacer">
           </div>
-          <button type="button" id="add-mode-extract-btn" class="secondary">
-            Auto Extract
-          </button>
-          <input type="file" id="extract-file-input" accept=".pdf, .jpg, .jpeg, .png, .xls, .xlsx, .csv" class="hidden">
+
         </div>
         <div id="add-model-fields">
           <div class="form-group">
@@ -962,36 +959,8 @@
         <div id="customer-result" class="result">
         </div>
       </section>
-      <div id="extract-loading-modal" class="hidden">
-        <div class="extract-loading-box">
-          <span class="extract-spinner">
-          </span>
-          <h3>
-            Working...
-          </h3>
-          <p>
-            This process may take some time depending on the file type and size.
-          </p>
-        </div>
-      </div>
-      <div id="extract-confirm-modal" class="hidden">
-        <div class="delete-modal">
-          <div class="delete-modal-title">
-            Extraction Complete
-          </div>
-          <p class="delete-modal-info">
-            Apple devices have been successfully extracted. Would you like to upload this extracted CSV to the dataset?
-          </p>
-          <div class="buttons">
-            <button type="button" id="extract-confirm-yes" class="primary">
-              Yes, Upload
-            </button>
-            <button type="button" id="extract-confirm-no" class="secondary">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
+
+
     </main>
     <script>
       const CONNECTIVITY_OPTIONS = { "iPad": ["Wi-Fi", "Wi-Fi + Cellular"], "Apple Watch": ["GPS", "GPS + Cellular"] };
@@ -3404,58 +3373,7 @@
         button.disabled = false;
         button.innerHTML = originalText;
       }
-      const extractBtn = document.getElementById("add-mode-extract-btn");
-      const extractFileInput = document.getElementById("extract-file-input");
-      const extractLoadingModal = document.getElementById("extract-loading-modal");
-      const extractConfirmModal = document.getElementById("extract-confirm-modal");
-      const extractConfirmYes = document.getElementById("extract-confirm-yes");
-      const extractConfirmNo = document.getElementById("extract-confirm-no");
-      let extractedCSVFile = null;
-      extractBtn.addEventListener("click", () => {
-        extractFileInput.click();
-      });
-      extractFileInput.addEventListener("change", async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        extractFileInput.value = "";
-        extractLoadingModal.classList.remove("hidden");
-        lockBackgroundScroll();
-        try {
-          const formData = new FormData();
-          formData.append("file", file);
-          const response = await fetch("/admin/extract", { method: "POST", body: formData });
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.detail || "Extraction failed.");
-          }
-          const blob = new Blob([data.csv_content], { type: "text/csv" });
-          extractedCSVFile = new File([blob], "extracted_apple_devices.csv", { type: "text/csv" });
-          extractLoadingModal.classList.add("hidden");
-          extractConfirmModal.classList.remove("hidden");
-        } catch (error) {
-          console.error("Extraction failed:", error);
-          extractLoadingModal.classList.add("hidden");
-          unlockBackgroundScroll();
-          showAdminToast(error.message || "Extraction failed. Please try again.", "error");
-        }
-      });
-      extractConfirmYes.addEventListener("click", () => {
-        if (extractedCSVFile) {
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(extractedCSVFile);
-          const uploadFileInput = document.getElementById("upload-csv-file");
-          uploadFileInput.files = dataTransfer.files;
-          setAddMode("upload");
-        }
-        extractConfirmModal.classList.add("hidden");
-        unlockBackgroundScroll();
-        showAdminToast("Extracted CSV ready for preview.", "success");
-      });
-      extractConfirmNo.addEventListener("click", () => {
-        extractedCSVFile = null;
-        extractConfirmModal.classList.add("hidden");
-        unlockBackgroundScroll();
-      });
+
 
     </script>
     <div id="admin-toast-container">
