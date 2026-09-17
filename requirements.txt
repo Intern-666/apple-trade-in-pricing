@@ -1,0 +1,16 @@
+# Target Python: 3.12
+# Keep environment aligned with the project runtime used by the dashboard.
+fastapi
+uvicorn[standard]
+pandas
+numpy
+joblib
+scikit-learn==1.6.1
+gspread
+google-auth
+lightgbm
+python-multipart
+pytesseract
+Pillow
+pdfplumber
+thefuzz
