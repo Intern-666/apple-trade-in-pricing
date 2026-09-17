@@ -1644,6 +1644,7 @@
             showAdminToast(data.detail || "The data changed just before deleting -- reloading the latest records.", "warning", 5e3);
             selectedDeleteRecordId = null;
             selectedDeleteDataVersion = null;
+            resetActionButton(deleteButton, "Delete Permanently");
             await refreshDeleteRecords();
             document.getElementById("delete-confirm").classList.add("hidden");
             return;
@@ -1651,6 +1652,7 @@
           if (!response.ok) {
             throw new Error(data.detail || data.message || "Delete failed.");
           }
+          resetActionButton(deleteButton, "Delete Permanently");
           document.getElementById("delete-confirm").classList.add("hidden");
           showAdminToast("Device deleted successfully.");
           selectedDeleteRecordId = null;
