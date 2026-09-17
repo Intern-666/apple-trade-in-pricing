@@ -2743,16 +2743,33 @@
       let selectedRecordId = null;
       let selectedRecordDataVersion = null;
       let modifyOpenedFromStatus = false;
+      // Mirrors DEVICE_EXCLUDED_FIELDS / ADMIN_EDITABLE_FIELDS in app.py.
+      // Kept in sync manually -- if the backend table changes, update here too.
+      const DEVICE_EXCLUDED_FIELDS = { "iPhone": ["Connectivity", "Material", "Case Size", "Charging Method", "Storage Type"], "iPad": ["Storage Type", "Material", "Case Size", "Charging Method"], "Mac": ["Connectivity", "Material", "Case Size", "Charging Method"], "Apple Watch": ["Storage Type", "Charging Method"], "AirPods": ["Storage (GB)", "Storage Type", "Connectivity", "Material", "Case Size"] };
+      const ADMIN_EDITABLE_FIELDS = ["Provider", "Device", "Sub-device", "Standardized Model", "Retail Price", "Storage (GB)", "Storage Type", "Connectivity", "Material", "Max. Trade-In Value (RM)", "Model_Year", "Case Size", "Charging Method", "Collection Date"];
+      function getRelevantAdminFields(device) {
+        // No device, or a device we don't have a configuration for -- same as
+        // the backend's `DEVICE_EXCLUDED_FIELDS.get(device, set())`, this
+        // means "no exclusions", so the caller falls back to showing every
+        // field rather than guessing which ones apply.
+        if (!device || !(device in DEVICE_EXCLUDED_FIELDS)) {
+          return null;
+        }
+        const excluded = new Set(DEVICE_EXCLUDED_FIELDS[device]);
+        return ADMIN_EDITABLE_FIELDS.filter((field) => !excluded.has(field));
+      }
       function openModifyRecord(record) {
         selectedRecordId = record.id ?? null;
         selectedRecordDataVersion = adminDataVersion;
         // Records coming from the Data Status page are a lighter-weight shape
-        // and don't include `relevant_fields`. Previously this made every
-        // field group hide itself (empty Set -> nothing ever matches), so the
-        // Modify form looked blank. When relevant_fields isn't provided at
-        // all, show every field instead of hiding everything.
-        const hasRelevantFieldInfo = Array.isArray(record.relevant_fields);
-        const relevantFields = new Set(record.relevant_fields || []);
+        // and don't include `relevant_fields`. Rather than showing every
+        // field (which jams Material/Case Size/etc onto devices that don't
+        // have them, like iPhone), compute the same per-device field set the
+        // backend uses. Only fall back to showing everything when the device
+        // itself is missing or unrecognized.
+        const relevantFieldsList = Array.isArray(record.relevant_fields) ? record.relevant_fields : getRelevantAdminFields(record.device);
+        const hasRelevantFieldInfo = Array.isArray(relevantFieldsList);
+        const relevantFields = new Set(relevantFieldsList || []);
         document.querySelectorAll("#modify-form [data-admin-field]").forEach((fieldGroup) => {
           const fieldName = fieldGroup.dataset.adminField;
           const shouldHide = hasRelevantFieldInfo && !relevantFields.has(fieldName);

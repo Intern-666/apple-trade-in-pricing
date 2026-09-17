@@ -73,6 +73,9 @@
               All providers
             </option>
           </select>
+          <button type="button" id="status-clear-filters" class="secondary">
+            Clear Filters
+          </button>
         </div>
       </section>
       <section class="card status-records-card">
@@ -321,6 +324,12 @@
       document.getElementById("status-search").addEventListener("input", applyFilters);
       document.getElementById("status-device-filter").addEventListener("change", applyFilters);
       document.getElementById("status-provider-filter").addEventListener("change", applyFilters);
+      document.getElementById("status-clear-filters").addEventListener("click", () => {
+        document.getElementById("status-search").value = "";
+        document.getElementById("status-device-filter").value = "";
+        document.getElementById("status-provider-filter").value = "";
+        applyFilters();
+      });
       document.getElementById("status-back").addEventListener("click", () => {
         window.location.href = "/admin";
       });
