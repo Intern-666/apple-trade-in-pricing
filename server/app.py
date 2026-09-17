@@ -745,12 +745,3 @@ def admin_refresh():
 @app.get('/health')
 def health_check():
     return {'status': 'online'}
-
-@app.get('/admin/debug-ocr')
-def debug_ocr():
-    import shutil, pytesseract
-    tesseract_path = shutil.which('tesseract')
-    return {
-        'tesseract_binary': tesseract_path,
-        'pytesseract_version': pytesseract.get_tesseract_version() if tesseract_path else None
-    }
