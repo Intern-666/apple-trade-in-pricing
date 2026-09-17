@@ -2812,6 +2812,7 @@
             throw new Error(data.detail || data.message || "Failed to modify record.");
           }
           showAdminToast("Device modified successfully.");
+          resetActionButton(saveButton, "Save Changes");
           document.getElementById("modify-form").classList.add("hidden");
           selectedRecordId = null;
           selectedRecordDataVersion = null;
