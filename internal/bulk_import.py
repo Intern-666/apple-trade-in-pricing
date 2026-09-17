@@ -4,6 +4,7 @@ def is_field_applicable(device, field):
         return True
     applicable_fields = DEVICE_APPLICABLE_FIELDS.get(device, set()); return field in applicable_fields
 COLUMN_SYNONYMS = {'Provider': ['provider', 'vendor', 'source', 'company', 'seller'], 'Device': ['category', 'device', 'device type', 'product category', 'device family'], 'Sub-device': ['sub-device', 'subdevice', 'sub device', 'series', 'line', 'tier'], 'Model Number': ['model number', 'model no', 'model no.', 'model num', 'part number', 'part no', 'a-number', 'a number', 'sku'], 'Standardized Model': ['model name', 'model', 'device model', 'product name', 'variant', 'device name', 'product description'], 'Retail Price': ['retail price', 'msrp', 'retail', 'sell price', 'sale price', 'list price'], 'Storage (GB)': ['storage', 'capacity', 'storage (gb)', 'storage gb'], 'Storage Type': ['storage type', 'memory type'], 'Connectivity': ['connectivity', 'network', 'cellular'], 'Material': ['material', 'case material', 'band material', 'finish'], 'Max. Trade-In Value (RM)': ['trade-in value', 'trade in value', 'trade-in', 'buyback', 'buyback price', 'trade value', 'max. trade-in value (rm)', 'price'], 'Model_Year': ['year', 'model year', 'release year'], 'Case Size': ['case size', 'size', 'case (mm)'], 'Charging Method': ['charging method', 'charging', 'charging case', 'specification', 'specifications']}; DEVICE_ALIASES = {'iphone': 'iPhone', 'phone': 'iPhone', 'i phone': 'iPhone', 'ipad': 'iPad', 'pad': 'iPad', 'tablet': 'iPad', 'mac': 'Mac', 'macbook': 'Mac', 'laptop': 'Mac', 'notebook': 'Mac', 'imac': 'Mac', 'mac mini': 'Mac', 'mac studio': 'Mac', 'mac pro': 'Mac', 'apple watch': 'Apple Watch', 'watch': 'Apple Watch', 'airpods': 'AirPods', 'air pods': 'AirPods', 'earbuds': 'AirPods', 'earphones': 'AirPods'}; BRAND_PREFIX_WORDS = {'apple'}; UNKNOWN = 'Unknown'
+INVALID_NUMERIC = '__INVALID__'
 def _is_blank(value):
     if value is None:
         return True
@@ -18,6 +19,13 @@ def _is_blank(value):
             return True
     return False
 def _is_unknown(value):
+    # A numeric field that couldn't be parsed (see normalize_numeric_for_comparison)
+    # is tagged with this sentinel rather than left blank. It must be treated as
+    # unknown here too -- otherwise two rows that both have unparseable data in
+    # the same field compare as an exact match ('__INVALID__' == '__INVALID__')
+    # instead of being routed to review, which defeats the point of flagging it.
+    if isinstance(value, str) and value == INVALID_NUMERIC:
+        return True
     return _is_blank(value)
 def normalize_text(value):
     if _is_blank(value):
@@ -127,7 +135,7 @@ def _parse_numeric_value(value, field_name=None):
 def normalize_numeric_for_comparison(value, field_name):
     number, invalid = _parse_numeric_value(value, field_name)
     if invalid:
-        return '__INVALID__'
+        return INVALID_NUMERIC
     if number is None:
         return UNKNOWN
     return int(round(number)) if field_name in {'Storage (GB)', 'Model_Year'} else round(number, 2)
@@ -164,6 +172,21 @@ def _apply_mac_identifier_casing(text):
     if not match:
         return text
     letters, suffix = match.groups(); canonical = _MAC_IDENTIFIER_FAMILY_CASING.get(letters.upper()); return canonical + suffix if canonical else text
+def _canonical_model_number_display(value, device):
+    if _is_blank(value):
+        return None
+    is_mac = normalize_device_value(device) == 'Mac'; parts = _split_model_number_text(str(value), is_mac); seen, display = (set(), [])
+    for part in parts:
+        cleaned = part.strip()
+        if not cleaned:
+            continue
+        if is_mac and _MAC_MODEL_IDENTIFIER_RE.search(cleaned):
+            cleaned = _apply_mac_identifier_casing(cleaned); key = re.sub('[^A-Za-z0-9,]', '', cleaned).upper()
+        else:
+            key = re.sub('[^A-Za-z0-9]', '', cleaned).upper()
+        if key and key not in seen:
+            seen.add(key); display.append(cleaned)
+    return ', '.join(display) if display else None
 def normalize_master_model_number_column(df):
     if df is None or df.empty or 'Model Number' not in df.columns:
         return df
@@ -171,19 +194,9 @@ def normalize_master_model_number_column(df):
     for idx, value in result['Model Number'].items():
         if _is_blank(value):
             continue
-        is_mac = normalize_device_value(result.at[idx, 'Device'] if has_device else None) == 'Mac'; parts = _split_model_number_text(str(value), is_mac); seen, display = (set(), [])
-        for part in parts:
-            cleaned = part.strip()
-            if not cleaned:
-                continue
-            if is_mac and _MAC_MODEL_IDENTIFIER_RE.search(cleaned):
-                cleaned = _apply_mac_identifier_casing(cleaned); key = re.sub('[^A-Za-z0-9,]', '', cleaned).upper()
-            else:
-                key = re.sub('[^A-Za-z0-9]', '', cleaned).upper()
-            if key and key not in seen:
-                seen.add(key); display.append(cleaned)
+        device = result.at[idx, 'Device'] if has_device else None; display = _canonical_model_number_display(value, device)
         if display:
-            result.at[idx, 'Model Number'] = ', '.join(display)
+            result.at[idx, 'Model Number'] = display
     return result
 _TRUSTED_APPLE_MODEL_NUMBER_RE = re.compile('^A\\d{4}$')
 def _is_trusted_apple_model_number(token):
@@ -274,11 +287,9 @@ def canonicalize_incoming_row_display_values(row, display_maps):
                 updates['Connectivity'] = c_conn
     raw_mn = row.get('Model Number')
     if not _is_blank(raw_mn):
-        tokens = normalize_model_numbers(raw_mn, device=dev_key)
-        if tokens:
-            c_mn = ', '.join(sorted(tokens))
-            if c_mn != str(raw_mn).strip():
-                updates['Model Number'] = c_mn
+        c_mn = _canonical_model_number_display(raw_mn, dev_key)
+        if c_mn and c_mn != str(raw_mn).strip():
+            updates['Model Number'] = c_mn
     return updates
 _ORDINAL_GENERATION_RE = re.compile('\\b(\\d{1,2})(st|nd|rd|th)\\b', re.IGNORECASE); _ALPHANUMERIC_GENERATION_RE = re.compile('\\b(\\d{1,2})([a-z])\\b', re.IGNORECASE); _CHIPSET_CODE_RE = re.compile('\\b[am]\\d+[a-z]?\\b', re.IGNORECASE); _VARIANT_TOKENS = {'air', 'mini', 'pro', 'max', 'plus', 'se', 'ultra', 'studio'}
 def extract_apple_model_identity(model_text):

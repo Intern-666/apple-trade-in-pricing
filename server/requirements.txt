@@ -11,6 +11,7 @@ google-auth
 lightgbm
 python-multipart
 opencv-python-headless
-easyocr
+pytesseract
+Pillow
 pdfplumber
 thefuzz
