@@ -1813,6 +1813,10 @@
           showAdminToast("Please enter the material.", "warning");
           return;
         }
+        if (!priceStatus) {
+          showAdminToast("Please select whether the trade-in value is confirmed.", "warning");
+          return;
+        }
         let tradeInValue = null;
         if (priceStatus.value === "yes") {
           const price = document.getElementById("add-price").value;
