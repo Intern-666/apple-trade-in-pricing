@@ -752,5 +752,5 @@ def debug_ocr():
     tesseract_path = shutil.which('tesseract')
     return {
         'tesseract_binary': tesseract_path,
-        'pytesseract_version': pytesseract.get_tesseract_version() if tesseract_path else None
+        'pytesseract_version': str(pytesseract.get_tesseract_version()) if tesseract_path else None
     }
