@@ -2930,13 +2930,23 @@
             return null;
           }
           const records = await response.json();
+          // When the status record's provider is known, require an exact
+          // provider match rather than letting a null provider act as a
+          // wildcard -- otherwise multiple candidates can tie and we'd
+          // silently pick the wrong row via matches[0].
           const matches = records.filter((candidate) => {
-            const providerMatches = record.provider == null || candidate.provider === record.provider;
-            const subDeviceMatches = record.sub_device == null || candidate.sub_device === record.sub_device;
+            const providerMatches = record.provider == null ? candidate.provider == null : candidate.provider === record.provider;
+            const subDeviceMatches = record.sub_device == null ? candidate.sub_device == null : candidate.sub_device === record.sub_device;
             return providerMatches && subDeviceMatches;
           });
-          if (matches.length > 0) {
+          if (matches.length === 1) {
             return matches[0];
+          }
+          if (matches.length > 1) {
+            // Still ambiguous even after matching provider and sub_device --
+            // don't guess which row to edit. Fall back to the lightweight
+            // status record instead of risking a modify on the wrong id.
+            return null;
           }
           return records.length === 1 ? records[0] : null;
         } catch (error) {
@@ -2948,9 +2958,18 @@
         modifyOpenedFromStatus = true;
         document.getElementById("admin-status-panel").classList.add("hidden");
         document.getElementById("nav-modify").click();
-        const fullRecord = await findFullRecordForStatusRecord(record);
-        openModifyRecord(fullRecord || record);
-        document.getElementById("modify-section").scrollIntoView({ behavior: "smooth", block: "start" });
+        try {
+          const fullRecord = await findFullRecordForStatusRecord(record);
+          openModifyRecord(fullRecord || record);
+          document.getElementById("modify-section").scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (error) {
+          // If opening the Modify form itself fails, don't leave the
+          // "came from status" flag stuck on -- otherwise every later
+          // Cancel/Save in this session would wrongly redirect back to
+          // the status page.
+          modifyOpenedFromStatus = false;
+          throw error;
+        }
       }
       async function loadStatusRecordFromStorage() {
         const params = new URLSearchParams(window.location.search);
@@ -2963,10 +2982,11 @@
         }
         try {
           const record = JSON.parse(storedRecord);
-          localStorage.removeItem("adminStatusRecord");
           await openStatusRecord(record);
         } catch (error) {
           console.error("Unable to open status record:", error);
+        } finally {
+          localStorage.removeItem("adminStatusRecord");
         }
       }
       document.getElementById("admin-status-button").addEventListener("click", () => {
