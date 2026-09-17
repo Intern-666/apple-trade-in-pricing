@@ -7,6 +7,20 @@
       Apple Trade-In — Admin Tool
     </title>
     <link rel="stylesheet" href="/assets/admin.css">
+    <style>
+      /* Number inputs (Model Year, Retail Price, Storage, Case Size, etc.):
+         drop the native up/down spinner so scrolling the page while the
+         cursor happens to be over one of these fields doesn't silently
+         change its value instead. */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
     <link rel="icon" type="image/png" href="/assets/imycom.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
   </head>
@@ -140,19 +154,19 @@
             <label for="add-year">
               Model Year
             </label>
-            <input id="add-year" type="number" placeholder="e.g. 2027">
+            <input id="add-year" type="number" min="1" step="1" placeholder="e.g. 2027">
           </div>
           <div class="form-group">
             <label for="add-msrp">
               Retail Price (RM)
             </label>
-            <input id="add-msrp" type="number" min="0" step="0.01" placeholder="e.g. 4999" required>
+            <input id="add-msrp" type="number" min="1" step="1" placeholder="e.g. 4999" required>
           </div>
           <div class="form-group" id="add-storage-group">
             <label for="add-storage">
               Storage (GB)
             </label>
-            <input id="add-storage" type="number" placeholder="e.g. 256">
+            <input id="add-storage" type="number" min="1" step="1" placeholder="e.g. 256">
           </div>
           <div class="form-group" id="add-storage-type-group">
             <label for="add-storage-type">
@@ -982,6 +996,24 @@
     <script>
       const CONNECTIVITY_OPTIONS = { "iPad": ["Wi-Fi", "Wi-Fi + Cellular"], "Apple Watch": ["GPS", "GPS + Cellular"] };
       const SUB_DEVICES = { "iPhone": ["Standard", "Mini", "Plus", "Pro", "Pro Max", "SE", "Air"], "iPad": ["Standard", "Air", "Mini", "Pro"], "Mac": ["MacBook", "MacBook Air", "MacBook Pro", "Mac Mini", "Mac Pro", "Mac Studio", "iMac"], "Apple Watch": ["SE", "Series", "Ultra"], "AirPods": ["AirPods", "AirPods Pro", "AirPods Max"] };
+      // A positive, non-zero whole number: used to validate Model Year,
+      // Retail Price, Storage (GB) and Case Size before they're submitted.
+      function isPositiveInteger(value) {
+        if (value === "" || value === null || value === undefined) {
+          return false;
+        }
+        const num = Number(value);
+        return Number.isInteger(num) && num > 0;
+      }
+      // Scrolling the page while the cursor happens to be over a number
+      // field shouldn't bump that field's value instead of scrolling --
+      // this disables the browser's default "wheel changes the number"
+      // behavior on every number input in the page.
+      document.querySelectorAll('input[type="number"]').forEach((input) => {
+        input.addEventListener("wheel", (event) => {
+          event.preventDefault();
+        }, { passive: false });
+      });
       const sections = { add: document.getElementById("add-section"), modify: document.getElementById("modify-section"), delete: document.getElementById("delete-section"), forecast: document.getElementById("forecast-section"), customers: document.getElementById("customers-section") };
       const navButtons = { add: document.getElementById("nav-add"), modify: document.getElementById("nav-modify"), delete: document.getElementById("nav-delete"), forecast: document.getElementById("nav-forecast"), customers: document.getElementById("nav-customers") };
       function showSection(sectionName) {
@@ -1733,12 +1765,28 @@
           showAdminToast("Please enter the model year.", "warning");
           return;
         }
+        if (!isPositiveInteger(year)) {
+          showAdminToast("Model Year must be a positive whole number.", "warning");
+          return;
+        }
         if (!msrp) {
           showAdminToast("Please enter the retail price.", "warning");
           return;
         }
+        if (!isPositiveInteger(msrp)) {
+          showAdminToast("Retail Price must be a positive whole number.", "warning");
+          return;
+        }
+        if (!collectionDate) {
+          showAdminToast("Please select the collection date.", "warning");
+          return;
+        }
         if (device !== "AirPods" && !storage) {
           showAdminToast("Please enter the storage.", "warning");
+          return;
+        }
+        if (device !== "AirPods" && !isPositiveInteger(storage)) {
+          showAdminToast("Storage (GB) must be a positive whole number.", "warning");
           return;
         }
         if (device === "Mac" && !storageType) {
@@ -1751,6 +1799,10 @@
         }
         if (device === "Apple Watch" && !caseSize) {
           showAdminToast("Please enter the case size.", "warning");
+          return;
+        }
+        if (device === "Apple Watch" && !isPositiveInteger(caseSize)) {
+          showAdminToast("Case Size (mm) must be a positive whole number.", "warning");
           return;
         }
         if (device === "AirPods" && !chargingMethod) {
@@ -1770,7 +1822,7 @@
           }
           tradeInValue = parseFloat(price);
         }
-        const payload = { Device: device, SubDevice: subDevice, ModelNumber: modelNumber || null, Model: model, Provider: provider || null, CollectionDate: collectionDate || null, MSRP: parseFloat(msrp), TradeInValue: tradeInValue, Storage: device === "AirPods" ? null : storage ? parseFloat(storage) : null, StorageType: device === "Mac" ? storageType || null : null, ModelYear: year ? parseInt(year, 10) : null, Connectivity: ["iPad", "Apple Watch"].includes(device) ? connectivity || null : null, Specification: null, CaseSize: device === "Apple Watch" ? caseSize ? parseInt(caseSize, 10) : null : null, ChargingMethod: device === "AirPods" ? chargingMethod || null : null, Material: device === "Apple Watch" ? document.getElementById("add-material").value.trim() || null : null };
+        const payload = { Device: device, SubDevice: subDevice, ModelNumber: modelNumber || null, Model: model, Provider: provider || null, CollectionDate: collectionDate || null, MSRP: parseInt(msrp, 10), TradeInValue: tradeInValue, Storage: device === "AirPods" ? null : storage ? parseInt(storage, 10) : null, StorageType: device === "Mac" ? storageType || null : null, ModelYear: year ? parseInt(year, 10) : null, Connectivity: ["iPad", "Apple Watch"].includes(device) ? connectivity || null : null, Specification: null, CaseSize: device === "Apple Watch" ? caseSize ? parseInt(caseSize, 10) : null : null, ChargingMethod: device === "AirPods" ? chargingMethod || null : null, Material: device === "Apple Watch" ? document.getElementById("add-material").value.trim() || null : null };
         const submitButton = document.getElementById("add-submit");
         setActionLoading(submitButton, "Adding...");
         try {
